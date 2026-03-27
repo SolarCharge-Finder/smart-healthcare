@@ -13,6 +13,9 @@ concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -54,7 +57,7 @@ jobs:
           dotnet format backend/SmartHealthcare.slnx --verify-no-changes
 
       - name: setup node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
           cache: "npm"
@@ -80,6 +83,11 @@ jobs:
         run: npm run build
         working-directory: frontend
 
+      - name: normalize image repository
+        id: image_meta
+        if: github.ref == 'refs/heads/main'
+        run: echo "repository_lower=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
       - name: setup docker buildx
         uses: docker/setup-buildx-action@v3
         if: github.ref == 'refs/heads/main'
@@ -102,8 +110,8 @@ jobs:
           cache-from: type=gha,scope=appointment-service
           cache-to: type=gha,scope=appointment-service,mode=max
           tags: |
-            ghcr.io/${{ github.repository }}/appointment-service:latest
-            ghcr.io/${{ github.repository }}/appointment-service:${{ github.sha }}
+            ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/appointment-service:latest
+            ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/appointment-service:${{ github.sha }}
 
       - name: build and push notification service
         uses: docker/build-push-action@v5
@@ -115,8 +123,8 @@ jobs:
           cache-from: type=gha,scope=notification-service
           cache-to: type=gha,scope=notification-service,mode=max
           tags: |
-            ghcr.io/${{ github.repository }}/notification-service:latest
-            ghcr.io/${{ github.repository }}/notification-service:${{ github.sha }}
+            ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/notification-service:latest
+            ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/notification-service:${{ github.sha }}
 
   deploy:
     runs-on: ubuntu-latest
@@ -145,6 +153,10 @@ jobs:
           mkdir -p $HOME/.kube
           echo "$KUBECONFIG_B64" | base64 -d > $HOME/.kube/config
 
+      - name: normalize image repository
+        id: image_meta
+        run: echo "repository_lower=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
       - name: apply manifests
         run: |
           kubectl apply -f infra/k8s
@@ -152,6 +164,6 @@ jobs:
       - name: update images
         run: |
           kubectl set image deployment/appointment-deployment \
-            appointment-service=ghcr.io/${{ github.repository }}/appointment-service:${{ github.sha }}
+            appointment-service=ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/appointment-service:${{ github.sha }}
           kubectl set image deployment/notification-deployment \
-            notification-service=ghcr.io/${{ github.repository }}/notification-service:${{ github.sha }}
+            notification-service=ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/notification-service:${{ github.sha }}
