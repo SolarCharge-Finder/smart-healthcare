@@ -1,0 +1,25 @@
+# macOS
+.DS_Store
+
+# .NET build artifacts
+**/bin/
+**/obj/
+
+# Visual Studio / Rider / VS Code user files
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Test results
+TestResults/
+*.trx
+
+# Logs
+*.log
+
+# Local secrets / env overrides
+.env
+.env.*

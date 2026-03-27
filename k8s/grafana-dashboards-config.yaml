@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: grafana-dashboards-config
+
+data:
+  dashboards.yml: |
+    apiVersion: 1
+
+    providers:
+      - name: smarthealth
+        type: file
+        updateIntervalSeconds: 10
+        options:
+          path: /var/lib/grafana/dashboards

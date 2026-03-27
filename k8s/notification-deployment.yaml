@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: notification-deployment
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: notification-service
+
+  template:
+    metadata:
+      labels:
+        app: notification-service
+
+    spec:
+      containers:
+
+      - name: notification-service
+
+        image: smarthealth-notification-service:latest
+
+        imagePullPolicy: IfNotPresent
+
+        ports:
+          - containerPort: 8080
+
+        env:
+
+        - name: RabbitMQ__Host
+          value: rabbitmq
+
+        - name: RabbitMQ__User
+          valueFrom:
+            secretKeyRef:
+              name: smarthealth-secrets
+              key: RABBITMQ_DEFAULT_USER
+
+        - name: RabbitMQ__Password
+          valueFrom:
+            secretKeyRef:
+              name: smarthealth-secrets
+              key: RABBITMQ_DEFAULT_PASS
+
+        - name: RABBITMQ_DEFAULT_USER
+          valueFrom:
+            secretKeyRef:
+              name: smarthealth-secrets
+              key: RABBITMQ_DEFAULT_USER
+
+        - name: RABBITMQ_DEFAULT_PASS
+          valueFrom:
+            secretKeyRef:
+              name: smarthealth-secrets
+              key: RABBITMQ_DEFAULT_PASS
+
+        resources:
+
+          requests:
+            cpu: 100m
+            memory: 128Mi
+
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+
+        livenessProbe:
+
+          httpGet:
+            path: /health/live
+            port: 8080
+
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+
+        readinessProbe:
+
+          httpGet:
+            path: /health/ready
+            port: 8080
+
+          initialDelaySeconds: 10
+          periodSeconds: 5

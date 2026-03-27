@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: grafana-dashboard
+
+data:
+  smarthealth.json: |
+    {
+      "title": "SmartHealth Metrics",
+      "schemaVersion": 38,
+      "version": 1,
+      "refresh": "10s",
+      "panels": [
+        {
+          "type": "stat",
+          "title": "Appointments Created",
+          "datasource": "Prometheus",
+          "targets": [
+            { "expr": "appointments_created_total" }
+          ],
+          "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 }
+        },
+        {
+          "type": "stat",
+          "title": "Appointments Cancelled",
+          "datasource": "Prometheus",
+          "targets": [
+            { "expr": "appointments_cancelled_total" }
+          ],
+          "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 }
+        },
+        {
+          "type": "stat",
+          "title": "Booking Conflicts",
+          "datasource": "Prometheus",
+          "targets": [
+            { "expr": "appointments_conflict_total" }
+          ],
+          "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 }
+        },
+        {
+          "type": "stat",
+          "title": "RabbitMQ Publish Success",
+          "datasource": "Prometheus",
+          "targets": [
+            { "expr": "rabbitmq_publish_success_total" }
+          ],
+          "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 }
+        },
+        {
+          "type": "stat",
+          "title": "RabbitMQ Publish Failure",
+          "datasource": "Prometheus",
+          "targets": [
+            { "expr": "rabbitmq_publish_failure_total" }
+          ],
+          "gridPos": { "x": 0, "y": 4, "w": 6, "h": 4 }
+        }
+      ]
+    }
