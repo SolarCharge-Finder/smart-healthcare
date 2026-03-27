@@ -14,6 +14,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     permissions:
       contents: read
       packages: write
@@ -120,6 +122,8 @@ jobs:
     if: github.ref == 'refs/heads/main'
     permissions:
       contents: read
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     env:
       KUBECONFIG_B64: ${{ secrets.KUBECONFIG }}
     steps:
