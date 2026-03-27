@@ -104,7 +104,7 @@ public class RabbitMqPublisher
                     routingKey: dlqRoutingKey,
                     arguments: null);
 
-                var queueArgs = new Dictionary<string, object>
+                var queueArgs = new Dictionary<string, object?>
                 {
                     ["x-dead-letter-exchange"] = dlxExchange,
                     ["x-dead-letter-routing-key"] = dlqRoutingKey
@@ -125,7 +125,7 @@ public class RabbitMqPublisher
 
                 if (!string.IsNullOrWhiteSpace(correlationId))
                 {
-                    props.Headers = new Dictionary<string, object>
+                    props.Headers = new Dictionary<string, object?>
                     {
                         ["x-correlation-id"] = correlationId
                     };
@@ -134,6 +134,7 @@ public class RabbitMqPublisher
                 await channel.BasicPublishAsync(
                     exchange: "",
                     routingKey: queueName,
+                    mandatory: false,
                     basicProperties: props,
                     body: body);
 

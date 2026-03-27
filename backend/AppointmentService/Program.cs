@@ -1,6 +1,7 @@
 using AppointmentService.Data;
 using AppointmentService.Logging;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using AppointmentService.Models;
 using AppointmentService.Messaging;
 using System.Data;
@@ -597,9 +598,6 @@ async (
 
 app.Run();
 
-public partial class Program { }
-
-
 static RouteHandlerBuilder RequireApiKey(
     RouteHandlerBuilder builder)
 {
@@ -770,3 +768,5 @@ internal static class Metrics
             $"rabbitmq_publish_failure_total {Interlocked.Read(ref _rabbitMqPublishFailureTotal)}\n";
     }
 }
+
+public partial class Program { }

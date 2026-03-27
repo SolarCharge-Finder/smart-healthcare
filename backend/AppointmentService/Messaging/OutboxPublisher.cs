@@ -75,7 +75,7 @@ public class OutboxPublisher : BackgroundService
                 message.ProcessedAt = DateTime.UtcNow;
                 Metrics.IncRabbitMqPublishSuccess();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 Metrics.IncRabbitMqPublishFailure();
             }

@@ -22,10 +22,10 @@ jobs:
 
     steps:
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: setup dotnet
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "8.0.x"
           cache: true
@@ -128,7 +128,7 @@ jobs:
       KUBECONFIG_B64: ${{ secrets.KUBECONFIG }}
     steps:
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: verify kubeconfig
         run: |

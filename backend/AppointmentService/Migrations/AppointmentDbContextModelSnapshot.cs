@@ -1,6 +1,7 @@
 #nullable disable
 using System;
 using AppointmentService.Data;
+using AppointmentService.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 

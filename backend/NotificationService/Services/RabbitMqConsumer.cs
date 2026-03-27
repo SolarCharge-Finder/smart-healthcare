@@ -96,7 +96,7 @@ public class RabbitMqConsumer : BackgroundService
             arguments: null
         );
 
-        var queueArgs = new Dictionary<string, object>
+        var queueArgs = new Dictionary<string, object?>
         {
             ["x-dead-letter-exchange"] = dlxExchange,
             ["x-dead-letter-routing-key"] = dlqRoutingKey

@@ -85,11 +85,26 @@ app.Run();
 
 static class Metrics
 {
-    private static long _appointmentsCreatedTotal;
-    private static long _appointmentsCancelledTotal;
-    private static long _appointmentsConflictTotal;
-    private static long _rabbitMqPublishSuccessTotal;
-    private static long _rabbitMqPublishFailureTotal;
+    private static long _appointmentsCreatedTotal = 0;
+    private static long _appointmentsCancelledTotal = 0;
+    private static long _appointmentsConflictTotal = 0;
+    private static long _rabbitMqPublishSuccessTotal = 0;
+    private static long _rabbitMqPublishFailureTotal = 0;
+
+    public static void IncAppointmentsCreated() =>
+        Interlocked.Increment(ref _appointmentsCreatedTotal);
+
+    public static void IncAppointmentsCancelled() =>
+        Interlocked.Increment(ref _appointmentsCancelledTotal);
+
+    public static void IncAppointmentsConflict() =>
+        Interlocked.Increment(ref _appointmentsConflictTotal);
+
+    public static void IncRabbitMqPublishSuccess() =>
+        Interlocked.Increment(ref _rabbitMqPublishSuccessTotal);
+
+    public static void IncRabbitMqPublishFailure() =>
+        Interlocked.Increment(ref _rabbitMqPublishFailureTotal);
 
     public static object Snapshot()
     {
