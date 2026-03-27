@@ -2,9 +2,11 @@ name: build
 
 on:
   push:
-    branches: ["**"]
+    branches:
+      - "**"
   pull_request:
-    branches: ["**"]
+    branches:
+      - "**"
   workflow_dispatch:
 
 concurrency:
@@ -14,8 +16,6 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     permissions:
       contents: read
       packages: write
@@ -123,7 +123,6 @@ jobs:
     permissions:
       contents: read
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       KUBECONFIG_B64: ${{ secrets.KUBECONFIG }}
     steps:
       - name: checkout
