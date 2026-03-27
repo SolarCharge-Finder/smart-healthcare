@@ -48,7 +48,7 @@ services:
 
 
   appointment-service:
-    build: ./AppointmentService
+    build: ../backend/AppointmentService
     container_name: sh-appointment
     depends_on:
       postgres:
@@ -68,7 +68,7 @@ services:
 
 
   notification-service:
-    build: ./NotificationService
+    build: ../backend/NotificationService
     container_name: sh-notification
     depends_on:
       rabbitmq:

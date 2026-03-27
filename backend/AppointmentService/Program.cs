@@ -33,6 +33,34 @@ builder.Host.UseSerilog();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+var frontendOrigin =
+    builder.Configuration["Frontend__Origin"];
+var enableCors =
+    builder.Environment.IsDevelopment() ||
+    !string.IsNullOrWhiteSpace(frontendOrigin);
+
+if (enableCors)
+{
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("frontend", policy =>
+        {
+            if (builder.Environment.IsDevelopment() &&
+                string.IsNullOrWhiteSpace(frontendOrigin))
+            {
+                policy.AllowAnyOrigin()
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+            }
+            else if (!string.IsNullOrWhiteSpace(frontendOrigin))
+            {
+                policy.WithOrigins(frontendOrigin)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+            }
+        });
+    });
+}
 
 // postgres
 builder.Services.AddDbContext<AppointmentDbContext>(options =>
@@ -44,7 +72,10 @@ builder.Services.AddDbContext<AppointmentDbContext>(options =>
 // rabbitmq publisher
 builder.Services.AddSingleton<RabbitMqPublisher>();
 builder.Services.AddSingleton<ICorrelationIdAccessor, CorrelationIdAccessor>();
-builder.Services.AddHostedService<OutboxPublisher>();
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddHostedService<OutboxPublisher>();
+}
 
 var redisConnectionString =
     builder.Configuration["Redis__ConnectionString"];
@@ -76,12 +107,24 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider
         .GetRequiredService<AppointmentDbContext>();
 
-    db.Database.Migrate();
+    if (app.Environment.IsEnvironment("Testing"))
+    {
+        db.Database.EnsureCreated();
+    }
+    else
+    {
+        db.Database.Migrate();
+    }
 }
 
 
 app.UseSwagger();
 app.UseSwaggerUI();
+
+if (enableCors)
+{
+    app.UseCors("frontend");
+}
 
 app.UseHttpsRedirection();
 
@@ -553,6 +596,8 @@ async (
 
 
 app.Run();
+
+public partial class Program { }
 
 
 static RouteHandlerBuilder RequireApiKey(
