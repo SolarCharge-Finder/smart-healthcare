@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,7 +32,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ?? throw new Exception("JWT Key is missing");
 
         var key = Encoding.UTF8.GetBytes(jwtKey);
-        
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -54,11 +55,21 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// middleware order matters!
-app.UseHttpsRedirection();
+// middleware order 
+// redirect to http 
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+// metrics middleware
+app.UseHttpMetrics();
 
 app.UseAuthentication();   //first authenticate
-app.UseAuthorization();    
+app.UseAuthorization();  
+
+//metric endpoint
+app.MapMetrics("/metrics/prometheus");
 
 // map controllers
 app.MapControllers();

@@ -46,6 +46,16 @@ services:
       timeout: 5s
       retries: 10
 
+  auth-service:
+    build: ../backend/AuthService
+    container_name: sh-authentication
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=authdb;Username=postgres;Password=admin
+    ports:
+      - "5001:8080"
 
   appointment-service:
     build: ../backend/AppointmentService
