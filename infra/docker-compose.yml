@@ -62,7 +62,7 @@ services:
       RabbitMQ__Host: rabbitmq
       RabbitMQ__User: guest
       RabbitMQ__Password: guest
-      Redis__ConnectionString: redis:6379,password=redispass
+      Redis__ConnectionString: redis:6379,password=redispass,abortConnect=False
     ports:
       - "8080:8080"
 

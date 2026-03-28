@@ -79,15 +79,15 @@ if (!builder.Environment.IsEnvironment("Testing"))
 }
 
 var redisConnectionString =
-    builder.Configuration["Redis__ConnectionString"];
+    builder.Configuration["Redis:ConnectionString"];
 
 if (string.IsNullOrWhiteSpace(redisConnectionString))
 {
     var redisHost =
-        builder.Configuration["Redis__Host"] ??
+        builder.Configuration["Redis:Host"] ??
         "redis:6379";
     var redisPassword =
-        builder.Configuration["Redis__Password"];
+        builder.Configuration["Redis:Password"];
 
     redisConnectionString =
         string.IsNullOrWhiteSpace(redisPassword)
