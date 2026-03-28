@@ -9,9 +9,11 @@ public class AppointmentDbContextFactory : IDesignTimeDbContextFactory<Appointme
     {
         var optionsBuilder = new DbContextOptionsBuilder<AppointmentDbContext>();
 
-        optionsBuilder.UseNpgsql(
-            "Host=localhost;Port=5432;Database=appointmentdb;Username=postgres;Password=admin"
-        );
+        var connectionString =
+            Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+            ?? "Host=localhost;Port=5432;Database=appointmentdb;Username=postgres;Password=admin";
+
+        optionsBuilder.UseNpgsql(connectionString);
 
         return new AppointmentDbContext(optionsBuilder.Options);
     }
