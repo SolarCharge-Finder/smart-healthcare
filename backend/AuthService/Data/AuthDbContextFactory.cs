@@ -11,7 +11,7 @@ public class AuthDbContextFactory : IDesignTimeDbContextFactory<AuthDbContext>
 
         var connectionString =
             Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
-            ?? "Host=localhost;Port=5432;Database=authdb;Username=postgres;Password=admin";
+            ?? "Host=localhost;Port=5432;Database=authdb;Username=change-me;Password=change-me";
 
         optionsBuilder.UseNpgsql(connectionString);
 

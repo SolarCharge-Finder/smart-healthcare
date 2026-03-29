@@ -8,6 +8,14 @@ using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var host = builder.Configuration["DB_HOST"] ?? "localhost";
+var port = builder.Configuration["DB_PORT"] ?? "5432";
+var db = builder.Configuration["DB_NAME"] ?? "authdb";
+var user = builder.Configuration["DB_USER"] ?? "postgres";
+var pass = builder.Configuration["DB_PASSWORD"] ?? "admin";
+
+var connectionString = $"Host={host};Port={port};Database={db};Username={user};Password={pass}";
+
 // add controllers
 builder.Services.AddControllers();
 
@@ -17,9 +25,8 @@ builder.Services.AddSwaggerGen();
 
 // db
 builder.Services.AddDbContext<AuthDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-    ));
+    options.UseNpgsql(connectionString)
+);
 
 // services
 builder.Services.AddScoped<AuthServiceLogic>();
