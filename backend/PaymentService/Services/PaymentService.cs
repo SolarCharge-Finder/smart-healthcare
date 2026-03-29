@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using PaymentService.Data;
 using PaymentService.Models;
@@ -21,14 +22,17 @@ public class PaymentProcessorService : IPaymentService
 	private readonly PaymentDbContext _dbContext;
 	private readonly PaymentIntentService _paymentIntentService;
 	private readonly StripeOptions _stripeOptions;
+	private readonly IConfiguration _configuration;
 
 	public PaymentProcessorService(
 		PaymentDbContext dbContext,
 		PaymentIntentService paymentIntentService,
+		IConfiguration configuration,
 		IOptions<StripeOptions> stripeOptions)
 	{
 		_dbContext = dbContext;
 		_paymentIntentService = paymentIntentService;
+		_configuration = configuration;
 		_stripeOptions = stripeOptions.Value;
 	}
 
@@ -39,7 +43,14 @@ public class PaymentProcessorService : IPaymentService
 			throw new InvalidOperationException("Stripe secret key is not configured.");
 		}
 
-		var normalizedCurrency = request.Currency.ToLowerInvariant();
+		var pricing = ResolvePricing(request.AppointmentId);
+
+		if (pricing.Amount <= 0)
+		{
+			throw new InvalidOperationException("Resolved payment amount is invalid.");
+		}
+
+		var normalizedCurrency = pricing.Currency.ToLowerInvariant();
 
 		var existing = await _dbContext.Payments
 			.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentId, cancellationToken);
@@ -51,11 +62,15 @@ public class PaymentProcessorService : IPaymentService
 				return existing;
 			}
 
-			var recreated = await CreateStripePaymentIntentAsync(request, normalizedCurrency, cancellationToken);
+			var recreated = await CreateStripePaymentIntentAsync(
+				request.AppointmentId,
+				pricing.Amount,
+				normalizedCurrency,
+				cancellationToken);
 
 			existing.StripePaymentIntentId = recreated.Id;
 			existing.ClientSecret = recreated.ClientSecret ?? existing.ClientSecret;
-			existing.Amount = request.Amount;
+			existing.Amount = pricing.Amount;
 			existing.Currency = normalizedCurrency;
 			existing.Status = MapStripeStatus(recreated.Status);
 			existing.FailureReason = recreated.LastPaymentError?.Message;
@@ -65,7 +80,11 @@ public class PaymentProcessorService : IPaymentService
 			return existing;
 		}
 
-		var paymentIntent = await CreateStripePaymentIntentAsync(request, normalizedCurrency, cancellationToken);
+		var paymentIntent = await CreateStripePaymentIntentAsync(
+			request.AppointmentId,
+			pricing.Amount,
+			normalizedCurrency,
+			cancellationToken);
 
 		var payment = new Payment
 		{
@@ -73,7 +92,7 @@ public class PaymentProcessorService : IPaymentService
 			AppointmentId = request.AppointmentId,
 			StripePaymentIntentId = paymentIntent.Id,
 			ClientSecret = paymentIntent.ClientSecret ?? string.Empty,
-			Amount = request.Amount,
+			Amount = pricing.Amount,
 			Currency = normalizedCurrency,
 			Status = MapStripeStatus(paymentIntent.Status),
 			FailureReason = paymentIntent.LastPaymentError?.Message,
@@ -149,13 +168,14 @@ public class PaymentProcessorService : IPaymentService
 	}
 
 	private async Task<PaymentIntent> CreateStripePaymentIntentAsync(
-		CreatePaymentIntentRequest request,
+		Guid appointmentId,
+		long amount,
 		string normalizedCurrency,
 		CancellationToken cancellationToken)
 	{
 		var options = new PaymentIntentCreateOptions
 		{
-			Amount = request.Amount,
+			Amount = amount,
 			Currency = normalizedCurrency,
 			AutomaticPaymentMethods = new PaymentIntentAutomaticPaymentMethodsOptions
 			{
@@ -163,19 +183,38 @@ public class PaymentProcessorService : IPaymentService
 			},
 			Metadata = new Dictionary<string, string>
 			{
-				["appointmentId"] = request.AppointmentId.ToString()
+				["appointmentId"] = appointmentId.ToString()
 			}
 		};
 
 		var requestOptions = new RequestOptions
 		{
-			IdempotencyKey = $"payment-intent:{request.AppointmentId}:{request.Amount}:{normalizedCurrency}"
+			IdempotencyKey = $"payment-intent:{appointmentId}:{amount}:{normalizedCurrency}"
 		};
 
 		return await _paymentIntentService.CreateAsync(
 			options,
 			requestOptions,
 			cancellationToken);
+	}
+
+	private (long Amount, string Currency) ResolvePricing(Guid appointmentId)
+	{
+		const long fallbackAmount = 20000;
+		const string fallbackCurrency = "lkr";
+
+		var configuredAmount = _configuration.GetValue<long?>("PaymentPricing:DefaultAmount");
+		var configuredCurrency = _configuration["PaymentPricing:Currency"];
+
+		var amount = configuredAmount.HasValue && configuredAmount.Value > 0
+			? configuredAmount.Value
+			: fallbackAmount;
+
+		var currency = string.IsNullOrWhiteSpace(configuredCurrency)
+			? fallbackCurrency
+			: configuredCurrency;
+
+		return (amount, currency);
 	}
 
 	private static string MapStripeStatus(string? stripeStatus)

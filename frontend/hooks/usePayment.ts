@@ -7,8 +7,6 @@ import {
 
 export interface CreatePaymentIntentPayload {
   appointmentId: string;
-  amount: number;
-  currency: string;
 }
 
 export function useCreatePaymentIntent() {

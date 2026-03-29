@@ -10,8 +10,6 @@ import Card from "../ui/Card";
 import Button from "../ui/Button";
 import Alert from "../ui/Alert";
 import Input from "../ui/Input";
-import api from "../../lib/api";
-import { Payment } from "../../types/payment";
 
 interface PaymentFormProps {
   appointmentId: string;
@@ -32,26 +30,6 @@ export default function PaymentForm({
     type: "success" | "error" | "info";
     message: string;
   } | null>(null);
-
-  const syncBackendPaymentStatus = async (
-    stripePaymentIntentId: string,
-    isSuccess: boolean,
-    failureReason?: string
-  ) => {
-    const { data: payments } = await api.get<Payment[]>("/payments");
-    const paymentRecord = payments.find(
-      (payment) => payment.stripePaymentIntentId === stripePaymentIntentId
-    );
-
-    if (!paymentRecord) {
-      throw new Error("Could not find payment record to update status.");
-    }
-
-    await api.post(`/payments/${paymentRecord.id}/confirm`, {
-      isSuccess,
-      ...(failureReason ? { failureReason } : {}),
-    });
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,17 +84,6 @@ export default function PaymentForm({
         console.log("Payment intent status:", paymentIntent.status);
         
         if (paymentIntent.status === "succeeded") {
-          try {
-            await syncBackendPaymentStatus(paymentIntent.id, true);
-          } catch (syncError) {
-            console.error("Failed to sync successful payment to backend:", syncError);
-            setStatus({
-              type: "error",
-              message: "Payment succeeded, but backend update failed. Please refresh and try again.",
-            });
-            return;
-          }
-
           setStatus({
             type: "success",
             message: "Payment successful! Your appointment is confirmed.",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import PaymentForm from "../../components/forms/PaymentForm";
@@ -10,7 +10,7 @@ import { useStripeConfig } from "../../hooks/useStripeConfig";
 import { useCreatePaymentIntent } from "../../hooks/usePayment";
 import Alert from "../../components/ui/Alert";
 
-export default function PaymentPage() {
+function PaymentPageContent() {
   const searchParams = useSearchParams();
   const [appointmentId, setAppointmentId] = useState<string>("");
   const [amount, setAmount] = useState<number>(0);
@@ -26,14 +26,17 @@ export default function PaymentPage() {
   const createPaymentIntent = useCreatePaymentIntent();
 
   useEffect(() => {
-    // Get payment details from URL params or use defaults
-    const apt = searchParams.get("appointmentId") || "11111111-1111-1111-1111-111111111111";
-    const amt = parseInt(searchParams.get("amount") || "20000", 10);
-    const curr = searchParams.get("currency") || "lkr";
+    const apt = searchParams.get("appointmentId");
+
+    if (!apt) {
+      setAppointmentId("");
+      setInitError("Missing appointmentId in URL.");
+      setIsInitializing(false);
+      return;
+    }
 
     setAppointmentId(apt);
-    setAmount(amt);
-    setCurrency(curr);
+    setInitError(null);
   }, [searchParams]);
 
   // Initialize Stripe once config is loaded
@@ -50,8 +53,6 @@ export default function PaymentPage() {
   useEffect(() => {
     if (
       appointmentId &&
-      amount > 0 &&
-      currency &&
       stripePromise &&
       !clientSecret &&
       !intentRequestedRef.current
@@ -62,8 +63,6 @@ export default function PaymentPage() {
           setIsInitializing(true);
           const response = await createPaymentIntent.mutateAsync({
             appointmentId,
-            amount,
-            currency,
           });
           const normalizedStatus = (response.status || "").toLowerCase();
 
@@ -76,6 +75,8 @@ export default function PaymentPage() {
             intentRequestedRef.current = false;
           } else {
             setClientSecret(response.clientSecret);
+            setAmount(response.amount);
+            setCurrency(response.currency);
             setInitInfo(null);
             setInitError(null);
           }
@@ -93,12 +94,12 @@ export default function PaymentPage() {
 
       createIntent();
     }
-  }, [appointmentId, amount, currency, stripePromise, clientSecret, createPaymentIntent]);
+  }, [appointmentId, stripePromise, clientSecret, createPaymentIntent]);
 
   useEffect(() => {
-    // Allow a fresh intent request when payment parameters change.
+    // Allow a fresh intent request when appointment changes.
     intentRequestedRef.current = false;
-  }, [appointmentId, amount, currency]);
+  }, [appointmentId]);
 
   const isReady = !configLoading && !isInitializing && stripePromise && clientSecret;
   const elementsOptions = useMemo(
@@ -116,7 +117,7 @@ export default function PaymentPage() {
 
   if (configError || initError) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-6 py-10">
+      <main className="flex flex-col max-w-6xl min-h-screen gap-6 px-6 py-10 mx-auto">
         <PageHeader
           title="Secure Payment"
           subtitle="Complete your payment with trusted providers."
@@ -130,7 +131,7 @@ export default function PaymentPage() {
 
   if (initInfo) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-6 py-10">
+      <main className="flex flex-col max-w-6xl min-h-screen gap-6 px-6 py-10 mx-auto">
         <PageHeader
           title="Secure Payment"
           subtitle="Complete your payment with trusted providers."
@@ -142,7 +143,7 @@ export default function PaymentPage() {
 
   if (!isReady) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-6 py-10">
+      <main className="flex flex-col max-w-6xl min-h-screen gap-6 px-6 py-10 mx-auto">
         <PageHeader
           title="Secure Payment"
           subtitle="Complete your payment with trusted providers."
@@ -150,7 +151,7 @@ export default function PaymentPage() {
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
             <div className="inline-block mb-4">
-              <div className="h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+              <div className="w-8 h-8 border-4 border-blue-200 rounded-full border-t-blue-600 animate-spin"></div>
             </div>
             <div className="text-gray-600">Initializing payment system...</div>
           </div>
@@ -160,7 +161,7 @@ export default function PaymentPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-6 py-10">
+    <main className="flex flex-col max-w-6xl min-h-screen gap-6 px-6 py-10 mx-auto">
       <PageHeader
         title="Secure Payment"
         subtitle="Complete your payment with trusted providers."
@@ -179,5 +180,25 @@ export default function PaymentPage() {
         </Elements>
       </div>
     </main>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex flex-col max-w-6xl min-h-screen gap-6 px-6 py-10 mx-auto">
+          <PageHeader
+            title="Secure Payment"
+            subtitle="Complete your payment with trusted providers."
+          />
+          <div className="flex items-center justify-center min-h-96">
+            <div className="text-gray-600">Loading payment details...</div>
+          </div>
+        </main>
+      }
+    >
+      <PaymentPageContent />
+    </Suspense>
   );
 }

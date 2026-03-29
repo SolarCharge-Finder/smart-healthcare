@@ -144,12 +144,6 @@ async (CreatePaymentIntentRequest request, IPaymentService paymentService) =>
 	if (request.AppointmentId == Guid.Empty)
 		return Results.BadRequest("AppointmentId is required");
 
-	if (request.Amount <= 0)
-		return Results.BadRequest("Amount must be greater than zero");
-
-	if (string.IsNullOrWhiteSpace(request.Currency))
-		return Results.BadRequest("Currency is required");
-
 	try
 	{
 		var payment = await paymentService.CreatePaymentIntentAsync(request);
@@ -158,6 +152,8 @@ async (CreatePaymentIntentRequest request, IPaymentService paymentService) =>
 		{
 			PaymentIntentId = payment.StripePaymentIntentId,
 			ClientSecret = payment.ClientSecret,
+			Amount = payment.Amount,
+			Currency = payment.Currency,
 			Status = payment.Status
 		});
 	}
@@ -186,7 +182,11 @@ async (HttpRequest httpRequest, IPaymentService paymentService, IOptions<StripeO
 
 		try
 		{
-			stripeEvent = EventUtility.ConstructEvent(json, signature, webhookSecret);
+			stripeEvent = EventUtility.ConstructEvent(
+				json,
+				signature,
+				webhookSecret,
+				throwOnApiVersionMismatch: false);
 		}
 		catch (StripeException ex)
 		{
@@ -232,7 +232,7 @@ async (Guid id, IPaymentService paymentService) =>
 	if (payment is null)
 		return Results.NotFound();
 
-	return Results.Ok(payment);
+	return Results.Ok(ToPaymentReadResponse(payment));
 });
 
 app.MapGet("/payments/appointment/{appointmentId:guid}",
@@ -243,14 +243,30 @@ async (Guid appointmentId, IPaymentService paymentService) =>
 	if (payment is null)
 		return Results.NotFound();
 
-	return Results.Ok(payment);
+	return Results.Ok(ToPaymentReadResponse(payment));
 });
 
 app.MapGet("/payments",
 async (IPaymentService paymentService) =>
 {
 	var payments = await paymentService.GetAllPaymentsAsync();
-	return Results.Ok(payments);
+	return Results.Ok(payments.Select(ToPaymentReadResponse));
 });
+
+static object ToPaymentReadResponse(Payment payment)
+{
+	return new
+	{
+		payment.Id,
+		payment.AppointmentId,
+		payment.StripePaymentIntentId,
+		payment.Amount,
+		payment.Currency,
+		payment.Status,
+		payment.FailureReason,
+		payment.CreatedAt,
+		payment.UpdatedAt
+	};
+}
 
 app.Run();
