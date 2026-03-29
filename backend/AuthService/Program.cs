@@ -82,3 +82,5 @@ app.MapMetrics("/metrics/prometheus");
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }
