@@ -80,6 +80,21 @@ services:
     restart: always
 
 
+  payment-service:
+    build: ../backend/PaymentService
+    container_name: sh-payment
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=appointmentdb;Username=postgres;Password=admin
+      Stripe__SecretKey: ${STRIPE_SECRET_KEY}
+      Stripe__PublishableKey: ${STRIPE_PUBLISHABLE_KEY}
+      Stripe__WebhookSecret: ${STRIPE_WEBHOOK_SECRET}
+    ports:
+      - "8081:8080"
+
+
   prometheus:
     image: prom/prometheus:v2.51.2
     container_name: sh-prometheus

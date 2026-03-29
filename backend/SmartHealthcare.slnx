@@ -2,4 +2,5 @@
   <Project Path="AppointmentService/AppointmentService.csproj" />
   <Project Path="AppointmentService.Tests/AppointmentService.Tests.csproj" />
   <Project Path="NotificationService/NotificationService.csproj" />
+  <Project Path="PaymentService/PaymentService.csproj" />
 </Solution>

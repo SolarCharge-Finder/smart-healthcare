@@ -1,3 +1,5 @@
+namespace PaymentService.Models;
+
 public class CreatePaymentIntentResponse
 {
     public string PaymentIntentId { get; set; } = string.Empty;
