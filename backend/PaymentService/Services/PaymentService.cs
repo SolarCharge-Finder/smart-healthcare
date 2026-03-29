@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 using PaymentService.Data;
 using PaymentService.Models;
 using Stripe;
@@ -22,17 +22,20 @@ public class PaymentProcessorService : IPaymentService
 	private readonly PaymentDbContext _dbContext;
 	private readonly PaymentIntentService _paymentIntentService;
 	private readonly StripeOptions _stripeOptions;
-	private readonly IConfiguration _configuration;
+	private readonly IAppointmentPricingService _appointmentPricingService;
+	private readonly ILogger<PaymentProcessorService> _logger;
 
 	public PaymentProcessorService(
 		PaymentDbContext dbContext,
 		PaymentIntentService paymentIntentService,
-		IConfiguration configuration,
+		IAppointmentPricingService appointmentPricingService,
+		ILogger<PaymentProcessorService> logger,
 		IOptions<StripeOptions> stripeOptions)
 	{
 		_dbContext = dbContext;
 		_paymentIntentService = paymentIntentService;
-		_configuration = configuration;
+		_appointmentPricingService = appointmentPricingService;
+		_logger = logger;
 		_stripeOptions = stripeOptions.Value;
 	}
 
@@ -43,12 +46,9 @@ public class PaymentProcessorService : IPaymentService
 			throw new InvalidOperationException("Stripe secret key is not configured.");
 		}
 
-		var pricing = ResolvePricing(request.AppointmentId);
-
-		if (pricing.Amount <= 0)
-		{
-			throw new InvalidOperationException("Resolved payment amount is invalid.");
-		}
+		var pricing = await _appointmentPricingService.ResolvePricingAsync(
+			request.AppointmentId,
+			cancellationToken);
 
 		var normalizedCurrency = pricing.Currency.ToLowerInvariant();
 
@@ -155,16 +155,46 @@ public class PaymentProcessorService : IPaymentService
 
 		if (payment is null)
 		{
+			_logger.LogWarning(
+				"No payment found for StripePaymentIntentId {StripePaymentIntentId}.",
+				intent.Id);
 			return null;
 		}
 
-		payment.Status = MapStripeStatus(intent.Status);
+		var incomingStatus = MapStripeStatus(intent.Status);
+
+		// Stripe webhooks can be delivered out of order; don't regress terminal states.
+		if (IsTerminal(payment.Status) && !string.Equals(payment.Status, incomingStatus, StringComparison.Ordinal))
+		{
+			_logger.LogInformation(
+				"Ignoring webhook status regression for payment {PaymentId}: current={CurrentStatus}, incoming={IncomingStatus}.",
+				payment.Id,
+				payment.Status,
+				incomingStatus);
+
+			return payment;
+		}
+
+		payment.Status = incomingStatus;
 		payment.FailureReason = intent.LastPaymentError?.Message;
 		payment.ClientSecret = intent.ClientSecret ?? payment.ClientSecret;
 		payment.UpdatedAt = DateTime.UtcNow;
 
 		await _dbContext.SaveChangesAsync(cancellationToken);
+
+		_logger.LogInformation(
+			"Payment {PaymentId} updated from webhook to status {Status}.",
+			payment.Id,
+			payment.Status);
+
 		return payment;
+	}
+
+	private static bool IsTerminal(string status)
+	{
+		return string.Equals(status, PaymentStatus.Succeeded, StringComparison.Ordinal) ||
+			string.Equals(status, PaymentStatus.Failed, StringComparison.Ordinal) ||
+			string.Equals(status, PaymentStatus.Cancelled, StringComparison.Ordinal);
 	}
 
 	private async Task<PaymentIntent> CreateStripePaymentIntentAsync(
@@ -196,25 +226,6 @@ public class PaymentProcessorService : IPaymentService
 			options,
 			requestOptions,
 			cancellationToken);
-	}
-
-	private (long Amount, string Currency) ResolvePricing(Guid appointmentId)
-	{
-		const long fallbackAmount = 20000;
-		const string fallbackCurrency = "lkr";
-
-		var configuredAmount = _configuration.GetValue<long?>("PaymentPricing:DefaultAmount");
-		var configuredCurrency = _configuration["PaymentPricing:Currency"];
-
-		var amount = configuredAmount.HasValue && configuredAmount.Value > 0
-			? configuredAmount.Value
-			: fallbackAmount;
-
-		var currency = string.IsNullOrWhiteSpace(configuredCurrency)
-			? fallbackCurrency
-			: configuredCurrency;
-
-		return (amount, currency);
 	}
 
 	private static string MapStripeStatus(string? stripeStatus)

@@ -7,6 +7,7 @@ using Serilog;
 using Serilog.Context;
 using Serilog.Formatting.Json;
 using Stripe;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,6 +44,21 @@ builder.Services.AddCors(options =>
 builder.Services
 	.AddOptions<StripeOptions>()
 	.Bind(builder.Configuration.GetSection(StripeOptions.SectionName));
+
+builder.Services
+	.AddOptions<AppointmentServiceOptions>()
+	.Bind(builder.Configuration.GetSection(AppointmentServiceOptions.SectionName));
+
+builder.Services
+	.AddOptions<PaymentPricingOptions>()
+	.Bind(builder.Configuration.GetSection(PaymentPricingOptions.SectionName));
+
+builder.Services.AddHttpClient<IAppointmentPricingService, AppointmentPricingService>(
+	(sp, client) =>
+	{
+		var options = sp.GetRequiredService<IOptions<AppointmentServiceOptions>>().Value;
+		client.BaseAddress = new Uri(options.BaseUrl);
+	});
 
 builder.Services.AddSingleton<PaymentIntentService>();
 
@@ -139,8 +155,42 @@ async (PaymentDbContext db) =>
 });
 
 app.MapPost("/payments/intents",
-async (CreatePaymentIntentRequest request, IPaymentService paymentService) =>
+async (HttpRequest httpRequest, IPaymentService paymentService) =>
 {
+	CreatePaymentIntentRequest? request;
+
+	try
+	{
+		using var jsonDoc = await JsonDocument.ParseAsync(httpRequest.Body);
+
+		if (jsonDoc.RootElement.ValueKind != JsonValueKind.Object)
+			return Results.BadRequest("Request body must be a JSON object.");
+
+		var allowedFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+		{
+			"appointmentId"
+		};
+
+		foreach (var property in jsonDoc.RootElement.EnumerateObject())
+		{
+			if (!allowedFields.Contains(property.Name))
+				return Results.BadRequest($"Unsupported field '{property.Name}'. Send only appointmentId.");
+		}
+
+		request = jsonDoc.RootElement.Deserialize<CreatePaymentIntentRequest>(
+			new JsonSerializerOptions
+			{
+				PropertyNameCaseInsensitive = true
+			});
+
+		if (request is null)
+			return Results.BadRequest("Invalid request body.");
+	}
+	catch (JsonException ex)
+	{
+		return Results.BadRequest($"Invalid JSON payload: {ex.Message}");
+	}
+
 	if (request.AppointmentId == Guid.Empty)
 		return Results.BadRequest("AppointmentId is required");
 
@@ -161,6 +211,10 @@ async (CreatePaymentIntentRequest request, IPaymentService paymentService) =>
 	{
 		return Results.BadRequest($"Stripe error: {ex.Message}");
 	}
+	catch (KeyNotFoundException ex)
+	{
+		return Results.NotFound(ex.Message);
+	}
 	catch (InvalidOperationException ex)
 	{
 		return Results.Problem(ex.Message, statusCode: 500);
@@ -169,7 +223,7 @@ async (CreatePaymentIntentRequest request, IPaymentService paymentService) =>
 
 
 app.MapPost("/payments/webhook",
-async (HttpRequest httpRequest, IPaymentService paymentService, IOptions<StripeOptions> options) =>
+async (HttpRequest httpRequest, IPaymentService paymentService, IOptions<StripeOptions> options, ILogger<Program> logger) =>
 	{
 		var json = await new StreamReader(httpRequest.Body).ReadToEndAsync();
 		var signature = httpRequest.Headers["Stripe-Signature"].ToString();
@@ -187,15 +241,54 @@ async (HttpRequest httpRequest, IPaymentService paymentService, IOptions<StripeO
 				signature,
 				webhookSecret,
 				throwOnApiVersionMismatch: false);
+
+			logger.LogInformation(
+				"Stripe webhook event received: {EventType} ({EventId})",
+				stripeEvent.Type,
+				stripeEvent.Id);
 		}
 		catch (StripeException ex)
 		{
+			logger.LogWarning(ex, "Invalid Stripe webhook signature.");
 			return Results.BadRequest($"Invalid Stripe webhook signature: {ex.Message}");
+		}
+
+		if (!stripeEvent.Type.StartsWith("payment_intent.", StringComparison.Ordinal))
+		{
+			logger.LogInformation(
+				"Ignoring non-payment_intent webhook event: {EventType} ({EventId})",
+				stripeEvent.Type,
+				stripeEvent.Id);
+
+			return Results.Ok(new { received = true, ignored = true, eventType = stripeEvent.Type });
 		}
 
 		if (stripeEvent.Data.Object is PaymentIntent intent)
 		{
-			await paymentService.UpdatePaymentFromStripeIntentAsync(intent);
+			var updatedPayment = await paymentService.UpdatePaymentFromStripeIntentAsync(intent);
+
+			if (updatedPayment is null)
+			{
+				logger.LogWarning(
+					"Webhook event {EventId} ignored because payment record was not found for StripePaymentIntentId {StripePaymentIntentId}.",
+					stripeEvent.Id,
+					intent.Id);
+			}
+			else
+			{
+				logger.LogInformation(
+					"Webhook event {EventId} applied. Payment {PaymentId} is now {Status}.",
+					stripeEvent.Id,
+					updatedPayment.Id,
+					updatedPayment.Status);
+			}
+		}
+		else
+		{
+			logger.LogInformation(
+				"Ignoring payment_intent webhook event with unsupported payload type: {EventType} ({EventId})",
+				stripeEvent.Type,
+				stripeEvent.Id);
 		}
 
 		return Results.Ok(new { received = true, eventType = stripeEvent.Type });
