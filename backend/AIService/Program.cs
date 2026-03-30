@@ -46,6 +46,22 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AiDbContext>();
+    
+    if (app.Environment.IsEnvironment("Testing"))
+    {
+        db.Database.EnsureCreated();
+        await AiDbContextSeed.SeedAsync(db);
+    }
+    else
+    {
+        db.Database.Migrate();
+        await AiDbContextSeed.SeedAsync(db);
+    }
+}
+
 app.UseHttpsRedirection();
 
 app.UseCors("frontend");
