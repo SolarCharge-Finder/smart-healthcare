@@ -34,6 +34,9 @@ builder.Services.AddSingleton<IOpenAIService, OpenAIService>();
 builder.Services.AddSingleton<IValidationService, ValidationService>();
 builder.Services.AddSingleton<IResponseParsingService, ResponseParsingService>();
 
+// Prompt Engineering Services
+builder.Services.AddSingleton<IPromptService, PromptService>();
+
 // CORS
 builder.Services.AddCors(options =>
 {

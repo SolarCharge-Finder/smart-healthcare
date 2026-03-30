@@ -15,17 +15,20 @@ public class OpenAIService : IOpenAIService
     private readonly ILogger<OpenAIService> _logger;
     private readonly IValidationService _validationService;
     private readonly IResponseParsingService _parsingService;
+    private readonly IPromptService _promptService;
 
     public OpenAIService(
         IConfiguration config, 
         ILogger<OpenAIService> logger,
         IValidationService validationService,
-        IResponseParsingService parsingService)
+        IResponseParsingService parsingService,
+        IPromptService promptService)
     {
         _config = config;
         _logger = logger;
         _validationService = validationService;
         _parsingService = parsingService;
+        _promptService = promptService;
     }
 
     public async Task<OpenAIResponse> AnalyzeSymptomsAsync(string symptoms, string correlationId, CancellationToken cancellationToken = default)
@@ -55,6 +58,13 @@ public class OpenAIService : IOpenAIService
 
             // Placeholder implementation - will be replaced with actual OpenAI integration in next commit
             await Task.Delay(100, cancellationToken); // Simulate API call
+
+            // Use structured prompt service
+            var userPrompt = _promptService.BuildMedicalAnalysisPrompt(validationResult.SanitizedSymptoms);
+            var systemPrompt = _promptService.BuildSystemPrompt();
+
+            _logger.LogInformation("Generated structured prompt. CorrelationId: {CorrelationId}, PromptVersion: {Version}", 
+                correlationId, _promptService.GetPromptVersion());
 
             var mockResponse = @"{
                 ""possibleConditions"": [""migraine"", ""flu""],
