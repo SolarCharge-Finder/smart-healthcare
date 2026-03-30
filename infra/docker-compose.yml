@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -88,6 +88,21 @@ services:
       RabbitMQ__User: guest
       RabbitMQ__Password: guest
     restart: always
+
+
+  payment-service:
+    build: ../backend/PaymentService
+    container_name: sh-payment
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=appointmentdb;Username=postgres;Password=admin
+      Stripe__SecretKey: ${STRIPE_SECRET_KEY}
+      Stripe__PublishableKey: ${STRIPE_PUBLISHABLE_KEY}
+      Stripe__WebhookSecret: ${STRIPE_WEBHOOK_SECRET}
+    ports:
+      - "8081:8080"
 
 
   prometheus:

@@ -47,13 +47,16 @@ export default function BookingForm() {
     const slotTime = new Date(`${date}T${time}:00`).toISOString();
 
     try {
-      await createAppointment.mutateAsync({
+      const appointment = await createAppointment.mutateAsync({
         patientId,
         doctorId,
         slotTime
       });
       setSuccess(true);
-      setTimeout(() => router.push("/appointments/history"), 800);
+      setTimeout(
+        () => router.push(`/payment?appointmentId=${appointment.id}`),
+        800
+      );
     } catch (err) {
       const axiosError = err as AxiosError;
       const responseMessage =

@@ -1,0 +1,64 @@
+@PaymentService_HostAddress = http://localhost:8081
+
+### Liveness
+GET {{PaymentService_HostAddress}}/health/live
+
+### Readiness
+GET {{PaymentService_HostAddress}}/health/ready
+
+### Create Payment Intent
+POST {{PaymentService_HostAddress}}/payments/intents
+Content-Type: application/json
+
+{
+	"appointmentId": "6d7d8b96-1708-4d71-b8d6-98ed99fd56f6",
+	"amount": 7500,
+	"currency": "lkr"
+}
+
+### Get Stripe Publishable Key
+GET {{PaymentService_HostAddress}}/payments/config
+
+### Confirm Payment (Success)
+POST {{PaymentService_HostAddress}}/payments/11111111-1111-1111-1111-111111111111/confirm
+Content-Type: application/json
+
+{
+	"isSuccess": true
+}
+
+### Confirm Payment (Failure)
+POST {{PaymentService_HostAddress}}/payments/11111111-1111-1111-1111-111111111111/confirm
+Content-Type: application/json
+
+{
+	"isSuccess": false,
+	"failureReason": "Card declined"
+}
+
+### Get Payment By ID
+GET {{PaymentService_HostAddress}}/payments/11111111-1111-1111-1111-111111111111
+
+### Get Payment By Appointment ID
+GET {{PaymentService_HostAddress}}/payments/appointment/6d7d8b96-1708-4d71-b8d6-98ed99fd56f6
+
+### Get All Payments
+GET {{PaymentService_HostAddress}}/payments
+
+### Stripe Webhook (for local manual tests only)
+POST {{PaymentService_HostAddress}}/payments/webhook
+Content-Type: application/json
+Stripe-Signature: t=111,v1=test
+
+{
+	"id": "evt_test_webhook",
+	"object": "event",
+	"type": "payment_intent.succeeded",
+	"data": {
+		"object": {
+			"id": "pi_test",
+			"object": "payment_intent",
+			"status": "succeeded"
+		}
+	}
+}
