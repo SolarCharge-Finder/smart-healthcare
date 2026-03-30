@@ -14,7 +14,7 @@ public class ValidationService : IValidationService
         "suicide", "kill", "harm", "murder", "die", "death",
         "illegal", "drugs", "overdose", "poison", "weapon"
     };
-    
+
     private static readonly string[] MedicalKeywords = {
         "pain", "ache", "fever", "cough", "headache", "nausea", "vomiting",
         "diarrhea", "fatigue", "weakness", "dizziness", "rash", "swelling",
@@ -24,14 +24,14 @@ public class ValidationService : IValidationService
     public ValidationResult ValidateSymptoms(string symptoms)
     {
         var result = new ValidationResult { IsValid = true };
-        
+
         if (string.IsNullOrWhiteSpace(symptoms))
         {
             result.IsValid = false;
             result.ErrorMessage = "Symptoms description is required";
             return result;
         }
-        
+
         // Length validation
         if (symptoms.Length < 10)
         {
@@ -39,17 +39,17 @@ public class ValidationService : IValidationService
             result.ErrorMessage = "Symptoms description must be at least 10 characters";
             return result;
         }
-        
+
         if (symptoms.Length > 2000)
         {
             result.IsValid = false;
             result.ErrorMessage = "Symptoms description must not exceed 2000 characters";
             return result;
         }
-        
+
         // Content validation
         var sanitizedSymptoms = symptoms.ToLowerInvariant();
-        
+
         // Check for forbidden content
         foreach (var word in ForbiddenWords)
         {
@@ -60,7 +60,7 @@ public class ValidationService : IValidationService
                 return result;
             }
         }
-        
+
         // Check for medical relevance
         var hasMedicalKeywords = MedicalKeywords.Any(keyword => sanitizedSymptoms.Contains(keyword));
         if (!hasMedicalKeywords)
@@ -69,7 +69,7 @@ public class ValidationService : IValidationService
             result.ErrorMessage = "Symptoms description must contain medical symptoms";
             return result;
         }
-        
+
         // Pattern validation for common medical formats
         var validPatterns = new[]
         {
@@ -77,7 +77,7 @@ public class ValidationService : IValidationService
             @"\b(chest|abdominal|back|joint|muscle)\s+(pain|discomfort|tightness)",
             @"\b(shortness|difficulty)\s+(of\s+)?breathing"
         };
-        
+
         var hasValidPattern = validPatterns.Any(pattern => Regex.IsMatch(sanitizedSymptoms, pattern, RegexOptions.IgnoreCase));
         if (!hasValidPattern)
         {
@@ -85,7 +85,7 @@ public class ValidationService : IValidationService
             result.ErrorMessage = "Symptoms description must follow medical symptom format";
             return result;
         }
-        
+
         result.SanitizedSymptoms = SanitizeSymptoms(symptoms);
         return result;
     }
@@ -94,13 +94,13 @@ public class ValidationService : IValidationService
     {
         if (string.IsNullOrWhiteSpace(symptoms))
             return string.Empty;
-            
+
         // Remove HTML tags
         var sanitized = Regex.Replace(symptoms, @"<[^>]*>", "", RegexOptions.IgnoreCase);
-        
+
         // Remove excessive whitespace
         sanitized = Regex.Replace(sanitized, @"\s+", " ", RegexOptions.IgnoreCase);
-        
+
         // Trim and return
         return sanitized.Trim();
     }

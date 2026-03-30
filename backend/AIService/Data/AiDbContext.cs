@@ -17,7 +17,7 @@ public class AiDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        
+
         // AI Analysis configuration
         modelBuilder.Entity<AIAnalysis>(entity =>
         {

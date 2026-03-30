@@ -29,8 +29,8 @@ public class AiController : ControllerBase
         try
         {
             var correlationId = HttpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
-            
-            _logger.LogInformation("Received symptom analysis request. Symptoms: {Symptoms}, CorrelationId: {CorrelationId}", 
+
+            _logger.LogInformation("Received symptom analysis request. Symptoms: {Symptoms}, CorrelationId: {CorrelationId}",
                 request.Symptoms, correlationId);
 
             var result = await _openAIService.AnalyzeSymptomsAsync(request.Symptoms, correlationId);
@@ -49,7 +49,8 @@ public class AiController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error in symptom analysis endpoint");
-            return StatusCode(500, new { 
+            return StatusCode(500, new
+            {
                 success = false,
                 error = "An unexpected error occurred during symptom analysis"
             });

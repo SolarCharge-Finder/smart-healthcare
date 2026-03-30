@@ -12,11 +12,11 @@ public interface IPromptService
 public class PromptService : IPromptService
 {
     private const string CURRENT_VERSION = "1.0";
-    
+
     public string BuildMedicalAnalysisPrompt(string symptoms)
     {
         var systemPrompt = BuildSystemPrompt();
-        
+
         var userPrompt = $@"Analyze the following medical symptoms and provide a structured JSON response:
         
 Symptoms: {symptoms}

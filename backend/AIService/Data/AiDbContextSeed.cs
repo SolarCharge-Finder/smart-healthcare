@@ -8,7 +8,7 @@ public static class AiDbContextSeed
     public static async Task SeedAsync(AiDbContext context)
     {
         await context.Database.EnsureCreatedAsync();
-        
+
         // Check if data already exists
         if (await context.AIAnalyses.AnyAsync())
             return;

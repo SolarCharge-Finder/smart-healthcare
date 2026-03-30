@@ -33,7 +33,7 @@ public class ResponseParsingService : IResponseParsingService
 
             // Try to parse as JSON
             var jsonDoc = JsonDocument.Parse(aiResponse);
-            
+
             if (!jsonDoc.RootElement.TryGetProperty("possibleConditions", out var conditionsElement))
             {
                 return new ParsedAIResponse
@@ -136,7 +136,7 @@ public class ResponseParsingService : IResponseParsingService
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "Failed to parse AI response. CorrelationId: {CorrelationId}, Response: {Response}", 
+            _logger.LogError(ex, "Failed to parse AI response. CorrelationId: {CorrelationId}, Response: {Response}",
                 correlationId, aiResponse);
 
             return new ParsedAIResponse

@@ -5,7 +5,7 @@ public static class PromptTemplates
     public const string MEDICAL_ANALYSIS = "medical_analysis";
     public const string EMERGENCY_ASSESSMENT = "emergency_assessment";
     public const string SYMPTOM_CLARIFICATION = "symptom_clarification";
-    
+
     public static class EmergencyIndicators
     {
         public const string CHEST_PAIN = "chest pain";
@@ -15,7 +15,7 @@ public static class PromptTemplates
         public const string SEVERE_BLEEDING = "severe bleeding";
         public const string STROKE_SYMPTOMS = "facial drooping, slurred speech, arm weakness";
     }
-    
+
     public static class UrgencyKeywords
     {
         public static readonly Dictionary<string, string> LowUrgency = new Dictionary<string, string>
@@ -26,7 +26,7 @@ public static class PromptTemplates
             ["occasional pain"] = "Low",
             ["mild fever"] = "Low"
         };
-        
+
         public static readonly Dictionary<string, string> MediumUrgency = new Dictionary<string, string>
         {
             ["persistent headache"] = "Medium",
@@ -35,7 +35,7 @@ public static class PromptTemplates
             ["significant pain"] = "Medium",
             ["reduced mobility"] = "Medium"
         };
-        
+
         public static readonly Dictionary<string, string> HighUrgency = new Dictionary<string, string>
         {
             ["severe pain"] = "High",
@@ -44,7 +44,7 @@ public static class PromptTemplates
             ["paralysis"] = "High",
             ["confusion"] = "High"
         };
-        
+
         public static readonly Dictionary<string, string> EmergencyUrgency = new Dictionary<string, string>
         {
             [EmergencyIndicators.CHEST_PAIN] = "Emergency",
@@ -55,7 +55,7 @@ public static class PromptTemplates
             [EmergencyIndicators.STROKE_SYMPTOMS] = "Emergency"
         };
     }
-    
+
     public static class SpecialtyMappings
     {
         public static readonly Dictionary<string, string> SymptomToSpecialty = new Dictionary<string, string>

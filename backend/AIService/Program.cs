@@ -60,7 +60,7 @@ if (app.Environment.IsDevelopment())
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AiDbContext>();
-    
+
     if (app.Environment.IsEnvironment("Testing"))
     {
         db.Database.EnsureCreated();

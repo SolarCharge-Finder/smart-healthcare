@@ -9,7 +9,7 @@ public class SymptomAnalysisRequest
     public string Symptoms { get; set; } = string.Empty;
     public Guid? PatientId { get; set; }
     public string? SessionToken { get; set; }
-    
+
     public class Validator : FluentValidation.AbstractValidator<SymptomAnalysisRequest>
     {
         public Validator()
@@ -19,7 +19,7 @@ public class SymptomAnalysisRequest
                 .MinimumLength(10).WithMessage("Symptoms description must be at least 10 characters")
                 .MaximumLength(2000).WithMessage("Symptoms description must not exceed 2000 characters")
                 .Must(symptoms => !string.IsNullOrWhiteSpace(symptoms?.Trim())).WithMessage("Symptoms cannot be just whitespace");
-                
+
             RuleFor(x => x.PatientId)
                 .NotEmpty().When(x => x.PatientId.HasValue).WithMessage("Patient ID is required when provided");
         }
@@ -41,7 +41,7 @@ public class SymptomAnalysisResponse
     public int ResponseTimeMs { get; set; }
     public string CorrelationId { get; set; } = string.Empty;
     public string? Error { get; set; }
-    
+
     public static SymptomAnalysisResponse CreateSuccess(OpenAIResponse aiResponse, string correlationId)
     {
         return new SymptomAnalysisResponse
@@ -55,7 +55,7 @@ public class SymptomAnalysisResponse
             CorrelationId = correlationId
         };
     }
-    
+
     public static SymptomAnalysisResponse CreateError(string error, string correlationId)
     {
         return new SymptomAnalysisResponse

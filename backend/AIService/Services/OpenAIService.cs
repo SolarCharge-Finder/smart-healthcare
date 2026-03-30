@@ -18,7 +18,7 @@ public class OpenAIService : IOpenAIService
     private readonly IPromptService _promptService;
 
     public OpenAIService(
-        IConfiguration config, 
+        IConfiguration config,
         ILogger<OpenAIService> logger,
         IValidationService validationService,
         IResponseParsingService parsingService,
@@ -34,19 +34,19 @@ public class OpenAIService : IOpenAIService
     public async Task<OpenAIResponse> AnalyzeSymptomsAsync(string symptoms, string correlationId, CancellationToken cancellationToken = default)
     {
         var startTime = DateTime.UtcNow;
-        
+
         try
         {
-            _logger.LogInformation("Starting AI symptom analysis. CorrelationId: {CorrelationId}, Symptoms: {Symptoms}", 
+            _logger.LogInformation("Starting AI symptom analysis. CorrelationId: {CorrelationId}, Symptoms: {Symptoms}",
                 correlationId, symptoms);
 
             // Validate input first
             var validationResult = _validationService.ValidateSymptoms(symptoms);
             if (!validationResult.IsValid)
             {
-                _logger.LogWarning("Input validation failed. CorrelationId: {CorrelationId}, Error: {Error}", 
+                _logger.LogWarning("Input validation failed. CorrelationId: {CorrelationId}, Error: {Error}",
                     correlationId, validationResult.ErrorMessage);
-                
+
                 return new OpenAIResponse
                 {
                     IsSuccess = false,
@@ -63,7 +63,7 @@ public class OpenAIService : IOpenAIService
             var userPrompt = _promptService.BuildMedicalAnalysisPrompt(validationResult.SanitizedSymptoms);
             var systemPrompt = _promptService.BuildSystemPrompt();
 
-            _logger.LogInformation("Generated structured prompt. CorrelationId: {CorrelationId}, PromptVersion: {Version}", 
+            _logger.LogInformation("Generated structured prompt. CorrelationId: {CorrelationId}, PromptVersion: {Version}",
                 correlationId, _promptService.GetPromptVersion());
 
             var mockResponse = @"{
@@ -76,12 +76,12 @@ public class OpenAIService : IOpenAIService
 
             // Parse the AI response
             var parsedResponse = _parsingService.ParseAIResponse(mockResponse, correlationId);
-            
+
             if (!parsedResponse.IsValid)
             {
-                _logger.LogError("AI response parsing failed. CorrelationId: {CorrelationId}, Error: {Error}", 
+                _logger.LogError("AI response parsing failed. CorrelationId: {CorrelationId}, Error: {Error}",
                     correlationId, parsedResponse.ErrorMessage);
-                
+
                 return new OpenAIResponse
                 {
                     IsSuccess = false,
@@ -94,7 +94,7 @@ public class OpenAIService : IOpenAIService
             return new OpenAIResponse
             {
                 IsSuccess = true,
-                Content = parsedResponse.PossibleConditions.Any() 
+                Content = parsedResponse.PossibleConditions.Any()
                     ? string.Join(", ", parsedResponse.PossibleConditions)
                     : "No specific conditions identified",
                 TokensUsed = 150,
@@ -107,7 +107,7 @@ public class OpenAIService : IOpenAIService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error in AI service. CorrelationId: {CorrelationId}", correlationId);
-            
+
             return new OpenAIResponse
             {
                 IsSuccess = false,
