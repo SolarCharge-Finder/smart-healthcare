@@ -138,6 +138,28 @@ app.Use(async (context, next) =>
 	}
 });
 
+// Helper function to determine HTTP status code based on error message
+static int DetermineStatusCode(string errorMessage)
+{
+	if (string.IsNullOrWhiteSpace(errorMessage))
+		return 500;
+
+	var lowerMessage = errorMessage.ToLowerInvariant();
+
+	// Service unavailability errors
+	if (lowerMessage.Contains("unavailable") || 
+	    lowerMessage.Contains("unreachable") ||
+	    lowerMessage.Contains("timed out") ||
+	    lowerMessage.Contains("cannot connect") ||
+	    lowerMessage.Contains("not configured"))
+	{
+		return 503;
+	}
+
+	// Default to 500 for other invalid operation exceptions
+	return 500;
+}
+
 app.MapGet("/health/live", () =>
 {
 	return Results.Ok("alive");
@@ -155,7 +177,7 @@ async (PaymentDbContext db) =>
 });
 
 app.MapPost("/payments/intents",
-async (HttpRequest httpRequest, IPaymentService paymentService) =>
+async (HttpRequest httpRequest, IPaymentService paymentService, ILogger<Program> logger) =>
 {
 	CreatePaymentIntentRequest? request;
 
@@ -213,14 +235,29 @@ async (HttpRequest httpRequest, IPaymentService paymentService) =>
 	}
 	catch (KeyNotFoundException ex)
 	{
-		return Results.NotFound(ex.Message);
+		logger.LogInformation(ex, "Appointment not found for payment creation.");
+		return Results.NotFound(new { detail = ex.Message });
 	}
 	catch (InvalidOperationException ex)
 	{
-		return Results.Problem(ex.Message, statusCode: 500);
+		logger.LogWarning(ex, "Payment intent creation failed due to invalid service state.");
+
+		var statusCode = DetermineStatusCode(ex.Message);
+
+		return Results.Problem(
+			title: "Payment initialization failed",
+			detail: ex.Message,
+			statusCode: statusCode);
+	}
+	catch (Exception ex)
+	{
+		logger.LogError(ex, "Unexpected error while creating payment intent.");
+		return Results.Problem(
+			title: "Payment initialization failed",
+			detail: "Unexpected server error while creating payment intent.",
+			statusCode: 500);
 	}
 });
-
 
 app.MapPost("/payments/webhook",
 async (HttpRequest httpRequest, IPaymentService paymentService, IOptions<StripeOptions> options, ILogger<Program> logger) =>

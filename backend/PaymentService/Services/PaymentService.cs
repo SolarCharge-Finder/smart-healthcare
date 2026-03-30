@@ -57,9 +57,23 @@ public class PaymentProcessorService : IPaymentService
 
 		if (existing is not null)
 		{
-			if (existing.Status is PaymentStatus.Succeeded or PaymentStatus.Pending or PaymentStatus.Processing or PaymentStatus.RequiresAction)
+			if (existing.Status is PaymentStatus.Succeeded)
 			{
 				return existing;
+			}
+
+			if (existing.Status is PaymentStatus.Pending or PaymentStatus.Processing or PaymentStatus.RequiresAction)
+			{
+				if (!string.IsNullOrWhiteSpace(existing.ClientSecret))
+				{
+					return existing;
+				}
+
+				_logger.LogWarning(
+					"Existing payment {PaymentId} for appointment {AppointmentId} has status {Status} but no client secret. Recreating payment intent.",
+					existing.Id,
+					request.AppointmentId,
+					existing.Status);
 			}
 
 			var recreated = await CreateStripePaymentIntentAsync(

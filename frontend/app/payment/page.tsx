@@ -21,9 +21,10 @@ function PaymentPageContent() {
   const [initError, setInitError] = useState<string | null>(null);
   const [initInfo, setInitInfo] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
-  const intentRequestedRef = useRef(false);
+  const intentRequestedRef = useRef<string | null>(null);
+  const inFlightRef = useRef(false);
 
-  const createPaymentIntent = useCreatePaymentIntent();
+  const { mutateAsync: createPaymentIntentAsync } = useCreatePaymentIntent();
 
   useEffect(() => {
     const apt = searchParams.get("appointmentId");
@@ -55,13 +56,16 @@ function PaymentPageContent() {
       appointmentId &&
       stripePromise &&
       !clientSecret &&
-      !intentRequestedRef.current
+      !inFlightRef.current &&
+      intentRequestedRef.current !== appointmentId
     ) {
-      intentRequestedRef.current = true;
+      intentRequestedRef.current = appointmentId;
+      inFlightRef.current = true;
+
       const createIntent = async () => {
         try {
           setIsInitializing(true);
-          const response = await createPaymentIntent.mutateAsync({
+          const response = await createPaymentIntentAsync({
             appointmentId,
           });
           const normalizedStatus = (response.status || "").toLowerCase();
@@ -72,7 +76,6 @@ function PaymentPageContent() {
           } else if (!response.clientSecret) {
             setInitError("Payment initialization failed: missing client secret.");
             setClientSecret(null);
-            intentRequestedRef.current = false;
           } else {
             setClientSecret(response.clientSecret);
             setAmount(response.amount);
@@ -81,24 +84,36 @@ function PaymentPageContent() {
             setInitError(null);
           }
         } catch (err) {
-          intentRequestedRef.current = false;
+          console.error("Failed to create payment intent", err);
           setInitError(
             err instanceof Error
               ? err.message
               : "Failed to initialize payment"
           );
         } finally {
+          inFlightRef.current = false;
           setIsInitializing(false);
         }
       };
 
       createIntent();
     }
-  }, [appointmentId, stripePromise, clientSecret, createPaymentIntent]);
+  }, [appointmentId, stripePromise, clientSecret, createPaymentIntentAsync]);
 
   useEffect(() => {
     // Allow a fresh intent request when appointment changes.
-    intentRequestedRef.current = false;
+    intentRequestedRef.current = null;
+    inFlightRef.current = false;
+    setClientSecret(null);
+    setAmount(0);
+    setCurrency("lkr");
+    setInitInfo(null);
+
+    if (appointmentId) {
+      setInitError(null);
+    }
+
+    setIsInitializing(Boolean(appointmentId));
   }, [appointmentId]);
 
   const isReady = !configLoading && !isInitializing && stripePromise && clientSecret;

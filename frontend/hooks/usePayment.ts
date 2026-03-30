@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 import api from "../lib/api";
 import {
   CreatePaymentIntentResponse,
@@ -9,14 +10,39 @@ export interface CreatePaymentIntentPayload {
   appointmentId: string;
 }
 
+function extractApiError(error: unknown, fallbackMessage: string): Error {
+  if (axios.isAxiosError(error)) {
+    const detail = error.response?.data?.detail;
+    const title = error.response?.data?.title;
+    const message =
+      (typeof detail === "string" && detail.trim()) ||
+      (typeof title === "string" && title.trim()) ||
+      (typeof error.response?.data === "string" && error.response.data.trim()) ||
+      (typeof error.message === "string" && error.message.trim()) ||
+      fallbackMessage;
+
+    return new Error(message);
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return new Error(error.message);
+  }
+
+  return new Error(fallbackMessage);
+}
+
 export function useCreatePaymentIntent() {
-  return useMutation<CreatePaymentIntentResponse, unknown, CreatePaymentIntentPayload>({
+  return useMutation<CreatePaymentIntentResponse, Error, CreatePaymentIntentPayload>({
     mutationFn: async (payload) => {
-      const { data } = await api.post<CreatePaymentIntentResponse>(
-        "/payments/intents",
-        payload
-      );
-      return data;
+      try {
+        const { data } = await api.post<CreatePaymentIntentResponse>(
+          "/payments/intents",
+          payload
+        );
+        return data;
+      } catch (error) {
+        throw extractApiError(error, "Failed to create payment intent.");
+      }
     },
   });
 }
@@ -24,9 +50,13 @@ export function useCreatePaymentIntent() {
 export function useConfirmPayment() {
   const queryClient = useQueryClient();
 
-  return useMutation<void, unknown, { paymentId: string; payload: ConfirmPaymentRequest }>({
+  return useMutation<void, Error, { paymentId: string; payload: ConfirmPaymentRequest }>({
     mutationFn: async ({ paymentId, payload }) => {
-      await api.post(`/payments/${paymentId}/confirm`, payload);
+      try {
+        await api.post(`/payments/${paymentId}/confirm`, payload);
+      } catch (error) {
+        throw extractApiError(error, "Failed to confirm payment.");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payments"] });
