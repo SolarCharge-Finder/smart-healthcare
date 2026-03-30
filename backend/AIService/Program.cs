@@ -1,5 +1,6 @@
 using AIService.Data;
 using AIService.Middleware;
+using AIService.Services;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -25,6 +26,9 @@ builder.Services.AddDbContext<AiDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")
     ));
+
+// OpenAI Service
+builder.Services.AddSingleton<IOpenAIService, OpenAIService>();
 
 // CORS
 builder.Services.AddCors(options =>
