@@ -1,3 +1,4 @@
+using AIService.DTOs;
 using AIService.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,15 +24,10 @@ public class AiController : ControllerBase
     }
 
     [HttpPost("analyze")]
-    public async Task<IActionResult> AnalyzeSymptoms([FromBody] SymptomRequest request)
+    public async Task<IActionResult> AnalyzeSymptoms([FromBody] SymptomAnalysisRequest request)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(request.Symptoms))
-            {
-                return BadRequest(new { error = "Symptoms cannot be empty" });
-            }
-
             var correlationId = HttpContext.Items["CorrelationId"]?.ToString() ?? Guid.NewGuid().ToString();
             
             _logger.LogInformation("Received symptom analysis request. Symptoms: {Symptoms}, CorrelationId: {CorrelationId}", 
@@ -41,23 +37,13 @@ public class AiController : ControllerBase
 
             if (result.IsSuccess)
             {
-                return Ok(new { 
-                    success = true,
-                    analysis = result.Content,
-                    tokensUsed = result.TokensUsed,
-                    cost = result.CostUsd,
-                    model = result.ModelUsed,
-                    responseTimeMs = result.ResponseTimeMs,
-                    correlationId = result.CorrelationId
-                });
+                var response = SymptomAnalysisResponse.CreateSuccess(result, correlationId);
+                return Ok(response);
             }
             else
             {
-                return StatusCode(500, new { 
-                    success = false,
-                    error = result.ErrorMessage,
-                    correlationId = result.CorrelationId
-                });
+                var response = SymptomAnalysisResponse.CreateError(result.ErrorMessage ?? "Analysis failed", correlationId);
+                return StatusCode(500, response);
             }
         }
         catch (Exception ex)
@@ -69,9 +55,4 @@ public class AiController : ControllerBase
             });
         }
     }
-}
-
-public class SymptomRequest
-{
-    public string Symptoms { get; set; } = string.Empty;
 }

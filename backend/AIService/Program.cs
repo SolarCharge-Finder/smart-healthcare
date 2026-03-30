@@ -30,6 +30,10 @@ builder.Services.AddDbContext<AiDbContext>(options =>
 // OpenAI Service
 builder.Services.AddSingleton<IOpenAIService, OpenAIService>();
 
+// Validation and Parsing Services
+builder.Services.AddSingleton<IValidationService, ValidationService>();
+builder.Services.AddSingleton<IResponseParsingService, ResponseParsingService>();
+
 // CORS
 builder.Services.AddCors(options =>
 {
