@@ -1,11 +1,7 @@
-namespace AuthService.Models;
+namespace Auth.Domain.Entities;
 
-public enum UserRole
-{
-    Patient,
-    Doctor,
-    Admin
-}
+using Auth.Domain.Enums;
+
 public class User
 {
     public Guid Id { get; set; }

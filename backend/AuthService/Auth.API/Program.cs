@@ -1,5 +1,8 @@
-using AuthService.Data;
-using AuthService.Services;
+using Auth.Application.Interfaces;
+using Auth.Application.Services;
+using Auth.Infrastructure.Data;
+using Auth.Infrastructure.Repositories;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -8,6 +11,7 @@ using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 🔹 DB connection
 var host = builder.Configuration["DB_HOST"] ?? "localhost";
 var port = builder.Configuration["DB_PORT"] ?? "5432";
 var db = builder.Configuration["DB_NAME"] ?? "authdb";
@@ -16,22 +20,22 @@ var pass = builder.Configuration["DB_PASSWORD"] ?? "admin";
 
 var connectionString = $"Host={host};Port={port};Database={db};Username={user};Password={pass}";
 
-// add controllers
+// 🔹 Controllers
 builder.Services.AddControllers();
 
-// swagger
+// 🔹 Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// db
+// 🔹 DbContext (Infrastructure)
 builder.Services.AddDbContext<AuthDbContext>(options =>
-    options.UseNpgsql(connectionString)
-);
+    options.UseNpgsql(connectionString));
 
-// services
-builder.Services.AddScoped<AuthServiceLogic>();
+// 🔹 Dependency Injection (IMPORTANT CHANGE)
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
-// jwt authentication
+// 🔹 JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -55,30 +59,28 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// swagger ui
+// 🔹 Swagger
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// middleware order 
-// redirect to http 
+// 🔹 Middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
 
-// metrics middleware
 app.UseHttpMetrics();
 
-app.UseAuthentication();   //first authenticate
-app.UseAuthorization();  
+app.UseAuthentication();
+app.UseAuthorization();
 
-//metric endpoint
+// 🔹 Metrics endpoint
 app.MapMetrics("/metrics/prometheus");
 
-// map controllers
+// 🔹 Controllers
 app.MapControllers();
 
 app.Run();
