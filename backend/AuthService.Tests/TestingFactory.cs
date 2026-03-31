@@ -1,4 +1,4 @@
-using AuthService.Data;
+using Auth.Infrastructure.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +14,6 @@ public class TestingFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
-            // Remove existing DbContext
             var descriptor = services.FirstOrDefault(
                 d => d.ServiceType ==
                 typeof(DbContextOptions<AuthDbContext>));
@@ -22,7 +21,6 @@ public class TestingFactory : WebApplicationFactory<Program>
             if (descriptor != null)
                 services.Remove(descriptor);
 
-            // Use InMemory DB instead of Postgres
             services.AddDbContext<AuthDbContext>(options =>
                 options.UseInMemoryDatabase("auth-tests"));
         });
