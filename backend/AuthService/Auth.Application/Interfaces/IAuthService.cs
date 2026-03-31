@@ -6,5 +6,5 @@ using Auth.Domain.Entities;
 public interface IAuthService
 {
     Task Register(RegisterRequest request);
-    Task<User?> Login(LoginRequest request);
+    Task<string?> Login(LoginRequest request);
 }

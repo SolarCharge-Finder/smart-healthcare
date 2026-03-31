@@ -7,10 +7,12 @@ using Auth.Domain.Entities;
 public class AuthService : IAuthService
 {
     private readonly IUserRepository _repo;
+    private readonly ITokenService _tokenService;
 
-    public AuthService(IUserRepository repo)
+    public AuthService(IUserRepository repo, ITokenService tokenService)
     {
         _repo = repo;
+        _tokenService = tokenService;
     }
 
     public async Task Register(RegisterRequest request)
@@ -33,14 +35,16 @@ public class AuthService : IAuthService
         await _repo.SaveChangesAsync();
     }
 
-    public async Task<User?> Login(LoginRequest request)
+    public async Task<string?> Login(LoginRequest request)
     {
         var user = await _repo.GetByEmailAsync(request.Email);
 
         if (user == null) return null;
 
-        return BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash)
-            ? user
-            : null;
+        var valid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
+
+        if (!valid) return null;
+
+        return _tokenService.GenerateToken(user);
     }
 }
