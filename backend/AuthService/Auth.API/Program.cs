@@ -23,8 +23,8 @@ builder.Services.AddSwaggerGen();
 var connectionString = $"Host={builder.Configuration["DB_HOST"] ?? "localhost"};" +
                        $"Port={builder.Configuration["DB_PORT"] ?? "5432"};" +
                        $"Database={builder.Configuration["DB_NAME"] ?? "authdb"};" +
-                       $"Username={builder.Configuration["DB_USER"] ?? "postgres"};" +
-                       $"Password={builder.Configuration["DB_PASSWORD"] ?? "admin"}";
+                       $"Username={builder.Configuration["DB_USER"] ?? "change-me"};" +
+                       $"Password={builder.Configuration["DB_PASSWORD"] ?? "change-me"}";
 
 builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseNpgsql(connectionString));
