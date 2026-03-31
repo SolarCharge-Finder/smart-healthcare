@@ -20,6 +20,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Auth.Domain", "backend\Auth
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Auth.Infrastructure", "backend\AuthService\Auth.Infrastructure\Auth.Infrastructure.csproj", "{B8B4070F-9027-4498-8FA8-B2E102EC26C9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AuthService.Tests", "backend\AuthService.Tests\AuthService.Tests.csproj", "{56C02928-A13C-4108-B1B5-1C07BE4803C5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -54,6 +56,10 @@ Global
 		{B8B4070F-9027-4498-8FA8-B2E102EC26C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B8B4070F-9027-4498-8FA8-B2E102EC26C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B8B4070F-9027-4498-8FA8-B2E102EC26C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{56C02928-A13C-4108-B1B5-1C07BE4803C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{56C02928-A13C-4108-B1B5-1C07BE4803C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{56C02928-A13C-4108-B1B5-1C07BE4803C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{56C02928-A13C-4108-B1B5-1C07BE4803C5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -67,6 +73,7 @@ Global
 		{3631B1D1-50CB-436F-A333-7E1E121CF7D9} = {6E6346C9-135B-4CF2-B562-33010AA0300E}
 		{DE3B07E6-D16C-4846-A1BD-FDD134B2E7D2} = {6E6346C9-135B-4CF2-B562-33010AA0300E}
 		{B8B4070F-9027-4498-8FA8-B2E102EC26C9} = {6E6346C9-135B-4CF2-B562-33010AA0300E}
+		{56C02928-A13C-4108-B1B5-1C07BE4803C5} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7D9504D6-ACD1-42B9-A5EA-F140D4EECC08}

@@ -1,4 +1,4 @@
-using AuthService.Data;
+using Auth.Infrastructure.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -48,7 +48,7 @@ public class PostgresIntegrationTests : IAsyncLifetime
         {
             email = "pg@test.com",
             password = "123456",
-            role = "user"
+            role = "Patient"
         };
 
         var response = await _client.PostAsJsonAsync("/auth/register", request);
