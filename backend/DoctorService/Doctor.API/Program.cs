@@ -2,9 +2,14 @@ using Doctor.API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// services
+// register services
 builder.Services.AddApplicationServices(builder.Configuration);
+
+// controllers + swagger
 builder.Services.AddApiServices();
+
+// authorization
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
