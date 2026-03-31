@@ -1,6 +1,7 @@
 namespace Doctor.Application.Services;
 
 using Doctor.Application.Interfaces;
+using Doctor.Application.DTOs;
 using Doctor.Domain.Entities;
 
 public class DoctorService : IDoctorService
