@@ -11,4 +11,7 @@ public interface IDoctorRepository
     Task<Doctor?> GetByUserIdAsync(Guid userId);
 
     Task SaveChangesAsync();
+    Task<List<Doctor>> GetAllAsync();
+    
+    Task<List<Doctor>> GetPendingAsync();
 }

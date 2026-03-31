@@ -33,4 +33,16 @@ public class DoctorRepository : IDoctorRepository
     {
         await _context.SaveChangesAsync();
     }
+
+    public async Task<List<Doctor>> GetAllAsync()
+    {
+        return await _context.Doctors.ToListAsync();
+    }
+
+    public async Task<List<Doctor>> GetPendingAsync()
+    {
+        return await _context.Doctors
+            .Where(d => !d.IsApproved)
+            .ToListAsync();
+    }
 }

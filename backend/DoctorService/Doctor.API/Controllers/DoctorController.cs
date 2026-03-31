@@ -29,6 +29,20 @@ public class DoctorController : ControllerBase
         }
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var doctors = await _service.GetAll();
+        return Ok(doctors);
+    }
+
+    [HttpGet("pending")]
+    public async Task<IActionResult> GetPending()
+    {
+        var doctors = await _service.GetPending();
+        return Ok(doctors);
+    }
+
     [HttpPut("{id}/approve")]
     public async Task<IActionResult> Approve(Guid id)
     {
