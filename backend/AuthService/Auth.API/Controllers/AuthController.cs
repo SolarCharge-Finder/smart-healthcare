@@ -23,9 +23,13 @@ public class AuthController : ControllerBase
             await _authService.Register(request);
             return Ok();
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
             return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, new { message = "Internal server error" });
         }
     }
 
@@ -35,15 +39,15 @@ public class AuthController : ControllerBase
         try
         {
             var token = await _authService.Login(request);
-
-            if (token == null)
-                return Unauthorized();
-
             return Ok(new { token });
         }
-        catch (Exception ex)
+        catch (UnauthorizedAccessException)
         {
-            return BadRequest(new { message = ex.Message });
+            return Unauthorized(new { message = "Invalid credentials" });
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, new { message = "Internal server error" });
         }
     }
 }

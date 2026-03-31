@@ -3,6 +3,7 @@ namespace Auth.Application.Services;
 using Auth.Application.Interfaces;
 using Auth.Application.DTOs;
 using Auth.Domain.Entities;
+using Auth.Domain.Enums;
 
 public class AuthService : IAuthService
 {
@@ -20,14 +21,18 @@ public class AuthService : IAuthService
         var exists = await _repo.ExistsByEmailAsync(request.Email);
 
         if (exists)
-            throw new Exception("User already exists");
+            throw new InvalidOperationException("User already exists");
+
+        if (request.Role == UserRole.Admin)
+            throw new InvalidOperationException("Cannot self-register as admin");
 
         var user = new User
         {
             Id = Guid.NewGuid(),
-            Email = request.Email,
+            Email = request.Email.ToLower().Trim(),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Role = request.Role,
+            IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -37,13 +42,15 @@ public class AuthService : IAuthService
 
     public async Task<string?> Login(LoginRequest request)
     {
-        var user = await _repo.GetByEmailAsync(request.Email);
+        var email = request.Email.ToLower().Trim();
 
-        if (user == null) return null;
+        var user = await _repo.GetByEmailAsync(email);
+
+        if (user == null) throw new UnauthorizedAccessException("Invalid credentials");;
 
         var valid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
 
-        if (!valid) return null;
+        if (!valid) throw new UnauthorizedAccessException("Invalid credentials");
 
         return _tokenService.GenerateToken(user);
     }
