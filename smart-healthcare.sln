@@ -32,6 +32,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Doctor.Domain", "backend\Do
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Doctor.Infrastructure", "backend\DoctorService\Doctor.Infrastructure\Doctor.Infrastructure.csproj", "{8D21BCFB-A08D-450C-AAB7-E5A40806145C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DoctorService.Tests", "backend\DoctorService.Tests\DoctorService.Tests.csproj", "{C089F821-95E8-465D-B00F-E1258CF6839A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -86,6 +88,10 @@ Global
 		{8D21BCFB-A08D-450C-AAB7-E5A40806145C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8D21BCFB-A08D-450C-AAB7-E5A40806145C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8D21BCFB-A08D-450C-AAB7-E5A40806145C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C089F821-95E8-465D-B00F-E1258CF6839A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C089F821-95E8-465D-B00F-E1258CF6839A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C089F821-95E8-465D-B00F-E1258CF6839A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C089F821-95E8-465D-B00F-E1258CF6839A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -105,6 +111,7 @@ Global
 		{97C77A0E-5B7B-4AEF-9C52-18F8EF4C74B0} = {FE3A1809-A31A-4201-AF1C-8D901DAF8528}
 		{0362E4C8-43F7-439B-A47A-2A8FDC0566CA} = {FE3A1809-A31A-4201-AF1C-8D901DAF8528}
 		{8D21BCFB-A08D-450C-AAB7-E5A40806145C} = {FE3A1809-A31A-4201-AF1C-8D901DAF8528}
+		{C089F821-95E8-465D-B00F-E1258CF6839A} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7D9504D6-ACD1-42B9-A5EA-F140D4EECC08}
