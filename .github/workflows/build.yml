@@ -123,6 +123,32 @@ jobs:
             ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/notification-service:latest
             ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/notification-service:${{ github.sha }}
 
+      - name: build and push auth service
+        uses: docker/build-push-action@v7
+        if: github.ref == 'refs/heads/main'
+        with:
+          context: backend/AuthService
+          file: backend/AuthService/Dockerfile
+          push: true
+          cache-from: type=gha,scope=auth-service
+          cache-to: type=gha,scope=auth-service,mode=max
+          tags: |
+            ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/auth-service:latest
+            ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/auth-service:${{ github.sha }}
+
+      - name: build and push doctor service
+        uses: docker/build-push-action@v7
+        if: github.ref == 'refs/heads/main'
+        with:
+          context: backend/DoctorService
+          file: backend/DoctorService/Dockerfile
+          push: true
+          cache-from: type=gha,scope=doctor-service
+          cache-to: type=gha,scope=doctor-service,mode=max
+          tags: |
+            ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/doctor-service:latest
+            ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/doctor-service:${{ github.sha }}
+
   deploy:
     runs-on: ubuntu-latest
     needs: build
@@ -172,3 +198,13 @@ jobs:
             appointment-service=ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/appointment-service:${{ github.sha }}
           kubectl set image deployment/notification-deployment \
             notification-service=ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/notification-service:${{ github.sha }}
+          kubectl set image deployment/auth-deployment \
+            auth-service=ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/auth-service:${{ github.sha }}
+          kubectl set image deployment/doctor-deployment \
+            doctor-service=ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/doctor-service:${{ github.sha }}
+
+      - name: verify rollout
+        if: steps.kubeconfig.outputs.enabled == 'true'
+        run: |
+          kubectl rollout status deployment/auth-deployment --timeout=120s
+          kubectl rollout status deployment/doctor-deployment --timeout=120s
