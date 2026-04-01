@@ -12,6 +12,6 @@ public interface IDoctorRepository
 
     Task SaveChangesAsync();
     Task<List<Doctor>> GetAllAsync();
-    
+
     Task<List<Doctor>> GetPendingAsync();
 }

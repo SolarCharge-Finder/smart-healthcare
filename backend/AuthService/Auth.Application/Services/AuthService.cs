@@ -46,7 +46,7 @@ public class AuthService : IAuthService
 
         var user = await _repo.GetByEmailAsync(email);
 
-        if (user == null) throw new UnauthorizedAccessException("Invalid credentials");;
+        if (user == null) throw new UnauthorizedAccessException("Invalid credentials"); ;
 
         var valid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
 
