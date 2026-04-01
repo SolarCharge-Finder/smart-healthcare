@@ -260,7 +260,7 @@ async (HttpRequest httpRequest, IPaymentService paymentService, ILogger<Program>
 });
 
 app.MapPost("/payments/webhook",
-async (HttpRequest httpRequest, IPaymentService paymentService, IOptions<StripeOptions> options, ILogger<Program> logger) =>
+async (HttpRequest httpRequest, IPaymentService paymentService, IOptions<StripeOptions> options, IOptions<AppointmentServiceOptions> appointmentOptions, ILogger<Program> logger, IHttpClientFactory httpClientFactory) =>
 {
     var json = await new StreamReader(httpRequest.Body).ReadToEndAsync();
     var signature = httpRequest.Headers["Stripe-Signature"].ToString();
@@ -318,6 +318,50 @@ async (HttpRequest httpRequest, IPaymentService paymentService, IOptions<StripeO
                 stripeEvent.Id,
                 updatedPayment.Id,
                 updatedPayment.Status);
+
+            // If payment is successful, notify AppointmentService to mark appointment as Paid
+            if (updatedPayment.Status.Equals("Succeeded", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var appointmentServiceUrl = appointmentOptions.Value.BaseUrl;
+                    var appointmentId = updatedPayment.AppointmentId;
+                    
+                    using var client = httpClientFactory.CreateClient();
+                    var patchUrl = $"{appointmentServiceUrl}appointments/{appointmentId}/confirm-payment";
+                    
+                    var request = new HttpRequestMessage(HttpMethod.Patch, patchUrl);
+                    request.Headers.Add("X-API-KEY", builder.Configuration["API_KEY"] ?? "");
+                    
+                    logger.LogInformation(
+                        "Notifying AppointmentService to confirm payment for appointment {AppointmentId}",
+                        appointmentId);
+                    
+                    var response = await client.SendAsync(request);
+                    
+                    if (response.IsSuccessStatusCode)
+                    {
+                        logger.LogInformation(
+                            "AppointmentService successfully confirmed payment for appointment {AppointmentId}",
+                            appointmentId);
+                    }
+                    else
+                    {
+                        logger.LogWarning(
+                            "AppointmentService returned {StatusCode} when confirming payment for appointment {AppointmentId}",
+                            response.StatusCode,
+                            appointmentId);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(
+                        ex,
+                        "Failed to notify AppointmentService about payment confirmation for appointment {AppointmentId}",
+                        updatedPayment.AppointmentId);
+                    // Don't fail the webhook if notification fails - it can be retried
+                }
+            }
         }
     }
     else

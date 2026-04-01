@@ -307,6 +307,65 @@ async (
     return Results.Ok(availableIso);
 });
 
+/*
+update appointment status to Paid after payment completion - ensure the telemedicine token - Sachithra
+*/
+
+RequireApiKey(
+app.MapPatch("/appointments/{id:guid}/confirm-payment",
+async (
+    Guid id,
+    AppointmentDbContext db,
+    ICorrelationIdAccessor correlationAccessor,
+    ILogger<Program> logger) =>
+{
+    var appointment = await db.Appointments
+        .FirstOrDefaultAsync(a => a.Id == id);
+
+    if (appointment is null)
+        return Results.NotFound(new { error = "Appointment not found" });
+
+    if (appointment.Status == "Paid")
+        return Results.Ok(new { message = "Appointment already marked as Paid", appointment });
+
+    if (appointment.Status == "Cancelled")
+        return Results.BadRequest(new { error = "Cannot update cancelled appointment" });
+
+    // Update appointment status to Paid after successful payment
+    appointment.Status = "Paid";
+    
+    var paymentConfirmedEvent = new
+    {
+        appointment.Id,
+        appointment.PatientId,
+        appointment.DoctorId,
+        appointment.SlotTime,
+        Status = "Paid",
+        PaidAt = DateTime.UtcNow
+    };
+
+    db.OutboxMessages.Add(
+        CreateOutboxMessage(
+            "appointment.payment-confirmed",
+            paymentConfirmedEvent,
+            correlationAccessor.CorrelationId));
+
+    await db.SaveChangesAsync();
+
+    logger.LogInformation(
+        "Appointment {AppointmentId} marked as Paid after successful payment",
+        appointment.Id);
+    
+    Metrics.IncAppointmentsPaid();
+
+    return Results.Ok(new 
+    { 
+        message = "Appointment payment confirmed",
+        appointmentId = appointment.Id,
+        status = appointment.Status
+    });
+}));
+
 app.MapGet("/metrics", () =>
 {
     return Results.Json(Metrics.Snapshot());
@@ -722,6 +781,7 @@ internal static class Metrics
 {
     private static long _appointmentsCreatedTotal;
     private static long _appointmentsCancelledTotal;
+    private static long _appointmentsPaidTotal;
     private static long _appointmentsConflictTotal;
     private static long _rabbitMqPublishSuccessTotal;
     private static long _rabbitMqPublishFailureTotal;
@@ -731,6 +791,9 @@ internal static class Metrics
 
     public static void IncAppointmentsCancelled() =>
         Interlocked.Increment(ref _appointmentsCancelledTotal);
+
+    public static void IncAppointmentsPaid() =>
+        Interlocked.Increment(ref _appointmentsPaidTotal);
 
     public static void IncAppointmentsConflict() =>
         Interlocked.Increment(ref _appointmentsConflictTotal);
@@ -749,6 +812,8 @@ internal static class Metrics
                 Interlocked.Read(ref _appointmentsCreatedTotal),
             appointments_cancelled_total =
                 Interlocked.Read(ref _appointmentsCancelledTotal),
+            appointments_paid_total =
+                Interlocked.Read(ref _appointmentsPaidTotal),
             appointments_conflict_total =
                 Interlocked.Read(ref _appointmentsConflictTotal),
             rabbitmq_publish_success_total =
@@ -763,6 +828,7 @@ internal static class Metrics
         return
             $"appointments_created_total {Interlocked.Read(ref _appointmentsCreatedTotal)}\n" +
             $"appointments_cancelled_total {Interlocked.Read(ref _appointmentsCancelledTotal)}\n" +
+            $"appointments_paid_total {Interlocked.Read(ref _appointmentsPaidTotal)}\n" +
             $"appointments_conflict_total {Interlocked.Read(ref _appointmentsConflictTotal)}\n" +
             $"rabbitmq_publish_success_total {Interlocked.Read(ref _rabbitMqPublishSuccessTotal)}\n" +
             $"rabbitmq_publish_failure_total {Interlocked.Read(ref _rabbitMqPublishFailureTotal)}\n";

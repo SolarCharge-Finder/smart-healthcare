@@ -159,20 +159,22 @@ public class TelemedicineSessionService : ITelemedicineService
 
     private void ValidateAppointmentStatus(AppointmentDto appointment)
     {
-        // Only allow video access for booked/confirmed/paid appointments
-        var validStatuses = new[] { "Booked", "Confirmed", "Paid", "BOOKED", "CONFIRMED", "PAID" };
+        // Per architecture: Only PAID appointments can generate telemedicine tokens
+        // Token generation happens AFTER payment is successfully completed
+        var validStatuses = new[] { "Paid", "PAID" };
 
         if (!validStatuses.Contains(appointment.Status, StringComparer.OrdinalIgnoreCase))
         {
-            var message = $"Appointment {appointment.Id} is in status '{appointment.Status}'. " +
-                         $"Only 'Booked', 'Confirmed', or 'Paid' appointments can start video sessions.";
+            var message = $"Appointment {appointment.Id} must be 'Paid' to start telemedicine session. " +
+                         $"Current status: '{appointment.Status}'. " +
+                         $"Payment must be completed first. Please complete payment before joining video.";
 
             _logger.LogWarning(message);
             throw new InvalidOperationException(message);
         }
 
         _logger.LogInformation(
-            "Appointment {AppointmentId} validation passed. Status: {Status}",
+            "Appointment {AppointmentId} validated for telemedicine. Status: {Status}. Token generation authorized.",
             appointment.Id, appointment.Status);
     }
 
