@@ -7,14 +7,6 @@ using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
 [ApiController]
-[Route("health")]
-public class HealthController : ControllerBase
-{
-    [HttpGet]
-    public IActionResult Get() => Ok("Service running");
-}
-
-[ApiController]
 [Route("admin")]
 public class AdminController : ControllerBase
 {
