@@ -13,17 +13,17 @@ public class DoctorService : IDoctorService
         _repo = repo;
     }
 
-    public async Task<Guid> CreateDoctor(CreateDoctorRequest request)
+    public async Task<Guid> CreateDoctor(CreateDoctorRequest request, Guid userId)
     {
         // prevent duplicate doctor profiles
-        var existing = await _repo.GetByUserIdAsync(request.UserId);
+        var existing = await _repo.GetByUserIdAsync(userId);
         if (existing != null)
             throw new InvalidOperationException("Doctor profile already exists");
 
         var doctor = new Doctor
         {
             Id = Guid.NewGuid(),
-            UserId = request.UserId,
+            UserId = userId,
             FullName = request.FullName,
             Specialization = request.Specialization,
             Hospital = request.Hospital,

@@ -3,6 +3,8 @@ namespace Doctor.API.Controllers;
 using Microsoft.AspNetCore.Mvc;
 using Doctor.Application.Interfaces;
 using Doctor.Application.DTOs;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 [ApiController]
 [Route("doctors")]
@@ -15,12 +17,18 @@ public class DoctorController : ControllerBase
         _service = service;
     }
 
+    [Authorize]
     [HttpPost]
     public async Task<IActionResult> Create(CreateDoctorRequest request)
     {
         try
         {
-            await _service.CreateDoctor(request);
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (userId == null)
+                return Unauthorized();
+
+            await _service.CreateDoctor(request, Guid.Parse(userId));
             return Ok();
         }
         catch (Exception ex)
@@ -29,6 +37,7 @@ public class DoctorController : ControllerBase
         }
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -36,6 +45,7 @@ public class DoctorController : ControllerBase
         return Ok(doctors);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpGet("pending")]
     public async Task<IActionResult> GetPending()
     {
@@ -43,6 +53,7 @@ public class DoctorController : ControllerBase
         return Ok(doctors);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id}/approve")]
     public async Task<IActionResult> Approve(Guid id)
     {

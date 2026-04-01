@@ -5,7 +5,7 @@ using Doctor.Domain.Entities;
 
 public interface IDoctorService
 {
-    Task<Guid> CreateDoctor(CreateDoctorRequest request);
+    Task<Guid> CreateDoctor(CreateDoctorRequest request, Guid userId);
 
     Task ApproveDoctor(Guid id);
 

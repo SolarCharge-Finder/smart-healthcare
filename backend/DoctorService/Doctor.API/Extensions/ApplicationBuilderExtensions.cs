@@ -14,6 +14,7 @@ public static class ApplicationBuilderExtensions
 
         app.UseHttpMetrics();
 
+        app.UseAuthentication();
         app.UseAuthorization();
 
         app.MapMetrics("/metrics/prometheus");
