@@ -17,21 +17,18 @@ public static class ServiceExtensions
     {
         var host = config["DB_HOST"] ?? "localhost";
         var port = config["DB_PORT"] ?? "5432";
-        var db = config["DB_NAME"] ?? "smartdb";
+        var db = config["DB_NAME"] ?? "admin-db";
         var user = config["DB_USER"] ?? "change-me";
         var pass = config["DB_PASSWORD"] ?? "change-me";
 
         var connectionString = $"Host={host};Port={port};Database={db};Username={user};Password={pass}";
 
-        services.AddDbContext<DoctorDbContext>(options =>
+        services.AddDbContext<AdminDbContext>(options =>
             options.UseNpgsql(connectionString));
 
-
-        services.AddScoped<IDoctorService, DoctorService>();
-        services.AddScoped<IDoctorRepository, DoctorRepository>();
+        services.AddScoped<IAdminService, AdminServiceImplementation>();
+        services.AddScoped<IAdminRepository, AdminRepository>();
     }
-
-
 
     public static void AddApiServices(this IServiceCollection services)
     {

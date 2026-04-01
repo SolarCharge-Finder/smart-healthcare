@@ -1,5 +1,6 @@
 using AdminService.API.Extensions;
 using AdminService.Infrastructure.Data;
+using AdminService.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,13 +17,16 @@ builder.Services.AddJwtAuth(builder.Configuration);
 // authorization
 builder.Services.AddAuthorization();
 
+// for accessing JWT in services
+builder.Services.AddInfrastructureServices(builder.Configuration);
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
     try
     {
-        var db = scope.ServiceProvider.GetRequiredService<AdminServiceDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
         db.Database.Migrate();
     }
     catch (Exception ex)

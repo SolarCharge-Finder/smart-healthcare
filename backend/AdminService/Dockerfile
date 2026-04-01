@@ -2,7 +2,7 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
 
 # copy csproj files
-COPY [".API/AdminService.API.csproj", "AdminService.API/"]
+COPY ["AdminService.API/AdminService.API.csproj", "AdminService.API/"]
 COPY ["AdminService.Application/AdminService.Application.csproj", "AdminService.Application/"]
 COPY ["AdminService.Domain/AdminService.Domain.csproj", "AdminService.Domain/"]
 COPY ["AdminService.Infrastructure/AdminService.Infrastructure.csproj", "AdminService.Infrastructure/"]
