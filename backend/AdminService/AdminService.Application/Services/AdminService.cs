@@ -8,7 +8,7 @@ public class AdminServiceImplementation : IAdminService
 {
     private readonly IAdminRepository _repo;
     private readonly IDoctorServiceClient _doctorClient;
-    
+
 
     public AdminServiceImplementation(IAdminRepository repo, IDoctorServiceClient doctorClient)
     {
@@ -65,7 +65,7 @@ public class AdminServiceImplementation : IAdminService
 
         if (admin == null)
             throw new Exception("Admin not found");
-        
+
         if (admin.IsApproved)
             throw new Exception("Admin already approved");
 

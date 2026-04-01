@@ -28,9 +28,9 @@ public class AdminController : ControllerBase
 
             if (userId == null)
                 return Unauthorized();
-                
+
             await _service.CreateAdmin(Guid.Parse(userId), request);
-            
+
             return Ok();
         }
         catch (Exception ex)
