@@ -25,7 +25,7 @@ public class AuthTests : IClassFixture<TestingFactory>
         };
 
         var response = await _client.PostAsJsonAsync("/auth/register", request);
-        
+
         var body = await response.Content.ReadAsStringAsync();
         Console.WriteLine(body);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -72,7 +72,7 @@ public class AuthTests : IClassFixture<TestingFactory>
         var body = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
 
         body.Should().ContainKey("token");
-        body["token"].ToString().Should().NotBeNullOrEmpty(); 
+        body["token"].ToString().Should().NotBeNullOrEmpty();
     }
 
     [Fact]
