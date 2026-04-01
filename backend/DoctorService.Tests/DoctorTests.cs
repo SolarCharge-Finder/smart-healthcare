@@ -50,7 +50,7 @@ public class DoctorTests : IClassFixture<TestingFactory>
         var response = await _client.PutAsync($"/doctors/{id}/approve", null);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-}
+    }
 
     [Fact]
     public async Task GetPending_Should_Return_Doctors()
