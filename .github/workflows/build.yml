@@ -33,16 +33,16 @@ jobs:
             backend/**/packages.lock.json
 
       - name: restore
-        run: dotnet restore backend/SmartHealthcare.slnx
+        run: dotnet restore smart-healthcare.sln
 
       - name: build
-        run: dotnet build backend/SmartHealthcare.slnx --configuration Release --no-restore
+        run: dotnet build smart-healthcare.sln --configuration Release --no-restore
 
       - name: test (if any)
         run: |
           set -e
           if find backend -name "*Tests.csproj" -print -quit | grep -q .; then
-            dotnet test backend/SmartHealthcare.slnx --configuration Release --no-build
+            dotnet test smart-healthcare.sln --configuration Release --no-build
           else
             echo "No test projects found, skipping."
           fi
@@ -51,7 +51,7 @@ jobs:
         run: |
           dotnet tool install -g dotnet-format
           export PATH="$PATH:$HOME/.dotnet/tools"
-          dotnet format backend/SmartHealthcare.slnx --verify-no-changes
+          dotnet format smart-healthcare.sln --verify-no-changes
 
       - name: setup node
         uses: actions/setup-node@v5
