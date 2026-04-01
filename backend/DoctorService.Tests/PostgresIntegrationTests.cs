@@ -25,7 +25,7 @@ public class PostgresIntegrationTests : IAsyncLifetime
 
         await _db.StartAsync();
 
-        _factory = new TestingFactory(_db);
+        _factory = new PostgreSqlTestingFactory(_db);
         _client = _factory.CreateClient();
 
         // apply migrations
@@ -57,18 +57,19 @@ public class PostgresIntegrationTests : IAsyncLifetime
         response.EnsureSuccessStatusCode();
     }
 
-    // 🔧 custom factory using Postgres
-    public class TestingFactory : WebApplicationFactory<Program>
+    public class PostgreSqlTestingFactory : TestingFactory
     {
         private readonly PostgreSqlContainer _db;
 
-        public TestingFactory(PostgreSqlContainer db)
+        public PostgreSqlTestingFactory(PostgreSqlContainer db)
         {
             _db = db;
         }
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            base.ConfigureWebHost(builder);
+
             builder.UseEnvironment("Testing");
 
             builder.ConfigureServices(services =>

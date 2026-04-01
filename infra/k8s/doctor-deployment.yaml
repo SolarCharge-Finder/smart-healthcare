@@ -42,3 +42,12 @@ spec:
                 secretKeyRef:
                   name: smarthealth-secrets
                   key: POSTGRES_PASSWORD
+            
+            - name: Jwt__Key
+              value: this-is-a-very-secure-super-long-key-123456789
+
+            - name: Jwt__Issuer
+              value: auth-service
+
+            - name: Jwt__Audience
+              value: smart-healthcare
