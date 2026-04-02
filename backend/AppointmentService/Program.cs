@@ -453,6 +453,7 @@ async (
     const int maxRetries = 3;
     var idempotencyKey = http.Request.Headers["Idempotency-Key"]
         .FirstOrDefault();
+    var redisLockUnavailable = false;
 
     if (string.IsNullOrWhiteSpace(idempotencyKey))
         idempotencyKey = null;
@@ -465,12 +466,32 @@ async (
         IDbContextTransaction? tx = null;
         try
         {
-            lockToken = await TryAcquireRedisLockAsync(
-                redis,
-                lockKey,
-                TimeSpan.FromSeconds(10));
+            if (!redisLockUnavailable)
+            {
+                try
+                {
+                    lockToken = await TryAcquireRedisLockAsync(
+                        redis,
+                        lockKey,
+                        TimeSpan.FromSeconds(10));
+                }
+                catch (RedisConnectionException ex)
+                {
+                    redisLockUnavailable = true;
+                    logger.LogWarning(
+                        ex,
+                        "Redis lock unavailable while creating appointment. Falling back to database transaction only.");
+                }
+                catch (RedisTimeoutException ex)
+                {
+                    redisLockUnavailable = true;
+                    logger.LogWarning(
+                        ex,
+                        "Redis lock timed out while creating appointment. Falling back to database transaction only.");
+                }
+            }
 
-            if (lockToken is null)
+            if (!redisLockUnavailable && lockToken is null)
             {
                 if (attempt == maxRetries)
                 {

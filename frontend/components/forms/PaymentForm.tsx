@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   PaymentElement,
   useStripe,
@@ -10,6 +11,7 @@ import Card from "../ui/Card";
 import Button from "../ui/Button";
 import Alert from "../ui/Alert";
 import Input from "../ui/Input";
+
 
 interface PaymentFormProps {
   appointmentId: string;
@@ -24,12 +26,14 @@ export default function PaymentForm({
 }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<{
     type: "success" | "error" | "info";
     message: string;
   } | null>(null);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,9 +90,14 @@ export default function PaymentForm({
         if (paymentIntent.status === "succeeded") {
           setStatus({
             type: "success",
-            message: "Payment successful! Your appointment is confirmed.",
+            message: "✅ Payment successful! Redirecting to your video consultation...",
           });
           setEmail("");
+          // Give the payment webhook a short moment to confirm the appointment before redirecting.
+          setTimeout(() => {
+            router.push(`/consultation?appointmentId=${appointmentId}`);
+          }, 3000);
+
         } else if (paymentIntent.status === "processing") {
           setStatus({
             type: "info",

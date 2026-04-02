@@ -39,7 +39,10 @@ if (enableCors)
         {
             if (builder.Environment.IsDevelopment() && string.IsNullOrWhiteSpace(frontendOrigin))
             {
-                policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+                // Allow common local frontend dev ports
+                policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:3002")
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
             }
             else if (!string.IsNullOrWhiteSpace(frontendOrigin))
             {
@@ -69,7 +72,7 @@ builder.Services.AddHttpClient<ITelemedicineService, TelemedicineSessionService>
     (sp, client) =>
     {
         var appointmentServiceUrl = sp.GetRequiredService<IConfiguration>()
-            ["AppointmentService:BaseUrl"] ?? "http://localhost:5001/api/";
+            ["AppointmentService:BaseUrl"] ?? "http://localhost:8080/";
 
         client.BaseAddress = new Uri(appointmentServiceUrl);
     });
@@ -128,6 +131,12 @@ telemedicineGroup.MapPost("/session", CreateTelemedicineSession)
     .Produces(StatusCodes.Status404NotFound)
     .Produces(StatusCodes.Status400BadRequest);
 
+telemedicineGroup.MapGet("/session/{appointmentId:guid}", GetTelemedicineSession)
+    .WithName("GetTelemedicineSession")
+    .WithDescription("Get an existing active telemedicine session for an appointment.")
+    .Produces<TelemedicineSessionResponse>(StatusCodes.Status200OK)
+    .Produces(StatusCodes.Status404NotFound);
+
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = serviceName }))
     .WithName("HealthCheck")
     .Produces(StatusCodes.Status200OK);
@@ -166,6 +175,43 @@ async Task<IResult> CreateTelemedicineSession(
     catch (Exception ex)
     {
         logger.LogError(ex, "Unexpected error in CreateTelemedicineSession");
+        return Results.StatusCode(500);
+    }
+}
+
+async Task<IResult> GetTelemedicineSession(
+    Guid appointmentId,
+    ITelemedicineService telemedicineService,
+    ILogger<Program> logger,
+    CancellationToken cancellationToken)
+{
+    try
+    {
+        if (appointmentId == Guid.Empty)
+            return Results.BadRequest(new { error = "AppointmentId cannot be empty" });
+
+        var session = await telemedicineService.GetActiveSessionAsync(appointmentId, cancellationToken);
+
+        if (session is null)
+            return Results.NotFound(new { error = $"No active session found for appointment {appointmentId}" });
+
+        // Reuse CreateSessionAsync to get fresh tokens for the existing session
+        var response = await telemedicineService.CreateSessionAsync(appointmentId, cancellationToken);
+        return Results.Ok(response);
+    }
+    catch (KeyNotFoundException ex)
+    {
+        logger.LogWarning(ex, "Appointment not found for session lookup");
+        return Results.NotFound(new { error = ex.Message });
+    }
+    catch (InvalidOperationException ex)
+    {
+        logger.LogWarning(ex, "Invalid appointment state for session lookup");
+        return Results.BadRequest(new { error = ex.Message });
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Unexpected error in GetTelemedicineSession");
         return Results.StatusCode(500);
     }
 }

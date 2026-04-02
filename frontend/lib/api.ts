@@ -12,4 +12,11 @@ if (apiKey) {
   api.defaults.headers.common["X-API-KEY"] = apiKey;
 }
 
+export const telemedicineApi = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_TELEMEDICINE_API_URL ?? "http://localhost:5002",
+  headers: {
+    "Content-Type": "application/json"
+  }
+});
+
 export default api;
