@@ -18,11 +18,12 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+// DB migration
 using (var scope = app.Services.CreateScope())
 {
     try
     {
-        var db = scope.ServiceProvider.GetRequiredService<UserServiceDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<UserDbContext>();
         db.Database.Migrate();
     }
     catch (Exception ex)
