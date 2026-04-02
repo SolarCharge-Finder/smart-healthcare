@@ -1,5 +1,5 @@
-using UserService.Infrastructure.Data;
-using UserService.Application.DTOs;
+using PatientService.Infrastructure.Data;
+using PatientService.Application.DTOs;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -12,7 +12,7 @@ using Xunit;
 using System.Net.Http.Json;
 using System.Linq;
 
-namespace UserService.Tests;
+namespace PatientService.Tests;
 
 public class PostgresIntegrationTests : IAsyncLifetime
 {
@@ -23,7 +23,7 @@ public class PostgresIntegrationTests : IAsyncLifetime
     public async Task InitializeAsync()
     {
         _db = new PostgreSqlBuilder("postgres:15")
-            .WithDatabase("userdb")
+            .WithDatabase("patientdb")
             .WithUsername("test")
             .WithPassword("test")
             .Build();
@@ -35,7 +35,7 @@ public class PostgresIntegrationTests : IAsyncLifetime
 
         // apply migrations
         using var scope = _factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<UserDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<PatientDbContext>();
         db.Database.Migrate();
     }
 
@@ -47,15 +47,15 @@ public class PostgresIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task CreateUser_Should_Work_With_Postgres()
+    public async Task CreatePatient_Should_Work_With_Postgres()
     {
-        var request = new CreateUserRequest
+        var request = new CreatePatientRequest
         {
-            FullName = "Postgres User",
+            FullName = "Postgres Patient",
             Email = "pg@test.com"
         };
 
-        var response = await _client.PostAsJsonAsync("/users", request);
+        var response = await _client.PostAsJsonAsync("/patients", request);
 
         response.EnsureSuccessStatusCode();
     }
@@ -63,34 +63,34 @@ public class PostgresIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task GetMe_Should_Return_Data_From_Postgres()
     {
-        await _client.PostAsJsonAsync("/users", new CreateUserRequest
+        await _client.PostAsJsonAsync("/patients", new CreatePatientRequest
         {
-            FullName = "User PG",
+            FullName = "Patient PG",
             Email = "userpg@test.com"
         });
 
-        var response = await _client.GetAsync("/users/me");
+        var response = await _client.GetAsync("/patients/me");
 
         response.EnsureSuccessStatusCode();
 
-        var user = await response.Content.ReadFromJsonAsync<UserResponse>();
+        var patient = await response.Content.ReadFromJsonAsync<PatientResponse>();
 
-        Assert.NotNull(user);
-        Assert.Equal("User PG", user!.FullName);
+        Assert.NotNull(patient);
+        Assert.Equal("Patient PG", patient!.FullName);
     }
 
     [Fact]
-    public async Task DeactivateUser_Should_Reflect_In_Postgres()
+    public async Task DeactivatePatient_Should_Reflect_In_Postgres()
     {
-        await _client.PostAsJsonAsync("/users", new CreateUserRequest
+        await _client.PostAsJsonAsync("/patients", new CreatePatientRequest
         {
             FullName = "Deactivate PG",
             Email = "deactivate@test.com"
         });
 
-        await _client.PatchAsync("/users/me/deactivate", null);
+        await _client.PatchAsync("/patients/me/deactivate", null);
 
-        var response = await _client.GetAsync("/users/me");
+        var response = await _client.GetAsync("/patients/me");
 
         Assert.Equal(System.Net.HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -115,12 +115,12 @@ public class PostgresIntegrationTests : IAsyncLifetime
             {
                 // replace DbContext
                 var descriptor = services.FirstOrDefault(
-                    d => d.ServiceType == typeof(DbContextOptions<UserDbContext>));
+                    d => d.ServiceType == typeof(DbContextOptions<PatientDbContext>));
 
                 if (descriptor != null)
                     services.Remove(descriptor);
 
-                services.AddDbContext<UserDbContext>(options =>
+                services.AddDbContext<PatientDbContext>(options =>
                     options.UseNpgsql(_db.GetConnectionString()));
             });
         }

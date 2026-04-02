@@ -26,8 +26,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\UserService\UserService.API\UserService.API.csproj" />
-    <ProjectReference Include="..\UserService\UserService.Infrastructure\UserService.Infrastructure.csproj" />
+    <ProjectReference Include="..\PatientService\PatientService.API\PatientService.API.csproj" />
+    <ProjectReference Include="..\PatientService\PatientService.Infrastructure\PatientService.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,4 @@
-using UserService.Infrastructure.Data;
+using PatientService.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 
-namespace UserService.Tests;
+namespace PatientService.Tests;
 
 public class TestingFactory : WebApplicationFactory<Program>
 {
@@ -31,13 +31,13 @@ public class TestingFactory : WebApplicationFactory<Program>
         {
             // replace DB
             var descriptor = services.FirstOrDefault(
-                d => d.ServiceType == typeof(DbContextOptions<UserDbContext>));
+                d => d.ServiceType == typeof(DbContextOptions<PatientDbContext>));
 
             if (descriptor != null)
                 services.Remove(descriptor);
 
-            services.AddDbContext<UserDbContext>(options =>
-                options.UseInMemoryDatabase("UserTestDb_" + Guid.NewGuid()));
+            services.AddDbContext<PatientDbContext>(options =>
+                options.UseInMemoryDatabase("PatientTestDb_" + Guid.NewGuid()));
 
             // override auth
             services.AddAuthentication("Test")

@@ -1,18 +1,18 @@
-using UserService.Infrastructure.Data;
-using UserEntity = UserService.Domain.Entities.User;
+using PatientService.Infrastructure.Data;
+using PatientEntity = PatientService.Domain.Entities.Patient;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace UserService.Tests;
+namespace PatientService.Tests;
 
 public class DbModelTests
 {
     [Fact]
-    public void User_Should_Have_Required_Fields()
+    public void Patient_Should_Have_Required_Fields()
     {
         using var db = CreateDbContext();
 
-        var entity = db.Model.FindEntityType(typeof(UserEntity));
+        var entity = db.Model.FindEntityType(typeof(PatientEntity));
 
         Assert.NotNull(entity);
 
@@ -29,7 +29,7 @@ public class DbModelTests
     {
         using var db = CreateDbContext();
 
-        var entity = db.Model.FindEntityType(typeof(UserEntity));
+        var entity = db.Model.FindEntityType(typeof(PatientEntity));
 
         var key = entity!.FindPrimaryKey();
 
@@ -37,12 +37,12 @@ public class DbModelTests
         Assert.Contains(key!.Properties, p => p.Name == "Id");
     }
 
-    private static UserDbContext CreateDbContext()
+    private static PatientDbContext CreateDbContext()
     {
-        var options = new DbContextOptionsBuilder<UserDbContext>()
+        var options = new DbContextOptionsBuilder<PatientDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
-        return new UserDbContext(options);
+        return new PatientDbContext(options);
     }
 }

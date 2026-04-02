@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using System.Text.Encodings.Web;
 using System.Security.Claims;
 
-namespace UserService.Tests;
+namespace PatientService.Tests;
 
 public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
