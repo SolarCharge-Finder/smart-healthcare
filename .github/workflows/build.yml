@@ -149,19 +149,6 @@ jobs:
             ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/doctor-service:latest
             ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/doctor-service:${{ github.sha }}
 
-      - name: build and push admin service
-        uses: docker/build-push-action@v7
-        if: github.ref == 'refs/heads/main'
-        with:
-          context: backend/AdminService
-          file: backend/AdminService/Dockerfile
-          push: true
-          cache-from: type=gha,scope=admin-service
-          cache-to: type=gha,scope=admin-service,mode=max
-          tags: |
-            ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/admin-service:latest
-            ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/admin-service:${{ github.sha }}
-
   deploy:
     runs-on: ubuntu-latest
     needs: build
@@ -215,12 +202,9 @@ jobs:
             auth-service=ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/auth-service:${{ github.sha }}
           kubectl set image deployment/doctor-deployment \
             doctor-service=ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/doctor-service:${{ github.sha }}
-          kubectl set image deployment/admin-deployment \
-            admin-service=ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/admin-service:${{ github.sha }}
 
       - name: verify rollout
         if: steps.kubeconfig.outputs.enabled == 'true'
         run: |
           kubectl rollout status deployment/auth-deployment --timeout=120s
           kubectl rollout status deployment/doctor-deployment --timeout=120s
-          kubectl rollout status deployment/admin-deployment --timeout=120s

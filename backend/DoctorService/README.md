@@ -82,14 +82,6 @@ Client → Controller → Service → Repository → Database
 - Approve doctor
 
 ---
-## Solution File Change
-
-dotnet sln add backend/DoctorService/DoctorService.API/DoctorService.API.csproj
-dotnet sln add backend/DoctorService/DoctorService.Application/DoctorService.Application.csproj
-dotnet sln add backend/DoctorService/DoctorService.Domain/DoctorService.Domain.csproj
-dotnet sln add backend/DoctorService/DoctorService.Infrastructure/DoctorService.Infrastructure.csproj
-
----
 
 ## 🐳 Docker
 
