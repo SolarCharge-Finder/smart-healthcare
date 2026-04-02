@@ -1,13 +1,10 @@
-using Doctor.Infrastructure.Data;
+using UserService.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
-using System.Text.Encodings.Web;
-using System.Security.Claims;
 
 namespace UserService.Tests;
 
@@ -32,17 +29,17 @@ public class TestingFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
-            // replace DB with in-memory
+            // replace DB
             var descriptor = services.FirstOrDefault(
-                d => d.ServiceType == typeof(DbContextOptions<UserServiceDbContext>));
+                d => d.ServiceType == typeof(DbContextOptions<UserDbContext>));
 
             if (descriptor != null)
                 services.Remove(descriptor);
 
-            services.AddDbContext<UserServiceDbContext>(options =>
-                options.UseInMemoryDatabase("smart-service-tests"));
+            services.AddDbContext<UserDbContext>(options =>
+                options.UseInMemoryDatabase("UserTestDb_" + Guid.NewGuid()));
 
-            // override authentication with test scheme
+            // override auth
             services.AddAuthentication("Test")
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
 

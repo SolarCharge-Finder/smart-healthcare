@@ -8,6 +8,8 @@ namespace UserService.Tests;
 
 public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
+    private const string TestUserId = "11111111-1111-1111-1111-111111111111"; 
+
     public TestAuthHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
@@ -21,7 +23,7 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
     {
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()),
+            new Claim(ClaimTypes.NameIdentifier, TestUserId),
             new Claim(ClaimTypes.Email, "test@test.com"),
             new Claim(ClaimTypes.Role, "Admin")
         };
