@@ -8,7 +8,7 @@ namespace PatientService.Tests;
 
 public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
-    private const string TestUserId = "11111111-1111-1111-1111-111111111111"; 
+    private const string TestUserId = "11111111-1111-1111-1111-111111111111";
 
     public TestAuthHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,

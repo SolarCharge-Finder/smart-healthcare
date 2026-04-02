@@ -32,11 +32,13 @@ public class PatientTests : IClassFixture<TestingFactory>
     [Fact]
     public async Task GetMe_Should_Return_Patient()
     {
-        await _client.PostAsJsonAsync("/patients", new CreatePatientRequest
+        var create = await _client.PostAsJsonAsync("/patients", new CreatePatientRequest
         {
             FullName = "Me",
             Email = "me@test.com"
         });
+
+        create.EnsureSuccessStatusCode();
 
         var response = await _client.GetAsync("/patients/me");
 
@@ -51,11 +53,13 @@ public class PatientTests : IClassFixture<TestingFactory>
     [Fact]
     public async Task UpdatePatient_Should_Work()
     {
-        await _client.PostAsJsonAsync("/patients", new CreatePatientRequest
+        var create = await _client.PostAsJsonAsync("/patients", new CreatePatientRequest
         {
             FullName = "Old",
             Email = "old@test.com"
         });
+
+        create.EnsureSuccessStatusCode();
 
         var response = await _client.PutAsJsonAsync("/patients/me", new UpdatePatientRequest
         {
@@ -72,11 +76,13 @@ public class PatientTests : IClassFixture<TestingFactory>
     [Fact]
     public async Task DeactivatePatient_Should_Work()
     {
-        await _client.PostAsJsonAsync("/patients", new CreatePatientRequest
+        var create = await _client.PostAsJsonAsync("/patients", new CreatePatientRequest
         {
             FullName = "Deactivate",
             Email = "d@test.com"
         });
+
+        create.EnsureSuccessStatusCode();
 
         var response = await _client.PatchAsync("/patients/me/deactivate", null);
 
@@ -90,11 +96,13 @@ public class PatientTests : IClassFixture<TestingFactory>
     [Fact]
     public async Task GetAll_Should_Return_Patients()
     {
-        await _client.PostAsJsonAsync("/patients", new CreatePatientRequest
+        var create = await _client.PostAsJsonAsync("/patients", new CreatePatientRequest
         {
             FullName = "Admin Patient",
             Email = "admin@test.com"
         });
+
+        create.EnsureSuccessStatusCode();
 
         var response = await _client.GetAsync("/patients");
 
@@ -105,4 +113,5 @@ public class PatientTests : IClassFixture<TestingFactory>
         patients.Should().NotBeNull();
         patients!.Count.Should().BeGreaterThan(0);
     }
+
 }
