@@ -14,7 +14,7 @@ public static class ServiceExtensions
     // applicatoin layer 
     public static void AddApplicationServices(this IServiceCollection services, IConfiguration config)
     {
-        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IUserService, UserServiceImplementation>();
 
         // call infrastructure
         services.AddInfrastructureServices(config);
