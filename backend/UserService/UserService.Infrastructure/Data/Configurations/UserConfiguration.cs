@@ -29,7 +29,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.CreatedAt)
             .IsRequired();
 
-        // 🔥 index for fast lookup (important)
+        // index for fast lookup (important)
         builder.HasIndex(u => u.UserId)
             .IsUnique();
 

@@ -49,7 +49,7 @@ public class UserController : ControllerBase
 
             var id = await _service.CreateUser(Guid.Parse(userId), request);
 
-            return Ok(new { id });
+            return Ok();
         }
         catch (Exception ex)
         {
@@ -81,16 +81,23 @@ public class UserController : ControllerBase
 
     // User: deactivate own account
     [Authorize]
-    [HttpPatch("me")]
+    [HttpPatch("me/deactivate")]
     public async Task<IActionResult> DeactivateOwnAccount()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        try
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-        if (userId == null)
-            return Unauthorized();
+            if (userId == null)
+                return Unauthorized();
 
-        await _service.DeactivateUser(Guid.Parse(userId));
-        return Ok();
+            await _service.DeactivateUser(Guid.Parse(userId));
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     // Admin: get all users
