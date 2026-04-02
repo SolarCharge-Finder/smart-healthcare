@@ -10,8 +10,13 @@ public interface IDoctorRepository
 
     Task<Doctor?> GetByUserIdAsync(Guid userId);
 
-    Task SaveChangesAsync();
+    Task<List<Doctor>> GetApprovedAsync();
+
     Task<List<Doctor>> GetAllAsync();
 
     Task<List<Doctor>> GetPendingAsync();
+
+    Task RemoveAsync(Doctor doctor);
+
+    Task SaveChangesAsync();
 }

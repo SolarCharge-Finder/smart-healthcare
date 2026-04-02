@@ -34,6 +34,13 @@ public class DoctorRepository : IDoctorRepository
         await _context.SaveChangesAsync();
     }
 
+    public async Task<List<Doctor>> GetApprovedAsync()
+    {
+        return await _context.Doctors
+            .Where(d => d.IsApproved)
+            .ToListAsync();
+    }
+
     public async Task<List<Doctor>> GetAllAsync()
     {
         return await _context.Doctors.ToListAsync();
@@ -44,5 +51,11 @@ public class DoctorRepository : IDoctorRepository
         return await _context.Doctors
             .Where(d => !d.IsApproved)
             .ToListAsync();
+    }
+
+    public Task RemoveAsync(Doctor doctor)
+    {
+        _context.Doctors.Remove(doctor);
+        return Task.CompletedTask;
     }
 }

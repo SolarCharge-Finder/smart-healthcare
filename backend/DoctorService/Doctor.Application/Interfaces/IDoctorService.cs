@@ -1,7 +1,6 @@
 namespace Doctor.Application.Interfaces;
 
 using Doctor.Application.DTOs;
-using Doctor.Domain.Entities;
 
 public interface IDoctorService
 {
@@ -9,9 +8,13 @@ public interface IDoctorService
 
     Task ApproveDoctor(Guid id);
 
-    Task<List<Doctor>> GetAll();
+    Task<List<DoctorResponse>> GetAll();
 
-    Task<List<Doctor>> GetPending();
+    Task<List<DoctorResponse>> GetApproved();
 
-    Task<Doctor?> GetByUserId(Guid userId);
+    Task<List<DoctorResponse>> GetPending();
+
+    Task<DoctorResponse?> GetById(Guid id);
+
+    Task DeleteDoctor(Guid id);
 }

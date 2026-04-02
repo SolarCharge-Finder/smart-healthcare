@@ -15,7 +15,6 @@ public class DoctorService : IDoctorService
 
     public async Task<Guid> CreateDoctor(CreateDoctorRequest request, Guid userId)
     {
-        // prevent duplicate doctor profiles
         var existing = await _repo.GetByUserIdAsync(userId);
         if (existing != null)
             throw new InvalidOperationException("Doctor profile already exists");
@@ -52,18 +51,65 @@ public class DoctorService : IDoctorService
         await _repo.SaveChangesAsync();
     }
 
-    public async Task<List<Doctor>> GetAll()
+    public async Task<List<DoctorResponse>> GetAll()
     {
-        return await _repo.GetAllAsync();
+        var doctors = await _repo.GetAllAsync();
+
+        return doctors.Select(Map).ToList();
     }
 
-    public async Task<List<Doctor>> GetPending()
+    public async Task<List<DoctorResponse>> GetApproved()
     {
-        return await _repo.GetPendingAsync();
+        var doctors = await _repo.GetApprovedAsync();
+
+        return doctors.Select(Map).ToList();
     }
 
-    public async Task<Doctor?> GetByUserId(Guid userId)
+    public async Task<List<DoctorResponse>> GetPending()
     {
-        return await _repo.GetByUserIdAsync(userId);
+        var doctors = await _repo.GetPendingAsync();
+
+        return doctors.Select(Map).ToList();
     }
+
+    public async Task<DoctorResponse?> GetById(Guid id)
+    {
+        var doctor = await _repo.GetByIdAsync(id);
+
+        if (doctor == null)
+            return null;
+
+        return Map(doctor);
+    }
+
+    public async Task<DoctorResponse?> GetByUserId(Guid userId)
+    {
+        var doctor = await _repo.GetByUserIdAsync(userId);
+
+        if (doctor == null)
+            return null;
+
+        return Map(doctor);
+    }
+
+    public async Task DeleteDoctor(Guid id)
+    {
+        var doctor = await _repo.GetByIdAsync(id);
+
+        if (doctor == null)
+            throw new Exception("Doctor not found");
+
+        await _repo.RemoveAsync(doctor);
+        await _repo.SaveChangesAsync();
+    }
+
+    private static DoctorResponse Map(Doctor d) => new()
+    {
+        Id = d.Id,
+        UserId = d.UserId,
+        FullName = d.FullName,
+        Specialization = d.Specialization,
+        Hospital = d.Hospital,
+        IsApproved = d.IsApproved
+    };
 }
