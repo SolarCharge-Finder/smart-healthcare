@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
 using Xunit;
+using Doctor.Application.DTOs;
 
 namespace DoctorService.Tests;
 
@@ -17,12 +18,11 @@ public class DoctorTests : IClassFixture<TestingFactory>
     [Fact]
     public async Task CreateDoctor_Should_Return_OK()
     {
-        var request = new
+        var request = new CreateDoctorRequest
         {
-            userId = Guid.NewGuid(),
-            fullName = "Dr Strange",
-            specialization = "Magic",
-            hospital = "Kamar Taj"
+            FullName = "Dr Strange",
+            Specialization = "Magic",
+            Hospital = "Kamar Taj"
         };
 
         var response = await _client.PostAsJsonAsync("/doctors", request);
@@ -33,19 +33,18 @@ public class DoctorTests : IClassFixture<TestingFactory>
     [Fact]
     public async Task ApproveDoctor_Should_Work()
     {
-        var request = new
+        var request = new CreateDoctorRequest
         {
-            userId = Guid.NewGuid(),
-            fullName = "Dr Who",
-            specialization = "Time Travel",
-            hospital = "TARDIS"
+            FullName = "Dr Who",
+            Specialization = "Time Travel",
+            Hospital = "TARDIS"
         };
 
         await _client.PostAsJsonAsync("/doctors", request);
 
-        var doctors = await _client.GetFromJsonAsync<List<dynamic>>("/doctors");
+        var doctors = await _client.GetFromJsonAsync<List<DoctorResponse>>("/doctors");
 
-        var id = doctors![0].GetProperty("id").GetGuid();
+        var id = doctors!.First().Id;
 
         var response = await _client.PutAsync($"/doctors/{id}/approve", null);
 
@@ -53,14 +52,67 @@ public class DoctorTests : IClassFixture<TestingFactory>
     }
 
     [Fact]
-    public async Task GetPending_Should_Return_Doctors()
+    public async Task GetById_Should_Return_Doctor()
     {
-        var request = new
+        var create = await _client.PostAsJsonAsync("/doctors", new CreateDoctorRequest
         {
-            userId = Guid.NewGuid(),
-            fullName = "Dr House",
-            specialization = "Diagnostics",
-            hospital = "Princeton"
+            FullName = "Dr Lookup",
+            Specialization = "ENT",
+            Hospital = "Test"
+        });
+
+        create.EnsureSuccessStatusCode();
+
+        var all = await _client.GetFromJsonAsync<List<DoctorResponse>>("/doctors");
+
+        var id = all!.First().Id;
+
+        var response = await _client.GetAsync($"/doctors/{id}");
+
+        response.EnsureSuccessStatusCode();
+
+        var doctor = await response.Content.ReadFromJsonAsync<DoctorResponse>();
+
+        doctor.Should().NotBeNull();
+        doctor!.Id.Should().Be(id);
+    }
+
+    [Fact]
+    public async Task GetApproved_Should_Return_Only_Approved_Doctors()
+    {
+        var create = await _client.PostAsJsonAsync("/doctors", new CreateDoctorRequest
+        {
+            FullName = "Dr Approved",
+            Specialization = "Neuro",
+            Hospital = "Test"
+        });
+
+        create.EnsureSuccessStatusCode();
+
+        var all = await _client.GetFromJsonAsync<List<DoctorResponse>>("/doctors");
+        var id = all!.First().Id;
+
+        await _client.PutAsync($"/doctors/{id}/approve", null);
+
+        var response = await _client.GetAsync("/doctors/approved");
+
+        response.EnsureSuccessStatusCode();
+
+        var doctors = await response.Content.ReadFromJsonAsync<List<DoctorResponse>>();
+
+        doctors.Should().NotBeNull();
+        doctors.Should().NotBeEmpty();
+        doctors!.All(d => d.IsApproved).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task GetPending_Should_Return_Unapproved_Doctors()
+    {
+        var request = new CreateDoctorRequest
+        {
+            FullName = "Dr House",
+            Specialization = "Diagnostics",
+            Hospital = "Princeton"
         };
 
         await _client.PostAsJsonAsync("/doctors", request);
@@ -69,9 +121,35 @@ public class DoctorTests : IClassFixture<TestingFactory>
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var doctors = await response.Content.ReadFromJsonAsync<List<object>>();
+        var doctors = await response.Content.ReadFromJsonAsync<List<DoctorResponse>>();
 
         doctors.Should().NotBeNull();
-        doctors!.Count.Should().BeGreaterThan(0);
+        doctors.Should().NotBeEmpty();
+        doctors!.All(d => d.IsApproved == false).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DeleteDoctor_Should_Remove_Doctor()
+    {
+        var create = await _client.PostAsJsonAsync("/doctors", new CreateDoctorRequest
+        {
+            FullName = "Dr Delete",
+            Specialization = "Ortho",
+            Hospital = "Test"
+        });
+
+        create.EnsureSuccessStatusCode();
+
+        var all = await _client.GetFromJsonAsync<List<DoctorResponse>>("/doctors");
+
+        var id = all!.First().Id;
+
+        var delete = await _client.DeleteAsync($"/doctors/{id}");
+
+        delete.EnsureSuccessStatusCode();
+
+        var response = await _client.GetAsync($"/doctors/{id}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 }

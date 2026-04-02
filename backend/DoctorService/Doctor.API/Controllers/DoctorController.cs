@@ -45,12 +45,30 @@ public class DoctorController : ControllerBase
         return Ok(doctors);
     }
 
+    [HttpGet("approved")]
+    public async Task<IActionResult> GetPublic()
+    {
+        var doctors = await _service.GetApproved();
+        return Ok(doctors);
+    }
+
     [Authorize(Roles = "Admin")]
     [HttpGet("pending")]
     public async Task<IActionResult> GetPending()
     {
         var doctors = await _service.GetPending();
         return Ok(doctors);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(Guid id)
+    {
+        var doctor = await _service.GetById(id);
+
+        if (doctor == null)
+            return NotFound();
+
+        return Ok(doctor);
     }
 
     [Authorize(Roles = "Admin")]
@@ -60,6 +78,21 @@ public class DoctorController : ControllerBase
         try
         {
             await _service.ApproveDoctor(id);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        try
+        {
+            await _service.DeleteDoctor(id);
             return Ok();
         }
         catch (Exception ex)
