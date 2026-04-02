@@ -6,6 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
 using Xunit;
 using System.Net.Http.Json;
+using Doctor.Application.DTOs;
+using FluentAssertions;
 
 namespace DoctorService.Tests;
 
@@ -44,17 +46,46 @@ public class PostgresIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task CreateDoctor_Should_Work_With_Postgres()
     {
-        var request = new
+        var request = new CreateDoctorRequest
         {
-            userId = Guid.NewGuid(),
-            fullName = "Dr Postgres",
-            specialization = "DB Magic",
-            hospital = "Container Hospital"
+            FullName = "Dr Postgres",
+            Specialization = "DB Magic",
+            Hospital = "Container Hospital"
         };
 
         var response = await _client.PostAsJsonAsync("/doctors", request);
 
         response.EnsureSuccessStatusCode();
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<DoctorDbContext>();
+
+        var doctor = await db.Doctors.ToListAsync();
+
+        doctor.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task ApproveDoctor_Should_Persist_In_Postgres()
+    {
+        var request = new CreateDoctorRequest
+        {
+            FullName = "Dr PG Approve",
+            Specialization = "Test",
+            Hospital = "DB"
+        };
+
+        await _client.PostAsJsonAsync("/doctors", request);
+
+        var doctors = await _client.GetFromJsonAsync<List<DoctorResponse>>("/doctors");
+
+        var id = doctors!.First().Id;
+
+        await _client.PutAsync($"/doctors/{id}/approve", null);
+
+        var approved = await _client.GetFromJsonAsync<List<DoctorResponse>>("/doctors/approved");
+
+        approved.Should().Contain(d => d.Id == id && d.IsApproved);
     }
 
     public class PostgreSqlTestingFactory : TestingFactory
