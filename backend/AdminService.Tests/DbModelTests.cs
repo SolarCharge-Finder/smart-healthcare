@@ -1,5 +1,5 @@
 using AdminService.Infrastructure.Data;
-using DoctorEntity = AdminService.Domain.Entities.Doctor;
+using AdminService.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
@@ -8,19 +8,21 @@ namespace AdminService.Tests;
 public class DbModelTests
 {
     [Fact]
-    public void Doctors_Should_Have_Required_Fields()
+    public void Admin_Should_Have_Required_Fields()
     {
         using var db = CreateDbContext();
 
-        var entity = db.Model.FindEntityType(typeof(DoctorEntity));
+        var entity = db.Model.FindEntityType(typeof(Admin));
 
         Assert.NotNull(entity);
 
         var properties = entity!.GetProperties();
 
+        Assert.Contains(properties, p => p.Name == "Id");
+        Assert.Contains(properties, p => p.Name == "UserId");
         Assert.Contains(properties, p => p.Name == "FullName");
-        Assert.Contains(properties, p => p.Name == "Specialization");
-        Assert.Contains(properties, p => p.Name == "Hospital");
+        Assert.Contains(properties, p => p.Name == "IsApproved");
+        Assert.Contains(properties, p => p.Name == "CreatedAt");
     }
 
     [Fact]
@@ -28,7 +30,7 @@ public class DbModelTests
     {
         using var db = CreateDbContext();
 
-        var entity = db.Model.FindEntityType(typeof(AdminEntity));
+        var entity = db.Model.FindEntityType(typeof(Admin));
 
         var key = entity!.FindPrimaryKey();
 

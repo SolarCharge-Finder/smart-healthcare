@@ -21,7 +21,7 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
     {
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()),
+            new Claim(ClaimTypes.NameIdentifier, "11111111-1111-1111-1111-111111111111"),
             new Claim(ClaimTypes.Email, "test@test.com"),
             new Claim(ClaimTypes.Role, "Admin")
         };
