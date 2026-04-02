@@ -59,6 +59,16 @@ Client → Controller → Service → Repository → Database
 
 ---
 
+## Solution file
+
+
+## Migrations 
+
+dotnet ef migrations add InitialCreate --output-dir Data/Migrations --project backend/UserService/UserService.Infrastructure --startup-project backend/UserService/UserService.API    
+
+dotnet ef database update --project backend/UserService/UserService.Infrastructure --startup-project
+ backend/UserService/UserService.API
+
 ## 🐳 Docker
 
 Build image:
