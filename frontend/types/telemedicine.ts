@@ -1,5 +1,6 @@
 export interface TelemedicineSessionResponse {
   appointmentId: string;
+  agoraAppId: string;
   channelName: string;
   patientToken: string;
   doctorToken: string;

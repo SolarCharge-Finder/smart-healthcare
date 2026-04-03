@@ -9,6 +9,8 @@
   <ItemGroup>
 
     <!-- Swagger -->
+    <PackageReference Include="AgoraDynamicKey" Version="1.0.0" />
+    <PackageReference Include="Crc32.NET" Version="1.2.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
 
     <!-- Entity Framework -->

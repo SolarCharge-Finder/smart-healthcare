@@ -12,6 +12,11 @@ public class TelemedicineSessionResponse
     public Guid AppointmentId { get; set; }
 
     /// <summary>
+    /// Agora Application ID used by the frontend to initialize the RTC client.
+    /// </summary>
+    public string AgoraAppId { get; set; } = string.Empty;
+
+    /// <summary>
     /// Agora channel name. Frontend uses this to join the channel.
     /// </summary>
     public string ChannelName { get; set; } = string.Empty;

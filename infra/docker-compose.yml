@@ -98,6 +98,7 @@ services:
         condition: service_healthy
     environment:
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=appointmentdb;Username=postgres;Password=admin
+      API_KEY: dev-key
       Stripe__SecretKey: ${STRIPE_SECRET_KEY}
       Stripe__PublishableKey: ${STRIPE_PUBLISHABLE_KEY}
       Stripe__WebhookSecret: ${STRIPE_WEBHOOK_SECRET}

@@ -13,15 +13,15 @@ import { TelemedicineSessionResponse } from "../../types/telemedicine";
 
 interface VideoRoomProps {
   session: TelemedicineSessionResponse;
-  agoraAppId: string;
 }
 
-function VideoRoom({ session, agoraAppId }: VideoRoomProps) {
+function VideoRoom({ session }: VideoRoomProps) {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [callError, setCallError] = useState<string | null>(null);
+  const [mediaWarning, setMediaWarning] = useState<string | null>(null);
   const clientRef = useRef<any>(null);
   const localTracksRef = useRef<any[]>([]);
   const router = useRouter();
@@ -35,6 +35,7 @@ function VideoRoom({ session, agoraAppId }: VideoRoomProps) {
   const joinRoom = async () => {
     setIsJoining(true);
     setCallError(null);
+    setMediaWarning(null);
     try {
       // Dynamically import Agora SDK (client-side only)
       const AgoraRTC = (await import("agora-rtc-sdk-ng")).default;
@@ -55,15 +56,39 @@ function VideoRoom({ session, agoraAppId }: VideoRoomProps) {
       });
 
       // Join the Agora channel with the patient token
-      await client.join(agoraAppId, session.channelName, session.patientToken, null);
+      const resolvedAppId = session.agoraAppId || process.env.NEXT_PUBLIC_AGORA_APP_ID || "";
+
+      if (!resolvedAppId) {
+        throw new Error("Agora App ID is missing. Please restart the frontend and retry.");
+      }
+
+      await client.join(resolvedAppId, session.channelName, session.patientToken, null);
+
+      // Mark the call as connected after the channel join succeeds.
+      // Camera/mic access can still fail on locked-down devices, but the user can remain in the room.
+      setIsConnected(true);
 
       // Create and publish local tracks
-      const [micTrack, cameraTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
-      localTracksRef.current = [micTrack, cameraTrack];
+      try {
+        const [micTrack, cameraTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+        localTracksRef.current = [micTrack, cameraTrack];
 
-      cameraTrack.play("local-video-container");
-      await client.publish([micTrack, cameraTrack]);
-      setIsConnected(true);
+        cameraTrack.play("local-video-container");
+        await client.publish([micTrack, cameraTrack]);
+      } catch (mediaErr: any) {
+        console.error("Media device access error:", mediaErr);
+
+        const deniedAccess =
+          mediaErr?.name === "NotAllowedError" ||
+          mediaErr?.code === "PERMISSION_DENIED" ||
+          String(mediaErr?.message || "").toLowerCase().includes("permission denied");
+
+        setMediaWarning(
+          deniedAccess
+            ? "Camera or microphone access is blocked on this Mac. The call is joined, but local video/audio cannot start until you allow Chrome access in macOS System Settings > Privacy & Security > Camera/Microphone."
+            : mediaErr?.message || "Joined the room, but local media could not start."
+        );
+      }
     } catch (err: any) {
       console.error("Agora join error:", err);
       setCallError(
@@ -127,14 +152,14 @@ function VideoRoom({ session, agoraAppId }: VideoRoomProps) {
   return (
     <div className="space-y-4">
       {/* Session Info */}
-      <div className="rounded-lg bg-blue-50 border border-blue-100 p-4 flex flex-wrap gap-4 text-sm">
+      <div className="flex flex-wrap gap-4 p-4 text-sm border border-blue-100 rounded-lg bg-blue-50">
         <div>
           <span className="font-medium text-gray-600">Channel:</span>{" "}
-          <code className="text-blue-700 bg-blue-100 px-1 rounded">{session.channelName}</code>
+          <code className="px-1 text-blue-700 bg-blue-100 rounded">{session.channelName}</code>
         </div>
         <div>
           <span className="font-medium text-gray-600">Appointment ID:</span>{" "}
-          <code className="text-blue-700 bg-blue-100 px-1 rounded text-xs">{session.appointmentId}</code>
+          <code className="px-1 text-xs text-blue-700 bg-blue-100 rounded">{session.appointmentId}</code>
         </div>
         <div>
           <span className="font-medium text-gray-600">Session expires in:</span>{" "}
@@ -155,6 +180,7 @@ function VideoRoom({ session, agoraAppId }: VideoRoomProps) {
       </div>
 
       {callError && <Alert type="error">{callError}</Alert>}
+      {mediaWarning && <Alert type="info">{mediaWarning}</Alert>}
 
       {/* Video Grid */}
       <div className="grid gap-4 md:grid-cols-2">
@@ -164,7 +190,7 @@ function VideoRoom({ session, agoraAppId }: VideoRoomProps) {
             id="local-video-container"
             className="w-full h-full min-h-[220px]"
           />
-          <span className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
+          <span className="absolute px-2 py-1 text-xs text-white rounded bottom-2 left-2 bg-black/60">
             You (Patient)
           </span>
         </div>
@@ -176,10 +202,10 @@ function VideoRoom({ session, agoraAppId }: VideoRoomProps) {
             className="w-full h-full min-h-[220px] flex items-center justify-center"
           >
             {!isConnected && (
-              <p className="text-gray-400 text-sm">Waiting for doctor to join...</p>
+              <p className="text-sm text-gray-400">Waiting for doctor to join...</p>
             )}
           </div>
-          <span className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
+          <span className="absolute px-2 py-1 text-xs text-white rounded bottom-2 left-2 bg-black/60">
             Doctor
           </span>
         </div>
@@ -225,10 +251,6 @@ function ConsultationPageContent() {
   const [hasRequested, setHasRequested] = useState(false);
 
   const createSession = useCreateTelemedicineSession();
-
-  // Agora App ID — set in TelemedicineService appsettings
-  // Frontend needs to know the App ID (not secret) to init AgoraRTC
-  const agoraAppId = process.env.NEXT_PUBLIC_AGORA_APP_ID ?? "";
 
   useEffect(() => {
     const apt = searchParams.get("appointmentId");
@@ -280,7 +302,7 @@ function ConsultationPageContent() {
   // ── Render states ──
   if (urlError) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-6 py-10">
+      <main className="flex flex-col max-w-6xl min-h-screen gap-6 px-6 py-10 mx-auto">
         <PageHeader
           title="Video Consultation"
           subtitle="Connect with your doctor in a secure virtual room."
@@ -292,7 +314,7 @@ function ConsultationPageContent() {
 
   if (createSession.isPending) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-6 py-10">
+      <main className="flex flex-col max-w-6xl min-h-screen gap-6 px-6 py-10 mx-auto">
         <PageHeader
           title="Video Consultation"
           subtitle="Connect with your doctor in a secure virtual room."
@@ -312,7 +334,7 @@ function ConsultationPageContent() {
   if (sessionError) {
     const isNotPaid = sessionError.toLowerCase().includes("paid");
     return (
-      <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-6 py-10">
+      <main className="flex flex-col max-w-6xl min-h-screen gap-6 px-6 py-10 mx-auto">
         <PageHeader
           title="Video Consultation"
           subtitle="Connect with your doctor in a secure virtual room."
@@ -328,7 +350,7 @@ function ConsultationPageContent() {
 
   if (!session) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-6 py-10">
+      <main className="flex flex-col max-w-6xl min-h-screen gap-6 px-6 py-10 mx-auto">
         <PageHeader
           title="Video Consultation"
           subtitle="Connect with your doctor in a secure virtual room."
@@ -339,18 +361,13 @@ function ConsultationPageContent() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-6 py-10">
+    <main className="flex flex-col max-w-6xl min-h-screen gap-6 px-6 py-10 mx-auto">
       <PageHeader
         title="Video Consultation"
         subtitle="Connect with your doctor in a secure virtual room."
       />
       <Card title="Live Video Consultation">
-        {!agoraAppId && (
-          <Alert type="error" >
-            ⚠️ NEXT_PUBLIC_AGORA_APP_ID is not set in .env.local. Video will not connect.
-          </Alert>
-        )}
-        <VideoRoom session={session} agoraAppId={agoraAppId} />
+        <VideoRoom session={session} />
       </Card>
     </main>
   );
@@ -362,7 +379,7 @@ export default function ConsultationPage() {
   return (
     <Suspense
       fallback={
-        <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-6 py-10">
+        <main className="flex flex-col max-w-6xl min-h-screen gap-6 px-6 py-10 mx-auto">
           <PageHeader
             title="Video Consultation"
             subtitle="Connect with your doctor in a secure virtual room."

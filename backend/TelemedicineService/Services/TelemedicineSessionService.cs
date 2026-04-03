@@ -90,6 +90,7 @@ public class TelemedicineSessionService : ITelemedicineService
         return new TelemedicineSessionResponse
         {
             AppointmentId = appointmentId,
+            AgoraAppId = _agoraOptions.AppId,
             ChannelName = channelName,
             PatientToken = patientToken,
             DoctorToken = doctorToken,
@@ -198,6 +199,7 @@ public class TelemedicineSessionService : ITelemedicineService
         return new TelemedicineSessionResponse
         {
             AppointmentId = session.AppointmentId,
+            AgoraAppId = _agoraOptions.AppId,
             ChannelName = channelName,
             PatientToken = _agoraTokenService.GenerateToken(channelName, secondsUntilExpiry),
             DoctorToken = _agoraTokenService.GenerateToken(channelName, secondsUntilExpiry),

@@ -1,21 +1,15 @@
-using System.Security.Cryptography;
-using System.Text;
+using AgoraIO.Media;
 using Microsoft.Extensions.Options;
 
 namespace TelemedicineService.Services;
 
 /// <summary>
-/// Implementation of Agora RTC token generation.
-/// Uses HMAC-SHA256 to create cryptographically secure tokens.
-/// Follows Agora's AccessToken2 specification.
+/// Implementation of Agora RTC token generation via official Agora dynamic key builder.
 /// </summary>
 public class AgoraTokenService : IAgoraTokenService
 {
     private readonly AgoraOptions _options;
     private readonly ILogger<AgoraTokenService> _logger;
-
-    // Token version for Agora AccessToken2 format
-    private const byte TokenVersion = 3;
 
     public AgoraTokenService(
         IOptions<AgoraOptions> options,
@@ -35,72 +29,28 @@ public class AgoraTokenService : IAgoraTokenService
 
         try
         {
-            var appIdBytes = Encoding.UTF8.GetBytes(_options.AppId);
-            var appCertificateBytes = Convert.FromHexString(_options.AppCertificate);
-
-            // Current timestamp
             var timestamp = (uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            var expiresAt = timestamp + expirySeconds;
+            var privilegeExpiredTs = timestamp + expirySeconds;
 
-            // Build the signature source string
-            // Format: "appId:expiration:crc:channelName"
-            var signatureSource = $"{_options.AppId}:{expirySeconds}:0:{channelName}";
-            var signatureSourceBytes = Encoding.UTF8.GetBytes(signatureSource);
+            // uid 0 allows the client to join without binding token to a specific uid.
+            var token = RtcTokenBuilder.buildTokenWithUID(
+                _options.AppId,
+                _options.AppCertificate,
+                channelName,
+                0,
+                RtcTokenBuilder.Role.RolePublisher,
+                privilegeExpiredTs);
 
-            // Generate HMAC-SHA256 signature
-            using (var hmac = new HMACSHA256(appCertificateBytes))
-            {
-                var signature = hmac.ComputeHash(signatureSourceBytes);
+            _logger.LogInformation(
+                "Generated Agora token for channel: {ChannelName}, expires in {ExpirySeconds}s",
+                channelName, expirySeconds);
 
-                // Build token: version + signature + appId + expiration
-                var tokenBytes = new List<byte>();
-
-                // Add version
-                tokenBytes.Add(TokenVersion);
-
-                // Add signature
-                tokenBytes.AddRange(signature);
-
-                // Build and add app id and expiration content
-                var contentBytes = BuildTokenContent(appIdBytes, expiresAt, channelName);
-                tokenBytes.AddRange(contentBytes);
-
-                // Convert to base64
-                var tokenString = Convert.ToBase64String(tokenBytes.ToArray());
-
-                _logger.LogInformation(
-                    "Generated Agora token for channel: {ChannelName}, expires in {ExpirySeconds}s",
-                    channelName, expirySeconds);
-
-                return tokenString;
-            }
+            return token;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to generate Agora token for channel: {ChannelName}", channelName);
             throw;
-        }
-    }
-
-    private byte[] BuildTokenContent(byte[] appIdBytes, uint expiresAt, string channelName)
-    {
-        using (var stream = new MemoryStream())
-        {
-            using (var writer = new BinaryWriter(stream))
-            {
-                // We're using the simplified token format with version 3
-                // For now, return a minimal content that includes expiration
-                var channelBytes = Encoding.UTF8.GetBytes(channelName);
-
-                // Write expiration (4 bytes, uint32)
-                writer.Write(expiresAt);
-
-                // Write channel name length and value
-                writer.Write((ushort)channelBytes.Length);
-                writer.Write(channelBytes);
-            }
-
-            return stream.ToArray();
         }
     }
 }
