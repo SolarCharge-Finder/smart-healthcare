@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: payment-deployment
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: payment-service
+
+  template:
+    metadata:
+      labels:
+        app: payment-service
+
+    spec:
+      containers:
+      - name: payment-service
+        image: smarthealth-payment-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: smarthealth-secrets
+              key: POSTGRES_USER
+
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: smarthealth-secrets
+              key: POSTGRES_PASSWORD
+
+        - name: ConnectionStrings__DefaultConnection
+          value: Host=postgres;Port=5432;Database=appointmentdb;Username=$(POSTGRES_USER);Password=$(POSTGRES_PASSWORD)
+
+        - name: AppointmentService__BaseUrl
+          value: http://appointment-service/
+
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: smarthealth-secrets
+              key: API_KEY
+
+        - name: Stripe__SecretKey
+          value: ""
+
+        - name: Stripe__PublishableKey
+          value: ""
+
+        - name: Stripe__WebhookSecret
+          value: ""
+
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
