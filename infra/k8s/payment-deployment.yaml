@@ -46,7 +46,7 @@ spec:
               key: POSTGRES_PASSWORD
 
         - name: ConnectionStrings__DefaultConnection
-          value: Host=postgres;Port=5432;Database=appointmentdb;Username=$(POSTGRES_USER);Password=$(POSTGRES_PASSWORD)
+          value: Host=postgres;Port=5432;Database=paymentdb;Username=$(POSTGRES_USER);Password=$(POSTGRES_PASSWORD)
 
         - name: AppointmentService__BaseUrl
           value: http://appointment-service/
@@ -58,13 +58,13 @@ spec:
               key: API_KEY
 
         - name: Stripe__SecretKey
-          value: ""
+          value: "sk_test_51TGCiA3rCMm65r19rZ8h6oEdjJnFpJTC5rAfhhH2xrkEQKUNElPlgcsICDddelXlQso0vLe52m7s33pWXlLWGK1a0057J4V8qT"
 
         - name: Stripe__PublishableKey
-          value: ""
+          value: "pk_test_51TGCiA3rCMm65r19DWJeCITL86GG0yUqdXCHMlTyxTaHh20YxHezVRI0MiV5FOkblYwXyajzZc8AjtKDxVzkxzFU005xYvTlsO"
 
         - name: Stripe__WebhookSecret
-          value: ""
+          value: "whsec_eb38d66d51f24a5989f1f0217cf393962c07c5eaf6a83a1284eeee1d8658a1e8"
 
         livenessProbe:
           httpGet:
