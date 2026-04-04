@@ -15,8 +15,13 @@ public class AIAnalysis
     public decimal CostUsd { get; set; }
     public string ModelUsed { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
     public DateTime? ProcessedAt { get; set; }
     public bool IsSuccessful { get; set; }
     public string? ErrorMessage { get; set; }
     public string CorrelationId { get; set; } = string.Empty;
+    
+    // Feedback and Confirmation
+    public bool FeedbackReceived { get; set; } = false;
+    public bool? Confirmed { get; set; } // null = no feedback, true = confirmed correct, false = incorrect
 }

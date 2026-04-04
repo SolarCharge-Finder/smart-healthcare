@@ -3,6 +3,7 @@ using AIService.Middleware;
 using AIService.Services;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,9 +34,28 @@ builder.Services.AddSingleton<IOpenAIService, OpenAIService>();
 // Validation and Parsing Services
 builder.Services.AddSingleton<IValidationService, ValidationService>();
 builder.Services.AddSingleton<IResponseParsingService, ResponseParsingService>();
+builder.Services.AddSingleton<IJsonResponseValidator, JsonResponseValidator>();
 
 // Prompt Engineering Services
 builder.Services.AddSingleton<IPromptService, PromptService>();
+
+// Rate Limiting Service
+var redisConnectionString = builder.Configuration["Redis:ConnectionString"] ?? "localhost:6379";
+builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(
+    StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnectionString));
+builder.Services.AddScoped<IRateLimitService, RateLimitService>();
+
+// Audit Logging Service
+builder.Services.AddScoped<IAuditLoggingService, AuditLoggingService>();
+
+// Specialty Mapping Service
+builder.Services.AddSingleton<ISpecialtyMappingService, SpecialtyMappingService>();
+
+// Confidence Scoring Service
+builder.Services.AddScoped<IConfidenceScoringService, ConfidenceScoringService>();
+
+// Urgency Classification Service
+builder.Services.AddSingleton<IUrgencyClassificationService, UrgencyClassificationService>();
 
 // CORS
 builder.Services.AddCors(options =>
@@ -76,6 +96,9 @@ using (var scope = app.Services.CreateScope())
 app.UseHttpsRedirection();
 
 app.UseCors("frontend");
+
+// Rate Limiting Middleware (must be before authorization)
+app.UseRateLimiting();
 
 // Custom middleware for correlation ID
 app.UseMiddleware<CorrelationIdMiddleware>();
