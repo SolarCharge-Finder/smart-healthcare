@@ -116,7 +116,7 @@ public class ConfidenceScoringService : IConfidenceScoringService
         try
         {
             // Find the analysis record
-            var analysis = _dbContext.AIAnalysis.FirstOrDefault(a => a.Id == analysisId);
+            var analysis = _dbContext.AIAnalyses.FirstOrDefault(a => a.Id == analysisId);
             
             if (analysis == null)
             {
@@ -282,7 +282,7 @@ public class ConfidenceScoringService : IConfidenceScoringService
     {
         try
         {
-            var patientAnalyses = _dbContext.AIAnalysis
+            var patientAnalyses = _dbContext.AIAnalyses
                 .Where(a => a.PatientId == patientId && a.FeedbackReceived)
                 .ToList();
 

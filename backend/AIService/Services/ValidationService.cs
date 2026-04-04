@@ -4,7 +4,7 @@ namespace AIService.Services;
 
 public interface IValidationService
 {
-    ValidationResult ValidateSymptoms(string symptoms);
+    SymptomsValidationResult ValidateSymptoms(string symptoms);
     string SanitizeSymptoms(string symptoms);
 }
 
@@ -21,9 +21,9 @@ public class ValidationService : IValidationService
         "shortness", "breath", "chest", "pressure", "infection", "inflammation"
     };
 
-    public ValidationResult ValidateSymptoms(string symptoms)
+    public SymptomsValidationResult ValidateSymptoms(string symptoms)
     {
-        var result = new ValidationResult { IsValid = true };
+        var result = new SymptomsValidationResult { IsValid = true };
 
         if (string.IsNullOrWhiteSpace(symptoms))
         {
@@ -106,7 +106,7 @@ public class ValidationService : IValidationService
     }
 }
 
-public class ValidationResult
+public class SymptomsValidationResult
 {
     public bool IsValid { get; set; }
     public string ErrorMessage { get; set; } = string.Empty;

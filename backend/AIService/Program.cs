@@ -40,10 +40,7 @@ builder.Services.AddSingleton<IJsonResponseValidator, JsonResponseValidator>();
 builder.Services.AddSingleton<IPromptService, PromptService>();
 
 // Rate Limiting Service
-var redisConnectionString = builder.Configuration["Redis:ConnectionString"] ?? "localhost:6379";
-builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(
-    StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnectionString));
-builder.Services.AddScoped<IRateLimitService, RateLimitService>();
+builder.Services.AddSingleton<IRateLimitService, InMemoryRateLimitService>();
 
 // Audit Logging Service
 builder.Services.AddScoped<IAuditLoggingService, AuditLoggingService>();

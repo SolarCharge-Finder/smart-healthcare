@@ -1,4 +1,5 @@
 using Serilog.Context;
+using AIService.Services;
 
 namespace AIService.Middleware;
 

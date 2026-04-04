@@ -218,7 +218,7 @@ public class JsonResponseValidator : IJsonResponseValidator
     }
 }
 
-public class ValidationResult
+public class JsonValidationResult
 {
     public bool IsValid { get; set; }
     public string? ErrorMessage { get; set; }
