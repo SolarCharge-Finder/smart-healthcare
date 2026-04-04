@@ -20,7 +20,7 @@ public class AIAnalysis
     public bool IsSuccessful { get; set; }
     public string? ErrorMessage { get; set; }
     public string CorrelationId { get; set; } = string.Empty;
-    
+
     // Feedback and Confirmation
     public bool FeedbackReceived { get; set; } = false;
     public bool? Confirmed { get; set; } // null = no feedback, true = confirmed correct, false = incorrect

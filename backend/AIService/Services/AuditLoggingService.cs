@@ -14,7 +14,7 @@ public interface IAuditLoggingService
         string ipAddress,
         int responseTimeMs,
         string correlationId);
-    
+
     Task<IEnumerable<AuditLog>> GetUserAuditLogsAsync(Guid patientId, int days = 30);
     Task<IEnumerable<AuditLog>> GetAllAuditLogsAsync(int days = 30);
 }

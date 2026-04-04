@@ -162,25 +162,25 @@ public class SpecialtyMappingService : ISpecialtyMappingService
         { "Angina", "Cardiologist" },
         { "Arrhythmia", "Cardiologist" },
         { "Hypertension", "Cardiologist" },
-        
+
         { "Pneumonia", "Pulmonologist" },
         { "Asthma", "Pulmonologist" },
         { "COPD", "Pulmonologist" },
         { "Bronchitis", "Pulmonologist" },
-        
+
         { "Migraine", "Neurologist" },
         { "Stroke", "Neurologist" },
         { "Seizure", "Neurologist" },
         { "Concussion", "Neurologist" },
-        
+
         { "Gastritis", "Gastroenterologist" },
         { "Ulcer", "Gastroenterologist" },
         { "IBS", "Gastroenterologist" },
-        
+
         { "Arthritis", "Orthopedist" },
         { "Fracture", "Orthopedist" },
         { "Herniated Disc", "Orthopedist" },
-        
+
         { "COVID-19", "Internist" },
         { "Influenza", "Internist" },
         { "Common Cold", "Primary Care" },
@@ -278,7 +278,7 @@ public class SpecialtyMappingService : ISpecialtyMappingService
             return 0.5; // Neutral confidence if no keywords matched
 
         var confidence = Math.Min(1.0, matchScore / totalSymptomKeywords);
-        
+
         _logger.LogDebug(
             "Calculated specialty confidence: {Specialty}={Confidence} " +
             "({MatchScore}/{TotalKeywords})",

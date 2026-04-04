@@ -12,7 +12,7 @@ public class AuditLog
     public int ResponseTimeMs { get; set; }
     public string CorrelationId { get; set; } = string.Empty;
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
-    
+
     // Legacy properties (kept for backward compatibility)
     public string RequestIp { get; set; } = string.Empty;
     public string Endpoint { get; set; } = string.Empty;

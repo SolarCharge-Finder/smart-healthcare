@@ -51,7 +51,7 @@ public class RateLimitService : IRateLimitService
 
                 // Step 1: Get all requests for this user
                 var values = await db.ListRangeAsync(key);
-                
+
                 // Step 2: Remove timestamps outside the window (older than windowSeconds)
                 var validRequests = new List<long>();
                 foreach (var value in values)
@@ -85,11 +85,11 @@ public class RateLimitService : IRateLimitService
                 {
                     // Add current timestamp to the list
                     await db.ListLeftPushAsync(key, now);
-                    
+
                     // Set expiry: keep Redis key for windowSeconds after oldest request
                     await db.KeyExpireAsync(key, TimeSpan.FromSeconds(windowSeconds));
-                    
-                    _logger.LogDebug("Request recorded for user {UserId}. New count: {Count}", 
+
+                    _logger.LogDebug("Request recorded for user {UserId}. New count: {Count}",
                         userId, validRequests.Count + 1);
                 }
                 else

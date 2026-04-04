@@ -13,9 +13,9 @@ public interface IConfidenceScoringService
         Guid? patientId);
 
     Task<double> AdjustScoreBasedOnFeedbackAsync(Guid analysisId, bool userConfirmed);
-    
+
     double CalculateSymptomClarityScore(string symptoms);
-    
+
     double CalculateConditionAgreementScore(List<string> conditions);
 }
 
@@ -117,7 +117,7 @@ public class ConfidenceScoringService : IConfidenceScoringService
         {
             // Find the analysis record
             var analysis = _dbContext.AIAnalyses.FirstOrDefault(a => a.Id == analysisId);
-            
+
             if (analysis == null)
             {
                 _logger.LogWarning("Analysis not found for feedback adjustment. Id: {Id}", analysisId);

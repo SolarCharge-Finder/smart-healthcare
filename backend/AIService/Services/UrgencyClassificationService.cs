@@ -114,7 +114,7 @@ public class UrgencyClassificationService : IUrgencyClassificationService
                 {
                     _logger.LogWarning("EMERGENCY SITUATION DETECTED. Symptoms: {Symptoms}",
                         normalizedSymptoms.Substring(0, Math.Min(100, normalizedSymptoms.Length)));
-                    
+
                     return ("Emergency",
                         "🚨 EMERGENCY: Call 911 immediately. Seek immediate hospital care.");
                 }
