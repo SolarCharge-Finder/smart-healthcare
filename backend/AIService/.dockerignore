@@ -1,0 +1,15 @@
+**/.git
+**/.gitignore
+**/bin
+**/obj
+**/.vs
+**/.vscode
+**/node_modules
+**/.env
+**/.env.local
+**/*.log
+**/dist
+**/coverage
+**/*.user
+**/.idea
+**/out
