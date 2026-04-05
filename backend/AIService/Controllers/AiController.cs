@@ -63,7 +63,7 @@ public class AiController : ControllerBase
         {
             var duration = (DateTime.UtcNow - startTime).TotalMilliseconds;
             _logger.LogError(ex, "Error in symptom analysis endpoint");
-            
+
             // Record error metrics
             _metricsService.RecordAiAnalysis("gpt-4o", duration, false, 0);
             _metricsService.RecordApiRequest("/api/ai/analyze", "POST", 500, duration);

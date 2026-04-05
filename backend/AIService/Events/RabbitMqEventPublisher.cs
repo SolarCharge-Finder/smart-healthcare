@@ -74,19 +74,19 @@ public class EventPublisher : IEventPublisher
     private async Task PublishEventAsync<T>(string eventType, T @event)
     {
         var json = JsonSerializer.Serialize(@event);
-        
+
         // Log event as JSON for debugging and audit trail
         _logger.LogInformation("Event: {EventType} | Correlation: {EventData}",
             eventType,
             json);
-        
+
         // In production, this would:
         // 1. Publish to RabbitMQ exchange "smarthealthcare.ai" with routing key
         // 2. Or send to Azure Service Bus topic "symptom-analysis-events"
         // 3. Or use a message queue service (SQS, Kafka, etc.)
         // 
         // For now, logging provides event traceability and correlation ID propagation
-        
+
         await Task.CompletedTask;
     }
 }

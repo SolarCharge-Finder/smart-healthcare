@@ -72,8 +72,8 @@ public class SecretsService : ISecretsService
         var errors = new List<string>();
 
         // Check OpenAI API key
-        var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY") 
-                  ?? _configuration["OpenAI:ApiKey"];
+        var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY")
+            ?? _configuration["OpenAI:ApiKey"];
         if (string.IsNullOrEmpty(apiKey))
         {
             errors.Add("OpenAI API key is not configured. Set OPENAI_API_KEY environment variable.");

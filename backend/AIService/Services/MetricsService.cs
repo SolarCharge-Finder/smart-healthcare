@@ -11,7 +11,7 @@ public class MetricsService : IMetricsService
 {
     private decimal _totalCostUsd = 0;
     private long _totalAnalyses = 0;
-    
+
     // Thread-safe counters for metrics
     private readonly ConcurrentDictionary<string, long> _analysisCounters = new();
     private readonly ConcurrentDictionary<string, List<double>> _responseTimes = new();
@@ -34,7 +34,7 @@ public class MetricsService : IMetricsService
             _analysisCounters.AddOrUpdate(key, 1, (k, v) => v + 1);
 
             var responseTimeKey = model;
-            _responseTimes.AddOrUpdate(responseTimeKey, 
+            _responseTimes.AddOrUpdate(responseTimeKey,
                 new List<double> { durationMs / 1000.0 },
                 (k, v) => { v.Add(durationMs / 1000.0); return v; });
 
@@ -81,7 +81,7 @@ public class MetricsService : IMetricsService
         var sb = new StringBuilder();
         sb.AppendLine("# HELP ai_analysis_total Total number of AI analyses performed");
         sb.AppendLine("# TYPE ai_analysis_total counter");
-        
+
         foreach (var kvp in _analysisCounters)
         {
             var parts = kvp.Key.Split('_');
@@ -92,7 +92,7 @@ public class MetricsService : IMetricsService
 
         sb.AppendLine("\n# HELP ai_response_duration_seconds AI response time in seconds");
         sb.AppendLine("# TYPE ai_response_duration_seconds histogram");
-        
+
         foreach (var kvp in _responseTimes)
         {
             if (kvp.Value.Count > 0)
@@ -113,7 +113,7 @@ public class MetricsService : IMetricsService
 
         sb.AppendLine("\n# HELP api_requests_total Total number of API requests");
         sb.AppendLine("# TYPE api_requests_total counter");
-        
+
         foreach (var kvp in _apiRequestCounters)
         {
             var parts = kvp.Key.Split('_');

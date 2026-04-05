@@ -78,7 +78,7 @@ public class OpenAIService : IOpenAIService
             {
                 _logger.LogInformation("Cache hit for symptoms analysis. CorrelationId: {CorrelationId}", correlationId);
                 cachedResponse.CorrelationId = correlationId;
-                
+
                 // Publish cache hit event
                 await _eventPublisher.PublishAnalysisCachedAsync(new()
                 {
@@ -86,7 +86,7 @@ public class OpenAIService : IOpenAIService
                     CacheKey = cacheKey,
                     CachedAnalysis = cachedResponse.Content ?? "",
                 });
-                
+
                 return cachedResponse;
             }
 
@@ -165,7 +165,7 @@ public class OpenAIService : IOpenAIService
             {
                 _logger.LogInformation("AI service failed, using fallback response. CorrelationId: {CorrelationId}", correlationId);
                 var fallbackResponse = _fallbackService.GetFallbackResponse(symptoms, correlationId);
-                
+
                 // Publish fallback event
                 await _eventPublisher.PublishAnalysisFallbackAsync(new()
                 {
@@ -174,7 +174,7 @@ public class OpenAIService : IOpenAIService
                     FallbackAnalysis = fallbackResponse.Content ?? "",
                     FailureReason = ex.Message
                 });
-                
+
                 return fallbackResponse;
             }
 

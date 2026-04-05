@@ -89,7 +89,6 @@ public class RateLimitingMiddleware
     /// </summary>
     private string ExtractUserId(HttpContext context)
     {
-        // Try to get from JWT token in Authorization header
         var userId = context.User?.FindFirst("sub")?.Value
             ?? context.User?.FindFirst("UserId")?.Value
             ?? context.User?.FindFirst("id")?.Value;

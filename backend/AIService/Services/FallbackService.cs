@@ -39,7 +39,7 @@ public class FallbackService : IFallbackService
     public bool ShouldUseFallback(Exception ex)
     {
         // Use fallback for network errors, timeouts, and rate limiting
-        return ex is HttpRequestException || 
+        return ex is HttpRequestException ||
                ex is TaskCanceledException ||
                ex is TimeoutException ||
                (ex.Message?.Contains("rate limit", StringComparison.OrdinalIgnoreCase) ?? false);
@@ -126,8 +126,8 @@ public class FallbackService : IFallbackService
 
 **Recommended Specialty:** {specialty}
 
-**Disclaimer:** This is a basic local analysis generated when the AI service is unavailable. \
-It uses pattern matching and should NOT replace professional medical evaluation. \
+**Disclaimer:** This is a basic local analysis generated when the AI service is unavailable.
+It uses pattern matching and should NOT replace professional medical evaluation.
 Please consult a healthcare professional for accurate diagnosis and treatment.
 
 **Next Steps:**
