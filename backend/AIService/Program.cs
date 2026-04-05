@@ -77,6 +77,25 @@ builder.Services.AddDbContext<AiDbContext>(options =>
 // Secrets Management Service (must be before OpenAI Service)
 builder.Services.AddSingleton<ISecretsService, SecretsService>();
 
+// Redis Connection for Caching
+var redisConnection = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
+try
+{
+    var redis = ConnectionMultiplexer.Connect(redisConnection);
+    builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
+    builder.Services.AddSingleton<ICachingService, CachingService>();
+    Console.WriteLine($"✓ Redis cache connected: {redisConnection.Split(':')[0]}:6379");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"⚠️  Redis connection failed ({redisConnection}): {ex.Message}");
+    Console.WriteLine("   Caching will be disabled but service will continue");
+    builder.Services.AddSingleton<ICachingService>(new NoOpCachingService());
+}
+
+// Fallback Service
+builder.Services.AddSingleton<IFallbackService, FallbackService>();
+
 // OpenAI Service
 builder.Services.AddSingleton<IOpenAIService, OpenAIService>();
 

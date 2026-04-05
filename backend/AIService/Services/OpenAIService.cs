@@ -17,6 +17,8 @@ public class OpenAIService : IOpenAIService
     private readonly IResponseParsingService _parsingService;
     private readonly IPromptService _promptService;
     private readonly ISecretsService _secretsService;
+    private readonly ICachingService _cachingService;
+    private readonly IFallbackService _fallbackService;
 
     public OpenAIService(
         IConfiguration config,
@@ -24,7 +26,9 @@ public class OpenAIService : IOpenAIService
         IValidationService validationService,
         IResponseParsingService parsingService,
         IPromptService promptService,
-        ISecretsService secretsService)
+        ISecretsService secretsService,
+        ICachingService cachingService,
+        IFallbackService fallbackService)
     {
         _config = config;
         _logger = logger;
@@ -32,8 +36,10 @@ public class OpenAIService : IOpenAIService
         _parsingService = parsingService;
         _promptService = promptService;
         _secretsService = secretsService;
+        _cachingService = cachingService;
+        _fallbackService = fallbackService;
 
-        _logger.LogInformation("OpenAI Service initialized with secure secrets management");
+        _logger.LogInformation("OpenAI Service initialized with secure secrets management, caching, and fallback support");
     }
 
     public async Task<OpenAIResponse> AnalyzeSymptomsAsync(string symptoms, string correlationId, CancellationToken cancellationToken = default)
@@ -59,6 +65,16 @@ public class OpenAIService : IOpenAIService
                     CorrelationId = correlationId,
                     ResponseTimeMs = (int)(DateTime.UtcNow - startTime).TotalMilliseconds
                 };
+            }
+
+            // Check cache for similar symptoms
+            var cacheKey = GenerateCacheKey(validationResult.SanitizedSymptoms);
+            var cachedResponse = await _cachingService.GetAsync<OpenAIResponse>(cacheKey);
+            if (cachedResponse != null)
+            {
+                _logger.LogInformation("Cache hit for symptoms analysis. CorrelationId: {CorrelationId}", correlationId);
+                cachedResponse.CorrelationId = correlationId;
+                return cachedResponse;
             }
 
             // Placeholder implementation - will be replaced with actual OpenAI integration in next commit
@@ -96,7 +112,7 @@ public class OpenAIService : IOpenAIService
                 };
             }
 
-            return new OpenAIResponse
+            var response = new OpenAIResponse
             {
                 IsSuccess = true,
                 Content = parsedResponse.PossibleConditions.Any()
@@ -108,10 +124,22 @@ public class OpenAIService : IOpenAIService
                 CorrelationId = correlationId,
                 CostUsd = 0.003m
             };
+
+            // Cache successful response
+            await _cachingService.SetAsync(cacheKey, response, TimeSpan.FromHours(24));
+
+            return response;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error in AI service. CorrelationId: {CorrelationId}", correlationId);
+
+            // Use fallback service when AI fails
+            if (_fallbackService.ShouldUseFallback(ex))
+            {
+                _logger.LogInformation("AI service failed, using fallback response. CorrelationId: {CorrelationId}", correlationId);
+                return _fallbackService.GetFallbackResponse(symptoms, correlationId);
+            }
 
             return new OpenAIResponse
             {
@@ -121,6 +149,15 @@ public class OpenAIService : IOpenAIService
                 ResponseTimeMs = (int)(DateTime.UtcNow - startTime).TotalMilliseconds
             };
         }
+    }
+
+    private string GenerateCacheKey(string symptoms)
+    {
+        // Create a normalized cache key from symptom keywords
+        var normalized = System.Text.RegularExpressions.Regex.Replace(
+            symptoms.ToLowerInvariant().Trim(),
+            @"\s+", "-");
+        return $"symptoms:{normalized}";
     }
 }
 
