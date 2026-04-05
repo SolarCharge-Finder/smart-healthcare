@@ -5,6 +5,52 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using StackExchange.Redis;
 
+// Load .env file for local development (if it exists)
+// Check multiple possible locations
+var envPaths = new[]
+{
+    Path.Combine(Directory.GetCurrentDirectory(), ".env"),
+    Path.Combine(AppContext.BaseDirectory, ".env"),
+    Path.Combine(AppContext.BaseDirectory, "../../../.env"),  // If running from bin/Debug
+};
+
+foreach (var envPath in envPaths)
+{
+    if (File.Exists(envPath))
+    {
+        Console.WriteLine($"Loading .env from: {envPath}");
+        foreach (var line in File.ReadAllLines(envPath))
+        {
+            // Skip empty lines and comments
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
+                continue;
+
+            var parts = line.Split('=', 2);
+            if (parts.Length == 2)
+            {
+                var key = parts[0].Trim();
+                var value = parts[1].Trim();
+                Environment.SetEnvironmentVariable(key, value);
+                Console.WriteLine($"  ✓ Set: {key}");
+            }
+        }
+        break;
+    }
+}
+
+// Verify API key is set
+var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+if (string.IsNullOrEmpty(apiKey))
+{
+    Console.WriteLine("⚠️  WARNING: OPENAI_API_KEY not found in .env or environment variables");
+    Console.WriteLine($"   Current directory: {Directory.GetCurrentDirectory()}");
+    Console.WriteLine($"   App base directory: {AppContext.BaseDirectory}");
+}
+else
+{
+    Console.WriteLine($"✓ OPENAI_API_KEY loaded ({apiKey.Substring(0, 10)}...)");
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Serilog
@@ -59,6 +105,9 @@ builder.Services.AddSingleton<IUrgencyClassificationService, UrgencyClassificati
 
 // Resilience Service (Circuit Breaker & Retry Policies)
 builder.Services.AddSingleton<IResilienceService, ResilienceService>();
+
+// Metrics Service (Prometheus)
+builder.Services.AddSingleton<IMetricsService, MetricsService>();
 
 // CORS
 builder.Services.AddCors(options =>
@@ -117,6 +166,12 @@ app.MapGet("/health/ready", async (AiDbContext db) =>
 {
     var canConnect = await db.Database.CanConnectAsync();
     return canConnect ? Results.Ok("ready") : Results.StatusCode(503);
+});
+
+// Prometheus metrics endpoint
+app.MapGet("/metrics", (IMetricsService metricsService) =>
+{
+    return Results.Text(metricsService.GetMetricsText(), "text/plain; version=0.0.4");
 });
 
 try
