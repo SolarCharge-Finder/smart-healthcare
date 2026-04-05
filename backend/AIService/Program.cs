@@ -28,6 +28,9 @@ builder.Services.AddDbContext<AiDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection")
     ));
 
+// Secrets Management Service (must be before OpenAI Service)
+builder.Services.AddSingleton<ISecretsService, SecretsService>();
+
 // OpenAI Service
 builder.Services.AddSingleton<IOpenAIService, OpenAIService>();
 

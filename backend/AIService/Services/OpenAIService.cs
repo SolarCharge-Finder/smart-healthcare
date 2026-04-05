@@ -16,19 +16,24 @@ public class OpenAIService : IOpenAIService
     private readonly IValidationService _validationService;
     private readonly IResponseParsingService _parsingService;
     private readonly IPromptService _promptService;
+    private readonly ISecretsService _secretsService;
 
     public OpenAIService(
         IConfiguration config,
         ILogger<OpenAIService> logger,
         IValidationService validationService,
         IResponseParsingService parsingService,
-        IPromptService promptService)
+        IPromptService promptService,
+        ISecretsService secretsService)
     {
         _config = config;
         _logger = logger;
         _validationService = validationService;
         _parsingService = parsingService;
         _promptService = promptService;
+        _secretsService = secretsService;
+
+        _logger.LogInformation("OpenAI Service initialized with secure secrets management");
     }
 
     public async Task<OpenAIResponse> AnalyzeSymptomsAsync(string symptoms, string correlationId, CancellationToken cancellationToken = default)
