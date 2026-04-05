@@ -1,4 +1,5 @@
 using AIService.Data;
+using AIService.Events;
 using AIService.Middleware;
 using AIService.Services;
 using Microsoft.EntityFrameworkCore;
@@ -95,6 +96,9 @@ catch (Exception ex)
 
 // Fallback Service
 builder.Services.AddSingleton<IFallbackService, FallbackService>();
+
+// Event Publisher (for microservices integration)
+builder.Services.AddSingleton<IEventPublisher, EventPublisher>();
 
 // OpenAI Service
 builder.Services.AddSingleton<IOpenAIService, OpenAIService>();

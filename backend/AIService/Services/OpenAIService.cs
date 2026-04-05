@@ -1,3 +1,4 @@
+using AIService.Events;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
@@ -19,6 +20,7 @@ public class OpenAIService : IOpenAIService
     private readonly ISecretsService _secretsService;
     private readonly ICachingService _cachingService;
     private readonly IFallbackService _fallbackService;
+    private readonly IEventPublisher _eventPublisher;
 
     public OpenAIService(
         IConfiguration config,
@@ -28,7 +30,8 @@ public class OpenAIService : IOpenAIService
         IPromptService promptService,
         ISecretsService secretsService,
         ICachingService cachingService,
-        IFallbackService fallbackService)
+        IFallbackService fallbackService,
+        IEventPublisher eventPublisher)
     {
         _config = config;
         _logger = logger;
@@ -38,8 +41,9 @@ public class OpenAIService : IOpenAIService
         _secretsService = secretsService;
         _cachingService = cachingService;
         _fallbackService = fallbackService;
+        _eventPublisher = eventPublisher;
 
-        _logger.LogInformation("OpenAI Service initialized with secure secrets management, caching, and fallback support");
+        _logger.LogInformation("OpenAI Service initialized with secure secrets management, caching, fallback support, and event publishing");
     }
 
     public async Task<OpenAIResponse> AnalyzeSymptomsAsync(string symptoms, string correlationId, CancellationToken cancellationToken = default)
@@ -74,6 +78,15 @@ public class OpenAIService : IOpenAIService
             {
                 _logger.LogInformation("Cache hit for symptoms analysis. CorrelationId: {CorrelationId}", correlationId);
                 cachedResponse.CorrelationId = correlationId;
+                
+                // Publish cache hit event
+                await _eventPublisher.PublishAnalysisCachedAsync(new()
+                {
+                    CorrelationId = correlationId,
+                    CacheKey = cacheKey,
+                    CachedAnalysis = cachedResponse.Content ?? "",
+                });
+                
                 return cachedResponse;
             }
 
@@ -128,6 +141,19 @@ public class OpenAIService : IOpenAIService
             // Cache successful response
             await _cachingService.SetAsync(cacheKey, response, TimeSpan.FromHours(24));
 
+            // Publish analysis completed event
+            await _eventPublisher.PublishAnalysisCompletedAsync(new()
+            {
+                CorrelationId = correlationId,
+                Symptoms = symptoms,
+                Analysis = response.Content ?? "",
+                TokensUsed = response.TokensUsed,
+                CostUsd = response.CostUsd,
+                ModelUsed = response.ModelUsed,
+                ResponseTimeMs = response.ResponseTimeMs,
+                Success = true
+            });
+
             return response;
         }
         catch (Exception ex)
@@ -138,7 +164,18 @@ public class OpenAIService : IOpenAIService
             if (_fallbackService.ShouldUseFallback(ex))
             {
                 _logger.LogInformation("AI service failed, using fallback response. CorrelationId: {CorrelationId}", correlationId);
-                return _fallbackService.GetFallbackResponse(symptoms, correlationId);
+                var fallbackResponse = _fallbackService.GetFallbackResponse(symptoms, correlationId);
+                
+                // Publish fallback event
+                await _eventPublisher.PublishAnalysisFallbackAsync(new()
+                {
+                    CorrelationId = correlationId,
+                    Symptoms = symptoms,
+                    FallbackAnalysis = fallbackResponse.Content ?? "",
+                    FailureReason = ex.Message
+                });
+                
+                return fallbackResponse;
             }
 
             return new OpenAIResponse
