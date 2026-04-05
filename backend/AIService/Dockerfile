@@ -3,12 +3,12 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 WORKDIR /src
 
 # Copy csproj and restore with cache
-COPY ["AIService/AIService.csproj", "AIService/"]
-RUN cd AIService && dotnet restore
+COPY "AIService.csproj" "./AIService.csproj"
+RUN dotnet restore
 
 # Copy everything and build in Release mode
-COPY AIService/ AIService/
-RUN cd AIService && dotnet publish -c Release -o /app/publish --no-restore
+COPY . .
+RUN dotnet publish -c Release -o /app/publish --no-restore
 
 # Runtime stage - optimized
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS runtime
