@@ -1,14 +1,14 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
-using System.Text.Encodings.Web;
 using System.Security.Claims;
+using System.Text.Encodings.Web;
 
 namespace PatientService.Tests;
 
 public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
-    private const string TestUserId = "11111111-1111-1111-1111-111111111111";
+    private static readonly string UserId = Guid.NewGuid().ToString();
 
     public TestAuthHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
@@ -23,7 +23,7 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
     {
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, TestUserId),
+            new Claim(ClaimTypes.NameIdentifier, UserId),
             new Claim(ClaimTypes.Email, "test@test.com"),
             new Claim(ClaimTypes.Role, "Admin")
         };

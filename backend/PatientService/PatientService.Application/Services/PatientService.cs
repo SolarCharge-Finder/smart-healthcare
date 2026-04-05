@@ -18,7 +18,9 @@ public class PatientServiceImplementation : IPatientService
         var existing = await _repo.GetByUserIdAsync(userId);
 
         if (existing != null)
-            throw new Exception("Patient profile already exists");
+        {
+            return existing.Id;
+        }
 
         var patient = new Patient
         {

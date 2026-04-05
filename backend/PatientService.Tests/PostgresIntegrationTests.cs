@@ -1,26 +1,25 @@
-using PatientService.Infrastructure.Data;
-using PatientService.Application.DTOs;
+using System.Net;
+using System.Net.Http.Json;
+using FluentAssertions;
+using Xunit;
 
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
+using PatientService.Application.DTOs;
+using PatientService.Infrastructure.Data;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Testcontainers.PostgreSql;
-using Xunit;
-
-using System.Net.Http.Json;
-using System.Linq;
 
 namespace PatientService.Tests;
 
-public class PostgresIntegrationTests : IAsyncLifetime
+public class PatientPostgresTests : IAsyncLifetime
 {
-    private PostgreSqlContainer _db = null!;
-    private HttpClient _client = null!;
-    private PostgreSqlTestingFactory _factory = null!;
+    private readonly PostgreSqlContainer _db;
+    private readonly HttpClient _client;
+    private readonly PostgreSqlTestingFactory _factory;
 
-    public async Task InitializeAsync()
+    public PatientPostgresTests()
     {
         _db = new PostgreSqlBuilder("postgres:15")
             .WithDatabase("patientdb")
@@ -28,12 +27,14 @@ public class PostgresIntegrationTests : IAsyncLifetime
             .WithPassword("test")
             .Build();
 
-        await _db.StartAsync();
-
         _factory = new PostgreSqlTestingFactory(_db);
         _client = _factory.CreateClient();
+    }
 
-        // apply migrations
+    public async Task InitializeAsync()
+    {
+        await _db.StartAsync();
+
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PatientDbContext>();
         db.Database.Migrate();
@@ -46,83 +47,103 @@ public class PostgresIntegrationTests : IAsyncLifetime
         await _db.DisposeAsync();
     }
 
-    [Fact]
-    public async Task CreatePatient_Should_Work_With_Postgres()
+    private async Task EnsurePatientExists()
     {
-        var request = new CreatePatientRequest
+        var response = await _client.PostAsJsonAsync("/patient", new CreatePatientRequest
         {
-            FullName = "Postgres Patient",
-            Email = "pg@test.com"
-        };
+            FullName = "Test User",
+            Email = "test@test.com"
+        });
 
-        var response = await _client.PostAsJsonAsync("/patients", request);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        response.EnsureSuccessStatusCode();
+        var check = await _client.GetAsync("/patient/me");
+        check.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]
-    public async Task GetMe_Should_Return_Data_From_Postgres()
+    public async Task Create_Should_Work()
     {
-        await _client.PostAsJsonAsync("/patients", new CreatePatientRequest
+        var response = await _client.PostAsJsonAsync("/patient", new CreatePatientRequest
         {
-            FullName = "Patient PG",
-            Email = "userpg@test.com"
+            FullName = "Create Test",
+            Email = "create@test.com"
         });
 
-        var response = await _client.GetAsync("/patients/me");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task GetMe_Should_Return_Profile()
+    {
+        await EnsurePatientExists();
+
+        var response = await _client.GetAsync("/patient/me");
 
         response.EnsureSuccessStatusCode();
 
         var patient = await response.Content.ReadFromJsonAsync<PatientResponse>();
 
-        Assert.NotNull(patient);
-        Assert.Equal("Patient PG", patient!.FullName);
+        patient.Should().NotBeNull();
+        patient!.FullName.Should().Be("Test User");
     }
 
     [Fact]
-    public async Task DeactivatePatient_Should_Reflect_In_Postgres()
+    public async Task Update_Should_Work()
     {
-        await _client.PostAsJsonAsync("/patients", new CreatePatientRequest
+        await EnsurePatientExists();
+
+        var update = await _client.PutAsJsonAsync("/patient", new UpdatePatientRequest
         {
-            FullName = "Deactivate PG",
-            Email = "deactivate@test.com"
+            FullName = "Updated Name"
         });
 
-        await _client.PatchAsync("/patients/me/deactivate", null);
+        update.EnsureSuccessStatusCode();
 
-        var response = await _client.GetAsync("/patients/me");
+        var patient = await _client.GetFromJsonAsync<PatientResponse>("/patient/me");
 
-        Assert.Equal(System.Net.HttpStatusCode.NotFound, response.StatusCode);
+        patient!.FullName.Should().Be("Updated Name");
     }
 
-    // Factory for PostgreSQL
-    public class PostgreSqlTestingFactory : TestingFactory
+    [Fact]
+    public async Task Deactivate_Should_Work()
     {
-        private readonly PostgreSqlContainer _db;
+        await EnsurePatientExists();
 
-        public PostgreSqlTestingFactory(PostgreSqlContainer db)
-        {
-            _db = db;
-        }
+        var deactivate = await _client.PatchAsync("/patient/me/deactivate", null);
+        deactivate.EnsureSuccessStatusCode();
 
-        protected override void ConfigureWebHost(IWebHostBuilder builder)
-        {
-            base.ConfigureWebHost(builder);
+        var response = await _client.GetAsync("/patient/me");
 
-            builder.UseEnvironment("Testing");
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
 
-            builder.ConfigureServices(services =>
-            {
-                // replace DbContext
-                var descriptor = services.FirstOrDefault(
-                    d => d.ServiceType == typeof(DbContextOptions<PatientDbContext>));
+    [Fact]
+    public async Task GetAll_Should_Work()
+    {
+        await EnsurePatientExists();
 
-                if (descriptor != null)
-                    services.Remove(descriptor);
+        var response = await _client.GetAsync("/patient");
+        response.EnsureSuccessStatusCode();
 
-                services.AddDbContext<PatientDbContext>(options =>
-                    options.UseNpgsql(_db.GetConnectionString()));
-            });
-        }
+        var patients = await response.Content.ReadFromJsonAsync<List<PatientResponse>>();
+
+        patients.Should().NotBeNull();
+        patients!.Count.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public async Task Delete_Should_Work()
+    {
+        await EnsurePatientExists();
+
+        var patients = await _client.GetFromJsonAsync<List<PatientResponse>>("/patient");
+        var id = patients!.First().Id;
+
+        var delete = await _client.DeleteAsync($"/patient/{id}");
+        delete.EnsureSuccessStatusCode();
+
+        var response = await _client.GetAsync($"/patient/{id}");
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 }
