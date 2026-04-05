@@ -54,6 +54,9 @@ builder.Services.AddScoped<IConfidenceScoringService, ConfidenceScoringService>(
 // Urgency Classification Service
 builder.Services.AddSingleton<IUrgencyClassificationService, UrgencyClassificationService>();
 
+// Resilience Service (Circuit Breaker & Retry Policies)
+builder.Services.AddSingleton<IResilienceService, ResilienceService>();
+
 // CORS
 builder.Services.AddCors(options =>
 {
