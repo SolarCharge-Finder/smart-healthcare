@@ -15,6 +15,7 @@ function PaymentPageContent() {
   const [appointmentId, setAppointmentId] = useState<string>("");
   const [amount, setAmount] = useState<number>(0);
   const [currency, setCurrency] = useState<string>("lkr");
+  const [paymentId, setPaymentId] = useState<string>("");
   const { data: config, isLoading: configLoading, error: configError } = useStripeConfig();
   const [stripePromise, setStripePromise] = useState(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -73,6 +74,7 @@ function PaymentPageContent() {
     setClientSecret(null);
     setAmount(0);
     setCurrency("lkr");
+    setPaymentId("");
     setInitInfo(null);
     setInitError(null);
     setIsInitializing(true);
@@ -89,6 +91,7 @@ function PaymentPageContent() {
           setInitError("Payment initialization failed: missing client secret.");
           setClientSecret(null);
         } else {
+          setPaymentId(response.paymentId);
           setClientSecret(response.clientSecret);
           setAmount(response.amount);
           setCurrency(response.currency);
@@ -186,6 +189,7 @@ function PaymentPageContent() {
         >
           <PaymentForm
             appointmentId={appointmentId}
+            paymentId={paymentId}
             amount={amount}
             currency={currency}
           />

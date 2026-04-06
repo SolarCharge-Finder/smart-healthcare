@@ -6,6 +6,8 @@ using Serilog;
 using Serilog.Formatting.Json;
 using Serilog.Context;
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("TelemedicineService.Tests")]
+
 var builder = WebApplication.CreateBuilder(args);
 
 var serviceName = builder.Configuration["ServiceName"] ?? "telemedicine-service";
@@ -26,7 +28,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // CORS
-var frontendOrigin = builder.Configuration["Frontend__Origin"];
+var frontendOrigin = builder.Configuration["Frontend:Origin"];
 var enableCors =
     builder.Environment.IsDevelopment() ||
     !string.IsNullOrWhiteSpace(frontendOrigin);
@@ -35,19 +37,26 @@ if (enableCors)
 {
     builder.Services.AddCors(options =>
     {
-        options.AddPolicy("frontend", policy =>
+        options.AddPolicy("FrontendPolicy", policy =>
         {
-            if (builder.Environment.IsDevelopment() && string.IsNullOrWhiteSpace(frontendOrigin))
+            var allowedOrigins = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                // Allow common local frontend dev ports
-                policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:3002")
-                    .AllowAnyHeader()
-                    .AllowAnyMethod();
-            }
-            else if (!string.IsNullOrWhiteSpace(frontendOrigin))
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "http://localhost:3001",
+                "http://127.0.0.1:3001",
+                "http://localhost:3002",
+                "http://127.0.0.1:3002"
+            };
+
+            if (!string.IsNullOrWhiteSpace(frontendOrigin))
             {
-                policy.WithOrigins(frontendOrigin).AllowAnyHeader().AllowAnyMethod();
+                allowedOrigins.Add(frontendOrigin);
             }
+
+            policy.WithOrigins(allowedOrigins.ToArray())
+                .AllowAnyHeader()
+                .AllowAnyMethod();
         });
     });
 }
@@ -101,7 +110,8 @@ app.UseSwaggerUI();
 
 if (enableCors)
 {
-    app.UseCors("frontend");
+    app.UseCors("FrontendPolicy");
+    // app.UseCors("frontend");
 }
 
 app.UseHttpsRedirection();
@@ -217,3 +227,6 @@ async Task<IResult> GetTelemedicineSession(
 }
 
 app.Run();
+
+// Make Program class accessible for integration tests using WebApplicationFactory
+internal partial class Program { }

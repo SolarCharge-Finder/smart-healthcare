@@ -9,6 +9,8 @@ using Serilog.Formatting.Json;
 using Stripe;
 using System.Text.Json;
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("PaymentService.Tests")]
+
 var builder = WebApplication.CreateBuilder(args);
 
 var serviceName =
@@ -222,6 +224,7 @@ async (HttpRequest httpRequest, IPaymentService paymentService, ILogger<Program>
 
         return Results.Ok(new CreatePaymentIntentResponse
         {
+            PaymentId = payment.Id,
             PaymentIntentId = payment.StripePaymentIntentId,
             ClientSecret = payment.ClientSecret,
             Amount = payment.Amount,
@@ -444,3 +447,6 @@ static object ToPaymentReadResponse(Payment payment)
 }
 
 app.Run();
+
+// Make Program class accessible for integration tests using WebApplicationFactory
+internal partial class Program { }

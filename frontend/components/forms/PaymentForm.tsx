@@ -11,22 +11,26 @@ import Card from "../ui/Card";
 import Button from "../ui/Button";
 import Alert from "../ui/Alert";
 import Input from "../ui/Input";
+import { useConfirmPayment } from "../../hooks/usePayment";
 
 
 interface PaymentFormProps {
   appointmentId: string;
+  paymentId: string;
   amount: number;
   currency: string;
 }
 
 export default function PaymentForm({
   appointmentId,
+  paymentId,
   amount,
   currency,
 }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
+  const { mutateAsync: confirmPaymentAsync } = useConfirmPayment();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<{
@@ -88,12 +92,23 @@ export default function PaymentForm({
         console.log("Payment intent status:", paymentIntent.status);
         
         if (paymentIntent.status === "succeeded") {
+          if (paymentId) {
+            try {
+              await confirmPaymentAsync({
+                paymentId,
+                payload: { isSuccess: true },
+              });
+            } catch (confirmError) {
+              console.error("Failed to confirm payment in backend:", confirmError);
+            }
+          }
+
           setStatus({
             type: "success",
             message: "✅ Payment successful! Redirecting to your video consultation...",
           });
           setEmail("");
-          // Give the payment webhook a short moment to confirm the appointment before redirecting.
+          // Give the backend confirmation call a short moment to settle before redirecting.
           setTimeout(() => {
             router.push(`/consultation?appointmentId=${appointmentId}`);
           }, 3000);
