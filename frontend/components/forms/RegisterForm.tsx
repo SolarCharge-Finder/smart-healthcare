@@ -5,18 +5,35 @@ import Card from "../ui/Card";
 import Input from "../ui/Input";
 import Button from "../ui/Button";
 import Alert from "../ui/Alert";
+import { useAuth } from "../../modules/auth/useAuth";
 
 export default function RegisterForm() {
+  const { register } = useAuth();
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [success, setSuccess] = useState(false);
 
-  const onSubmit = (event: FormEvent) => {
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    const user = { name, email };
-    localStorage.setItem("smarthealth:user", JSON.stringify(user));
-    setSuccess(true);
+    setError(null);
+    setSuccess(false);
+
+    try {
+      await register(name, email, password);
+      setSuccess(true);
+
+      // clear form
+      setName("");
+      setEmail("");
+      setPassword("");
+    } catch (err: any) {
+      console.error(err);
+      setError("Registration failed. Try again.");
+    }
   };
 
   return (
@@ -43,9 +60,11 @@ export default function RegisterForm() {
           required
         />
 
-        {success ? (
-          <Alert type="success">Mock account created successfully.</Alert>
-        ) : null}
+        {success && (
+          <Alert type="success">Account created successfully.</Alert>
+        )}
+
+        {error && <Alert type="error">{error}</Alert>}
 
         <Button type="submit">Register</Button>
       </form>
