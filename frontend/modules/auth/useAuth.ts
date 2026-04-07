@@ -1,11 +1,14 @@
-import { loginApi, registerApi } from "./api";
+"use client";
+
+import { loginApi, registerApi } from "./authApi";
+import { authStorage } from "./authStorage";
 
 export const useAuth = () => {
   const login = async (email: string, password: string) => {
     const data = await loginApi(email, password);
 
-    // store token
-    localStorage.setItem("token", data.token);
+    // store data in localStorage
+    authStorage.setAuth(data);
 
     return data;
   };
@@ -17,7 +20,7 @@ export const useAuth = () => {
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
+    authStorage.clear();
   };
 
   return {
