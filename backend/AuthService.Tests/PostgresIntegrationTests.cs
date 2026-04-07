@@ -46,9 +46,10 @@ public class PostgresIntegrationTests : IAsyncLifetime
     {
         var request = new
         {
+            name = "PG User",
             email = "pg@test.com",
             password = "123456",
-            role = "Patient"
+            role = "Undefined"
         };
 
         var response = await _client.PostAsJsonAsync("/auth/register", request);
@@ -56,7 +57,7 @@ public class PostgresIntegrationTests : IAsyncLifetime
         response.EnsureSuccessStatusCode();
     }
 
-    // 🔧 custom factory
+    // custom factory
     public class TestingFactory : WebApplicationFactory<Program>
     {
         private readonly PostgreSqlContainer _db;

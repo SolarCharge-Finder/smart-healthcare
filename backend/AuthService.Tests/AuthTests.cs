@@ -19,9 +19,10 @@ public class AuthTests : IClassFixture<TestingFactory>
     {
         var request = new
         {
+            name = "Test User",
             email = "test@test.com",
             password = "123456",
-            role = "Patient"
+            role = "Undefined"
         };
 
         var response = await _client.PostAsJsonAsync("/auth/register", request);
@@ -36,9 +37,10 @@ public class AuthTests : IClassFixture<TestingFactory>
     {
         var request = new
         {
+            name = "Duplicate User",
             email = "duplicate@test.com",
             password = "123456",
-            role = "Patient"
+            role = "Undefined"
         };
 
         await _client.PostAsJsonAsync("/auth/register", request);
@@ -52,9 +54,10 @@ public class AuthTests : IClassFixture<TestingFactory>
     {
         var register = new
         {
+            name = "Login User",
             email = "login@test.com",
             password = "123456",
-            role = "Patient"
+            role = "Undefined"
         };
 
         await _client.PostAsJsonAsync("/auth/register", register);
@@ -80,9 +83,10 @@ public class AuthTests : IClassFixture<TestingFactory>
     {
         var register = new
         {
+            name = "Wrong Pass User",
             email = "wrongpass@test.com",
             password = "123456",
-            role = "Patient"
+            role = "Undefined"
         };
 
         await _client.PostAsJsonAsync("/auth/register", register);

@@ -23,12 +23,16 @@ public class AuthService : IAuthService
         if (exists)
             throw new InvalidOperationException("User already exists");
 
+        if (request.Role == UserRole.Doctor)
+            throw new InvalidOperationException("Cannot self-register as doctor");
+
         if (request.Role == UserRole.Admin)
             throw new InvalidOperationException("Cannot self-register as admin");
 
         var user = new User
         {
             Id = Guid.NewGuid(),
+            Name = request.Name,
             Email = request.Email.ToLower().Trim(),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Role = request.Role,
