@@ -10,6 +10,7 @@ using Microsoft.OpenApi.Models;
 
 using System.Text;
 using System.Text.Json.Serialization;
+using Auth.Infrastructure.Services;
 
 namespace Auth.API.Extensions;
 
@@ -38,6 +39,8 @@ public static class ServiceExtensions
             options.UseNpgsql(connectionString));
 
         services.AddScoped<IUserRepository, UserRepository>();
+
+        services.AddScoped<ITokenService, TokenService>();
 
         return services;
     }
