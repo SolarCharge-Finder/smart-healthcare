@@ -38,8 +38,8 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var token = await _authService.Login(request);
-            return Ok(new { token });
+            var response = await _authService.Login(request);
+            return Ok(response);
         }
         catch (UnauthorizedAccessException)
         {

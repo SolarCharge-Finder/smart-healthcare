@@ -44,7 +44,7 @@ public class AuthService : IAuthService
         await _repo.SaveChangesAsync();
     }
 
-    public async Task<string?> Login(LoginRequest request)
+    public async Task<LoginResponse?> Login(LoginRequest request)
     {
         var email = request.Email.ToLower().Trim();
 
@@ -56,6 +56,16 @@ public class AuthService : IAuthService
 
         if (!valid) throw new UnauthorizedAccessException("Invalid credentials");
 
-        return _tokenService.GenerateToken(user);
+        var token = _tokenService.GenerateToken(user);
+
+        var response = new LoginResponse
+        {
+            Token = token,
+            Name = user.Name,
+            Email = user.Email,
+            Role = user.Role.ToString()
+        };
+
+        return response;
     }
 }
