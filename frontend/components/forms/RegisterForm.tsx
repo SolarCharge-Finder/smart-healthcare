@@ -5,11 +5,10 @@ import Card from "../ui/Card";
 import Input from "../ui/Input";
 import Button from "../ui/Button";
 import Alert from "../ui/Alert";
-import { useAuth } from "../../modules/auth/useAuth";
+
+import { registerApi } from "../../modules/auth/authApi";
 
 export default function RegisterForm() {
-  const { register } = useAuth();
-
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,7 +22,8 @@ export default function RegisterForm() {
     setSuccess(false);
 
     try {
-      await register(name, email, password);
+      await registerApi({ name, email, password });
+
       setSuccess(true);
 
       // clear form
@@ -61,7 +61,9 @@ export default function RegisterForm() {
         />
 
         {success && (
-          <Alert type="success">Account created successfully.</Alert>
+          <Alert type="success">
+            Account created successfully. You can now log in.
+          </Alert>
         )}
 
         {error && <Alert type="error">{error}</Alert>}

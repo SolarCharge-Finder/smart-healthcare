@@ -6,10 +6,12 @@ import Card from "../ui/Card";
 import Input from "../ui/Input";
 import Button from "../ui/Button";
 import Alert from "../ui/Alert";
-import { useAuth } from "../../modules/auth/useAuth";
+
+import { loginApi } from "../../modules/auth/authApi";
+import { useAuthContext } from "../../modules/auth/AuthContext";
 
 export default function LoginForm() {
-  const { login } = useAuth();
+  const { login } = useAuthContext();
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -24,7 +26,9 @@ export default function LoginForm() {
     setMessage(null);
 
     try {
-      const data = await login(email, password);
+      const data = await loginApi(email, password);
+
+      login(data); // update auth context with user data
 
       setMessage("Login successful.");
 
