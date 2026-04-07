@@ -1,39 +1,16 @@
 using Auth.API.Extensions;
 using Auth.Infrastructure.Data;
-
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json.Serialization;
-using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Controllers
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.Converters.Add(
-            new JsonStringEnumConverter());
-    });
+builder.Services
+    .AddApplicationServices() // register services 
+    .AddInfrastructureServices(builder.Configuration) // for accessing JWT in services
+    .AddApiServices() // controllers + swagger
+    .AddJwtAuth(builder.Configuration); // JWT auth
 
-// Swagger
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-// DB
-var connectionString = $"Host={builder.Configuration["DB_HOST"] ?? "localhost"};" +
-                       $"Port={builder.Configuration["DB_PORT"] ?? "5432"};" +
-                       $"Database={builder.Configuration["DB_NAME"] ?? "authdb"};" +
-                       $"Username={builder.Configuration["DB_USER"] ?? "change-me"};" +
-                       $"Password={builder.Configuration["DB_PASSWORD"] ?? "change-me"}";
-
-builder.Services.AddDbContext<AuthDbContext>(options =>
-    options.UseNpgsql(connectionString));
-
-// Clean DI
-builder.Services.AddApplicationServices();
-builder.Services.AddJwtAuth(builder.Configuration);
-
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(); // authorization
 
 var app = builder.Build();
 
@@ -46,24 +23,15 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Migration failed: {ex.Message}");
+        Console.WriteLine("DB migration failed: " + ex.Message);
     }
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-    app.UseHttpsRedirection();
-}
+// middleware
+app.UseApiMiddleware();
 
-app.UseHttpMetrics();
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapMetrics("/metrics/prometheus");
-app.MapControllers();
+// health check
+app.MapGet("/health", () => Results.Ok("Healthy"));
 
 app.Run();
-
 public partial class Program { }
