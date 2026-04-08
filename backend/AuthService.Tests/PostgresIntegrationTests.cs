@@ -60,7 +60,7 @@ public class PostgresIntegrationTests : IAsyncLifetime
 
         var token = FakeEmailService.LastSentToken;
 
-        await _client.PostAsJsonAsync("/auth/verify", new { token } );
+        await _client.PostAsJsonAsync("/auth/verify", new { token });
 
         response.EnsureSuccessStatusCode();
     }
