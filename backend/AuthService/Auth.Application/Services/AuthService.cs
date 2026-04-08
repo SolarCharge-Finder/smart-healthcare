@@ -23,13 +23,13 @@ public class AuthService : IAuthService
 
     public async Task Register(RegisterRequest request)
     {
-        var email = request.Email.ToLower().Trim(); 
+        var email = request.Email.ToLower().Trim();
 
         var recent = await _repo.GetRecentPendingByEmailAsync(email);
 
         if (recent != null && recent.ExpiresAt > DateTime.UtcNow)
             throw new InvalidOperationException("A verification email has already been sent to this address. Please check your email or wait before trying again.");
-        
+
         var exists = await _repo.ExistsByEmailAsync(email); //fist check if user already exists
 
         if (exists)
@@ -76,7 +76,7 @@ public class AuthService : IAuthService
         var pending = await _repo.GetPendingByTokenAsync(hashVerificationToken);
 
         if (pending == null)
-            return; 
+            return;
 
         if (pending.ExpiresAt < DateTime.UtcNow)
         {

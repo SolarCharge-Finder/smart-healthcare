@@ -52,7 +52,7 @@ public class UserRepository : IUserRepository
     {
         await _context.Users.AddAsync(user);
     }
-    
+
     // pending user
     public async Task<PendingUser?> GetPendingByEmailAsync(string email)
     {
