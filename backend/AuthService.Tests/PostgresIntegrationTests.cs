@@ -6,6 +6,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
 using Xunit;
 using System.Net.Http.Json;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+
+
+using Auth.Application.Interfaces;
 
 namespace AuthService.Tests;
 
@@ -54,6 +58,10 @@ public class PostgresIntegrationTests : IAsyncLifetime
 
         var response = await _client.PostAsJsonAsync("/auth/register", request);
 
+        var token = FakeEmailService.LastSentToken;
+
+        await _client.PostAsJsonAsync("/auth/verify", new { token } );
+
         response.EnsureSuccessStatusCode();
     }
 
@@ -82,6 +90,9 @@ public class PostgresIntegrationTests : IAsyncLifetime
 
                 services.AddDbContext<AuthDbContext>(options =>
                     options.UseNpgsql(_db.GetConnectionString()));
+
+                services.RemoveAll<IEmailService>();
+                services.AddScoped<IEmailService, FakeEmailService>();
             });
         }
     }
