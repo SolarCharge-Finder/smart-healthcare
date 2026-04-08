@@ -62,6 +62,10 @@ public class AuthTests : IClassFixture<TestingFactory>
 
         await _client.PostAsJsonAsync("/auth/register", register);
 
+        var token = FakeEmailService.LastSentToken;
+
+        await _client.PostAsJsonAsync("/auth/verify", new { token });
+
         var login = new
         {
             email = "login@test.com",

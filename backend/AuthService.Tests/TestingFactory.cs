@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+
+using Auth.Application.Interfaces;
 
 namespace AuthService.Tests;
 
@@ -23,6 +26,9 @@ public class TestingFactory : WebApplicationFactory<Program>
 
             services.AddDbContext<AuthDbContext>(options =>
                 options.UseInMemoryDatabase("auth-tests"));
+
+            services.RemoveAll<IEmailService>();
+            services.AddScoped<IEmailService, FakeEmailService>();
         });
     }
 }

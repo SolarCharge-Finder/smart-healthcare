@@ -1,6 +1,6 @@
 "use client";
 
-import { loginApi, registerApi } from "./authApi";
+import { loginApi, registerApi, verifyApi } from "./authApi";
 import { authStorage } from "./authStorage";
 
 export const useAuth = () => {
@@ -19,6 +19,11 @@ export const useAuth = () => {
     return data;
   };
 
+  const verify = async (token: string) => {
+    const data = await verifyApi(token);
+    return data;
+  }
+
   const logout = () => {
     authStorage.clear();
   };
@@ -26,6 +31,7 @@ export const useAuth = () => {
   return {
     login,
     register,
+    verify,
     logout,
   };
 };
