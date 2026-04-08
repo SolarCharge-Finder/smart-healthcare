@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/template",
+  "author": "adeesha",
+  "classifications": ["Web", "API", "Microservice"],
+  "identity": "SmartHealthcare.ApiTemplate",
+  "name": "Smart Healthcare API Template",
+  "shortName": "smartapi",
+  "sourceName": "SmartService",
+  "preferNameDirectory": false,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "symbols": {
+    "ServiceName": {
+      "type": "parameter",
+      "datatype": "string",
+      "defaultValue": "MyService"
+    }
+  }
+}

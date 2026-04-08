@@ -6,3 +6,5 @@ data:
   init.sql: |
     CREATE DATABASE authdb;
     CREATE DATABASE paymentdb;
+    CREATE DATABASE doctordb;
+    CREATE DATABASE admindb;
