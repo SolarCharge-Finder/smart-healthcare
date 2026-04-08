@@ -1,10 +1,10 @@
 namespace Auth.Application.Interfaces;
 
 using Auth.Application.DTOs;
-using Auth.Domain.Entities;
 
 public interface IAuthService
 {
     Task Register(RegisterRequest request);
+    Task Verify(string token);
     Task<LoginResponse?> Login(LoginRequest request);
 }

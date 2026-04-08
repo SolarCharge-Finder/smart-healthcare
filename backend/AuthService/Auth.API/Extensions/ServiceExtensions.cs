@@ -42,6 +42,10 @@ public static class ServiceExtensions
 
         services.AddScoped<ITokenService, TokenService>();
 
+        services.AddScoped<IEmailService, EmailService>();
+
+        services.AddScoped<IVerificationService, VerificationService>();
+
         return services;
     }
 
@@ -104,7 +108,7 @@ public static class ServiceExtensions
     // Auth setup
     public static IServiceCollection AddJwtAuth(this IServiceCollection services, IConfiguration config)
     {
-        var key = config["Jwt:Key"]!;
+        var key = config["Jwt:Key"] ?? throw new Exception("JWT key not configured");
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
