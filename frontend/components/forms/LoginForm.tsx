@@ -1,26 +1,46 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import Card from "../ui/Card";
 import Input from "../ui/Input";
 import Button from "../ui/Button";
 import Alert from "../ui/Alert";
 
+import { loginApi } from "../../modules/auth/authApi";
+import { useAuthContext } from "../../modules/auth/AuthContext";
+
 export default function LoginForm() {
+  const { login } = useAuthContext();
+  const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const onSubmit = (event: FormEvent) => {
+  const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    const userJson = localStorage.getItem("smarthealth:user");
-    const user = userJson ? JSON.parse(userJson) : null;
+    setError(null);
+    setMessage(null);
 
-    if (user && user.email === email) {
-      localStorage.setItem("smarthealth:session", "active");
-      setMessage("Mock login successful.");
-    } else {
-      setMessage("User not found. Register first.");
+    try {
+      const data = await loginApi(email, password);
+
+      login(data); // update auth context with user data
+
+      setMessage("Login successful.");
+
+      // redirect based on role - for now just go to home
+      // if (data.role === "Admin") router.push("/admin");
+      // else if (data.role === "Doctor") router.push("/doctor");
+      // else router.push("/patient"); - i mean this will prolly just be normal home ig so delete this later
+
+      router.push("/"); // temporary redirect to home after login (role based routing later maybe)
+    } catch (err: any) {
+      console.error(err);
+      setError("Invalid email or password.");
     }
   };
 
@@ -42,7 +62,8 @@ export default function LoginForm() {
           required
         />
 
-        {message ? <Alert type="info">{message}</Alert> : null}
+        {message && <Alert type="success">{message}</Alert>}
+        {error && <Alert type="error">{error}</Alert>}
 
         <Button type="submit">Login</Button>
       </form>

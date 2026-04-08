@@ -23,12 +23,16 @@ public class AuthService : IAuthService
         if (exists)
             throw new InvalidOperationException("User already exists");
 
+        if (request.Role == UserRole.Doctor)
+            throw new InvalidOperationException("Cannot self-register as doctor");
+
         if (request.Role == UserRole.Admin)
             throw new InvalidOperationException("Cannot self-register as admin");
 
         var user = new User
         {
             Id = Guid.NewGuid(),
+            Name = request.Name,
             Email = request.Email.ToLower().Trim(),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Role = request.Role,
@@ -40,7 +44,7 @@ public class AuthService : IAuthService
         await _repo.SaveChangesAsync();
     }
 
-    public async Task<string?> Login(LoginRequest request)
+    public async Task<LoginResponse?> Login(LoginRequest request)
     {
         var email = request.Email.ToLower().Trim();
 
@@ -52,6 +56,16 @@ public class AuthService : IAuthService
 
         if (!valid) throw new UnauthorizedAccessException("Invalid credentials");
 
-        return _tokenService.GenerateToken(user);
+        var token = _tokenService.GenerateToken(user);
+
+        var response = new LoginResponse
+        {
+            Token = token,
+            Name = user.Name,
+            Email = user.Email,
+            Role = user.Role.ToString()
+        };
+
+        return response;
     }
 }
