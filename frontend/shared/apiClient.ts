@@ -1,3 +1,5 @@
+// apiClient.ts for authentication-related API calls, with token handling (adeesha)
+
 import axios from "axios";
 
 const apiClient = axios.create({

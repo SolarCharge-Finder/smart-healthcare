@@ -13,11 +13,16 @@ export default function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
+
+    if (loading) return; // prevent multiple submissions
+
+    setLoading(true);
     setError(null);
     setSuccess(false);
 
@@ -33,6 +38,8 @@ export default function RegisterForm() {
     } catch (err: any) {
       console.error(err);
       setError("Registration failed. Try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -62,13 +69,15 @@ export default function RegisterForm() {
 
         {success && (
           <Alert type="success">
-            Account created successfully. You can now log in.
+            Account created. Please check your email to verify. 
           </Alert>
         )}
 
         {error && <Alert type="error">{error}</Alert>}
 
-        <Button type="submit">Register</Button>
+        <Button type="submit" disabled={loading}>
+          {loading ? "Registering..." : "Register"}
+        </Button>
       </form>
     </Card>
   );

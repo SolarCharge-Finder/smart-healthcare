@@ -19,3 +19,8 @@ export const registerApi = async (
   const res = await apiClient.post("/auth/register", data);
   return res.data;
 };
+
+export const verifyApi = async (token: string): Promise<any> => {
+  const res = await apiClient.post("/auth/verify", { token });
+  return res.data;
+};
