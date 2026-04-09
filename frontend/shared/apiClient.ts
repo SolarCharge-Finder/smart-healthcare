@@ -3,7 +3,7 @@
 import axios from "axios";
 
 const apiClient = axios.create({
-  baseURL: "http://localhost:30001", // gateway URL
+  baseURL: process.env.NEXT_PUBLIC_AUTH_API_URL || "http://localhost:30001"
 });
 
 apiClient.interceptors.request.use((config) => {
