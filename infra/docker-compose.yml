@@ -57,6 +57,39 @@ services:
     ports:
       - "5001:8080"
 
+  patient-service: 
+    build: ../backend/PatientService
+    container_name: sh-patient
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=patientdb;Username=postgres;Password=admin
+    ports:
+      - "5002:8080"
+  
+  doctor-service: 
+    build: ../backend/DoctorService
+    container_name: sh-doctor
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=doctordb;Username=postgres;Password=admin
+    ports:
+      - "5003:8080"
+
+  admin-service: 
+    build: ../backend/AdminService
+    container_name: sh-admin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=admindb;Username=postgres;Password=admin
+    ports:
+      - "5004:8080"
+
   appointment-service:
     build: ../backend/AppointmentService
     container_name: sh-appointment
