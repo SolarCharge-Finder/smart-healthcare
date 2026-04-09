@@ -2,8 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Auth.Application.DTOs;
 
-public class VerifyRequest
+public class ForgotPasswordRequest
 {
     [Required]
-    public string Token { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
 }

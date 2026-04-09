@@ -1,12 +1,17 @@
 namespace Auth.Application.DTOs;
 
 using Auth.Domain.Enums;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 public class RegisterRequest
 {
     public string Name { get; set; } = "";
+
+    [Required]
     public string Email { get; set; } = "";
+    [Required]
+    [MinLength(6)]
     public string Password { get; set; } = "";
 
     [JsonConverter(typeof(JsonStringEnumConverter))]

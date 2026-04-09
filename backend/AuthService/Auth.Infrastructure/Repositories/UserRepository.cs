@@ -42,6 +42,12 @@ public class UserRepository : IUserRepository
         return await _context.Users.AnyAsync(u => u.Email == email);
     }
 
+    public async Task<User?> GetByIdAsync(Guid userId)
+    {
+        return await _context.Users
+            .FirstOrDefaultAsync(u => u.Id == userId);
+    }
+
     public async Task<User?> GetByEmailAsync(string email)
     {
         return await _context.Users
@@ -64,6 +70,12 @@ public class UserRepository : IUserRepository
     {
         return await _context.PendingUsers
             .FirstOrDefaultAsync(p => p.VerificationToken == token);
+    }
+
+    public async Task<User?> GetByPasswordResetTokenAsync(string token)
+    {
+        return await _context.Users
+            .FirstOrDefaultAsync(u => u.PasswordResetToken == token);
     }
 
     public async Task<PendingUser?> GetRecentPendingByEmailAsync(string email)

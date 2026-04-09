@@ -70,7 +70,8 @@ public class AuthService : IAuthService
 
     public async Task Verify(string token)
     {
-        var hashVerificationToken = TokenHasher.Hash(token);
+        var decodedToken = Uri.UnescapeDataString(token);
+        var hashVerificationToken = TokenHasher.Hash(decodedToken);
 
         // find the pending user associated with this token
         var pending = await _repo.GetPendingByTokenAsync(hashVerificationToken);
@@ -136,5 +137,50 @@ public class AuthService : IAuthService
         };
 
         return response;
+    }
+
+    public async Task ForgotPassword(ForgotPasswordRequest request)
+    {
+        var email = request.Email.ToLower().Trim();
+
+        var user = await _repo.GetByEmailAsync(email);
+
+        if (user == null) return; // don't reveal whether email exists
+
+        var resetToken = _verificationService.GenerateVerificationToken();
+        var hashResetToken = TokenHasher.Hash(resetToken);
+
+        user.PasswordResetToken = hashResetToken;
+        user.PasswordResetExpiresAt = DateTime.UtcNow.AddMinutes(15); // token valid for 15 minutes
+
+        await _repo.SaveChangesAsync();
+
+        await _emailService.SendPasswordResetEmail(email, resetToken);
+    }
+
+    public async Task ResetPassword(ResetPasswordRequest request)
+    {
+        var decodedToken = Uri.UnescapeDataString(request.Token);
+        var hashResetToken = TokenHasher.Hash(decodedToken);
+
+        var user = await _repo.GetByPasswordResetTokenAsync(hashResetToken);
+
+        if (user == null)
+            throw new InvalidOperationException("Invalid token");
+
+        if (user.PasswordResetExpiresAt < DateTime.UtcNow)
+        {
+            user.PasswordResetToken = null;
+            user.PasswordResetExpiresAt = null;
+            await _repo.SaveChangesAsync();
+
+            throw new InvalidOperationException("Token expired");
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        user.PasswordResetToken = null;
+        user.PasswordResetExpiresAt = null;
+
+        await _repo.SaveChangesAsync();
     }
 }
