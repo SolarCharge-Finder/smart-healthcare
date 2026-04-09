@@ -10,4 +10,10 @@ public class FakeEmailService : IEmailService
         LastSentToken = token;
         return Task.CompletedTask;
     }
+
+    public Task SendPasswordResetEmail(string email, string token)
+    {
+        LastSentToken = token;
+        return Task.CompletedTask;
+    }
 }

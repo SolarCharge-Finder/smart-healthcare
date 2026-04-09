@@ -46,6 +46,8 @@ public static class ServiceExtensions
 
         services.AddScoped<IVerificationService, VerificationService>();
 
+        services.AddScoped<IUserService, UserService>();
+
         return services;
     }
 
