@@ -30,9 +30,9 @@ public class AuthController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return StatusCode(500, new { message = "Internal server error" });
+            return StatusCode(500, new { message = "Internal server error: " + ex.Message });
         }
     }
 
@@ -51,9 +51,9 @@ public class AuthController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return StatusCode(500, new { message = "Internal server error" });
+            return StatusCode(500, new { message = "Internal server error: " + ex.Message });
         }
     }
 
@@ -72,9 +72,9 @@ public class AuthController : ControllerBase
         {
             return Unauthorized(new { message = "Invalid credentials" });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return StatusCode(500, new { message = "Internal server error" });
+            return StatusCode(500, new { message = "Internal server error: " + ex.Message });
         }
     }
 
@@ -92,9 +92,9 @@ public class AuthController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return StatusCode(500, new { message = "Internal server error" });
+            return StatusCode(500, new { message = "Internal server error: " + ex.Message });
         }
         return Ok(new 
         { 
@@ -116,9 +116,9 @@ public class AuthController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return StatusCode(500, new { message = "Internal server error" });
+            return StatusCode(500, new { message = "Internal server error: " + ex.Message });
         }
         return Ok(new 
         { 

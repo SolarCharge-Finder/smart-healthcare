@@ -77,7 +77,7 @@ public class AuthService : IAuthService
         var pending = await _repo.GetPendingByTokenAsync(hashVerificationToken);
 
         if (pending == null)
-            return;
+            throw new InvalidOperationException("Invalid token");
 
         if (pending.ExpiresAt < DateTime.UtcNow)
         {
