@@ -7,69 +7,69 @@ using AuthService.Tests.Helpers;
 
 public class IntegrationTests : IClassFixture<PostgresFixture>
 {
-private readonly HttpClient _client;
+    private readonly HttpClient _client;
 
-public IntegrationTests(PostgresFixture fixture)
-{
-    var factory = new TestingFactory(fixture.Db);
-    _client = factory.CreateClient();
-}
-
-[Fact]
-public async Task Full_User_Lifecycle_Should_Work()
-{
-    var email = "integration@test.com";
-    var password = "123456";
-
-    // REGISTER
-    await _client.PostAsJsonAsync("/auth/register", new
+    public IntegrationTests(PostgresFixture fixture)
     {
-        name = "Integration User",
-        email,
-        password,
-        role = "Undefined"
-    });
+        var factory = new TestingFactory(fixture.Db);
+        _client = factory.CreateClient();
+    }
 
-    // VERIFY
-    var verifyToken = FakeEmailService.LastVerificationToken;
-    await _client.PostAsJsonAsync("/auth/verify", new { token = verifyToken });
-
-    // LOGIN
-    var login = await _client.PostAsJsonAsync("/auth/login", new
+    [Fact]
+    public async Task Full_User_Lifecycle_Should_Work()
     {
-        email,
-        password
-    });
+        var email = "integration@test.com";
+        var password = "123456";
 
-    var data = await login.Content.ReadFromJsonAsync<LoginResponse>();
+        // REGISTER
+        await _client.PostAsJsonAsync("/auth/register", new
+        {
+            name = "Integration User",
+            email,
+            password,
+            role = "Undefined"
+        });
 
-    _client.DefaultRequestHeaders.Authorization =
-        new AuthenticationHeaderValue("Bearer", data!.Token);
+        // VERIFY
+        var verifyToken = FakeEmailService.LastVerificationToken;
+        await _client.PostAsJsonAsync("/auth/verify", new { token = verifyToken });
 
-    // UPDATE PROFILE
-    await _client.PutAsJsonAsync("/users/profile", new
-    {
-        name = "Updated Integration User"
-    });
+        // LOGIN
+        var login = await _client.PostAsJsonAsync("/auth/login", new
+        {
+            email,
+            password
+        });
 
-    // CHANGE PASSWORD
-    await _client.PutAsJsonAsync("/users/change-password", new
-    {
-        currentPassword = password,
-        newPassword = "newpass123"
-    });
+        var data = await login.Content.ReadFromJsonAsync<LoginResponse>();
 
-    // FORGOT PASSWORD
-    await _client.PostAsJsonAsync("/auth/forgot-password", new { email });
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", data!.Token);
 
-    var resetToken = FakeEmailService.LastPasswordResetToken;
+        // UPDATE PROFILE
+        await _client.PutAsJsonAsync("/users/profile", new
+        {
+            name = "Updated Integration User"
+        });
 
-    // RESET PASSWORD
-    await _client.PostAsJsonAsync("/auth/reset-password", new
-    {
-        token = resetToken,
-        newPassword = "resetpass123"
-    });
-}
+        // CHANGE PASSWORD
+        await _client.PutAsJsonAsync("/users/change-password", new
+        {
+            currentPassword = password,
+            newPassword = "newpass123"
+        });
+
+        // FORGOT PASSWORD
+        await _client.PostAsJsonAsync("/auth/forgot-password", new { email });
+
+        var resetToken = FakeEmailService.LastPasswordResetToken;
+
+        // RESET PASSWORD
+        await _client.PostAsJsonAsync("/auth/reset-password", new
+        {
+            token = resetToken,
+            newPassword = "resetpass123"
+        });
+    }
 
 }

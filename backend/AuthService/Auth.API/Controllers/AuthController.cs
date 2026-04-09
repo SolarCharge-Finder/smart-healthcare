@@ -96,9 +96,9 @@ public class AuthController : ControllerBase
         {
             return StatusCode(500, new { message = "Internal server error: " + ex.Message });
         }
-        return Ok(new 
-        { 
-            message = "If an account with that email exists, a password reset link has been sent." 
+        return Ok(new
+        {
+            message = "If an account with that email exists, a password reset link has been sent."
         });
     }
 
@@ -109,7 +109,7 @@ public class AuthController : ControllerBase
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
-                
+
             await _authService.ResetPassword(request);
         }
         catch (InvalidOperationException ex)
@@ -120,9 +120,9 @@ public class AuthController : ControllerBase
         {
             return StatusCode(500, new { message = "Internal server error: " + ex.Message });
         }
-        return Ok(new 
-        { 
-            message = "Password has been reset successfully." 
+        return Ok(new
+        {
+            message = "Password has been reset successfully."
         });
     }
 
