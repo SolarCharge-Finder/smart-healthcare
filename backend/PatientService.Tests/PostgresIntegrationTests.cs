@@ -1,15 +1,17 @@
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
-using Xunit;
 
-using PatientService.Application.DTOs;
-using PatientService.Infrastructure.Data;
+using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using PatientService.Application.DTOs;
+using PatientService.Infrastructure.Data;
+
 using Testcontainers.PostgreSql;
+
+using Xunit;
 
 namespace PatientService.Tests;
 

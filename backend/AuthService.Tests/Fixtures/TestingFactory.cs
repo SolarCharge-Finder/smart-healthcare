@@ -1,17 +1,20 @@
-using Auth.Infrastructure.Data;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Configuration;
+using System.Text;
+
 using Auth.Application.Interfaces;
-using Testcontainers.PostgreSql;
+using Auth.Infrastructure.Data;
+
 using AuthService.Tests.Helpers;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
+
+using Testcontainers.PostgreSql;
 
 namespace AuthService.Tests.Fixtures;
 
@@ -47,7 +50,9 @@ public class TestingFactory : WebApplicationFactory<Program>
                 d => d.ServiceType == typeof(DbContextOptions<AuthDbContext>));
 
             if (descriptor != null)
+            {
                 services.Remove(descriptor);
+            }
 
             services.AddDbContext<AuthDbContext>(options =>
                 options.UseNpgsql(_db.GetConnectionString()));

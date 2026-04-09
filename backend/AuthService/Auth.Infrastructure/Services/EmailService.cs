@@ -1,9 +1,11 @@
 namespace Auth.Infrastructure.Services;
 
+using Auth.Application.Interfaces;
+
+using Microsoft.Extensions.Configuration;
+
 using SendGrid;
 using SendGrid.Helpers.Mail;
-using Auth.Application.Interfaces;
-using Microsoft.Extensions.Configuration;
 
 public class EmailService : IEmailService
 {
@@ -23,7 +25,9 @@ public class EmailService : IEmailService
         var frontendUrl = _config["FrontendUrl"] ?? "http://localhost:3000";
 
         if (string.IsNullOrEmpty(apiKey))
+        {
             throw new Exception("SendGrid API key not configured");
+        }
 
         var client = new SendGridClient(apiKey);
 
@@ -60,7 +64,9 @@ public class EmailService : IEmailService
         var frontendUrl = _config["FrontendUrl"] ?? "http://localhost:3000";
 
         if (string.IsNullOrEmpty(apiKey))
+        {
             throw new Exception("SendGrid API key not configured");
+        }
 
         var client = new SendGridClient(apiKey);
 

@@ -1,9 +1,12 @@
-using Xunit;
-using System.Net.Http.Json;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
+
 using Auth.Application.DTOs;
+
 using AuthService.Tests.Fixtures;
 using AuthService.Tests.Helpers;
+
+using Xunit;
 
 public class IntegrationTests : IClassFixture<PostgresFixture>
 {

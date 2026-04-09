@@ -1,7 +1,8 @@
 namespace Auth.Infrastructure.Data;
 
-using Microsoft.EntityFrameworkCore;
 using Auth.Domain.Entities;
+
+using Microsoft.EntityFrameworkCore;
 
 public class AuthDbContext : DbContext
 {

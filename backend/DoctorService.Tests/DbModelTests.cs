@@ -1,7 +1,10 @@
 using Doctor.Infrastructure.Data;
-using DoctorEntity = Doctor.Domain.Entities.Doctor;
+
 using Microsoft.EntityFrameworkCore;
+
 using Xunit;
+
+using DoctorEntity = Doctor.Domain.Entities.Doctor;
 
 namespace DoctorService.Tests;
 

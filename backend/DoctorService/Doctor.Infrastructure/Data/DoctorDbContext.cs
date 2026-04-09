@@ -1,7 +1,8 @@
 namespace Doctor.Infrastructure.Data;
 
-using Microsoft.EntityFrameworkCore;
 using Doctor.Domain.Entities;
+
+using Microsoft.EntityFrameworkCore;
 
 public class DoctorDbContext : DbContext
 {

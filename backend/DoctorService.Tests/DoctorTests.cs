@@ -1,8 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
-using Xunit;
+
 using Doctor.Application.DTOs;
+
+using FluentAssertions;
+
+using Xunit;
 
 namespace DoctorService.Tests;
 

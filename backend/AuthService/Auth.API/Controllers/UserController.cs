@@ -1,8 +1,10 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using Auth.Application.Interfaces;
-using Auth.Application.DTOs;
 using System.Security.Claims;
+
+using Auth.Application.DTOs;
+using Auth.Application.Interfaces;
+
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Auth.API.Controllers;
 
@@ -26,7 +28,9 @@ public class UsersController : ControllerBase
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (userId == null)
+            {
                 return Unauthorized();
+            }
 
             await _userService.UpdateName(Guid.Parse(userId), request.Name);
 
@@ -55,7 +59,9 @@ public class UsersController : ControllerBase
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (userId == null)
+            {
                 return Unauthorized();
+            }
 
             await _userService.ChangePassword(
                 Guid.Parse(userId),

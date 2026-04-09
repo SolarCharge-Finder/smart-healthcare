@@ -1,10 +1,10 @@
 namespace Auth.Application.Services;
 
-using Auth.Application.Interfaces;
 using Auth.Application.DTOs;
+using Auth.Application.Interfaces;
+using Auth.Application.Utilities;
 using Auth.Domain.Entities;
 using Auth.Domain.Enums;
-using Auth.Application.Utilities;
 
 public class AuthService : IAuthService
 {
@@ -28,24 +28,34 @@ public class AuthService : IAuthService
         var recent = await _repo.GetRecentPendingByEmailAsync(email);
 
         if (recent != null && recent.ExpiresAt > DateTime.UtcNow)
+        {
             throw new InvalidOperationException("A verification email has already been sent to this address. Please check your email or wait before trying again.");
+        }
 
         var exists = await _repo.ExistsByEmailAsync(email); //fist check if user already exists
 
         if (exists)
+        {
             throw new InvalidOperationException("User already exists");
+        }
 
         if (request.Role == UserRole.Doctor)
+        {
             throw new InvalidOperationException("Cannot self-register as doctor");
+        }
 
         if (request.Role == UserRole.Admin)
+        {
             throw new InvalidOperationException("Cannot self-register as admin");
+        }
 
         var existingPending = await _repo.GetPendingByEmailAsync(email);
 
         // remove any existing pending registration for this email to avoid confusion with multiple tokens
         if (existingPending != null)
+        {
             _repo.RemovePending(existingPending);
+        }
 
         // generate a new verification token for this registration attempt
         var verificationToken = _verificationService.GenerateVerificationToken();
@@ -77,7 +87,9 @@ public class AuthService : IAuthService
         var pending = await _repo.GetPendingByTokenAsync(hashVerificationToken);
 
         if (pending == null)
+        {
             throw new InvalidOperationException("Invalid token");
+        }
 
         if (pending.ExpiresAt < DateTime.UtcNow)
         {
@@ -120,11 +132,17 @@ public class AuthService : IAuthService
 
         var user = await _repo.GetByEmailAsync(email);
 
-        if (user == null) throw new UnauthorizedAccessException("Invalid credentials");
+        if (user == null)
+        {
+            throw new UnauthorizedAccessException("Invalid credentials");
+        }
 
         var valid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
 
-        if (!valid) throw new UnauthorizedAccessException("Invalid credentials");
+        if (!valid)
+        {
+            throw new UnauthorizedAccessException("Invalid credentials");
+        }
 
         var token = _tokenService.GenerateToken(user);
 
@@ -145,7 +163,10 @@ public class AuthService : IAuthService
 
         var user = await _repo.GetByEmailAsync(email);
 
-        if (user == null) return; // don't reveal whether email exists
+        if (user == null)
+        {
+            return; // don't reveal whether email exists
+        }
 
         var resetToken = _verificationService.GenerateVerificationToken();
         var hashResetToken = TokenHasher.Hash(resetToken);
@@ -166,7 +187,9 @@ public class AuthService : IAuthService
         var user = await _repo.GetByPasswordResetTokenAsync(hashResetToken);
 
         if (user == null)
+        {
             throw new InvalidOperationException("Invalid token");
+        }
 
         if (user.PasswordResetExpiresAt < DateTime.UtcNow)
         {

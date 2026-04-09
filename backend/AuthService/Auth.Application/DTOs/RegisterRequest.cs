@@ -1,8 +1,9 @@
 namespace Auth.Application.DTOs;
 
-using Auth.Domain.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+
+using Auth.Domain.Enums;
 
 public class RegisterRequest
 {

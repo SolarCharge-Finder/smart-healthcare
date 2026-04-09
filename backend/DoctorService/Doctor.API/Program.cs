@@ -1,5 +1,6 @@
 using Doctor.API.Extensions;
 using Doctor.Infrastructure.Data;
+
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);

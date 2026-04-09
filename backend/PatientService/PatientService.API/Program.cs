@@ -1,6 +1,7 @@
+using Microsoft.EntityFrameworkCore;
+
 using PatientService.API.Extensions;
 using PatientService.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 

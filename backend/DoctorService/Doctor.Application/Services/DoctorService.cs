@@ -1,7 +1,7 @@
 namespace Doctor.Application.Services;
 
-using Doctor.Application.Interfaces;
 using Doctor.Application.DTOs;
+using Doctor.Application.Interfaces;
 using Doctor.Domain.Entities;
 
 public class DoctorService : IDoctorService
@@ -17,7 +17,9 @@ public class DoctorService : IDoctorService
     {
         var existing = await _repo.GetByUserIdAsync(userId);
         if (existing != null)
+        {
             throw new InvalidOperationException("Doctor profile already exists");
+        }
 
         var doctor = new Doctor
         {
@@ -41,10 +43,14 @@ public class DoctorService : IDoctorService
         var doctor = await _repo.GetByIdAsync(id);
 
         if (doctor == null)
+        {
             throw new Exception("Doctor not found");
+        }
 
         if (doctor.IsApproved)
+        {
             throw new Exception("Doctor already approved");
+        }
 
         doctor.IsApproved = true;
 
@@ -77,7 +83,9 @@ public class DoctorService : IDoctorService
         var doctor = await _repo.GetByIdAsync(id);
 
         if (doctor == null)
+        {
             return null;
+        }
 
         return Map(doctor);
     }
@@ -87,7 +95,9 @@ public class DoctorService : IDoctorService
         var doctor = await _repo.GetByUserIdAsync(userId);
 
         if (doctor == null)
+        {
             return null;
+        }
 
         return Map(doctor);
     }
@@ -97,7 +107,9 @@ public class DoctorService : IDoctorService
         var doctor = await _repo.GetByIdAsync(id);
 
         if (doctor == null)
+        {
             throw new Exception("Doctor not found");
+        }
 
         await _repo.RemoveAsync(doctor);
         await _repo.SaveChangesAsync();

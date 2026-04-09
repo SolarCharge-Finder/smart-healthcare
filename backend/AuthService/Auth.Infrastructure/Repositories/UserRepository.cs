@@ -3,6 +3,7 @@ namespace Auth.Infrastructure.Repositories;
 using Auth.Application.Interfaces;
 using Auth.Domain.Entities;
 using Auth.Infrastructure.Data;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -26,13 +27,17 @@ public class UserRepository : IUserRepository
     public async Task CommitTransactionAsync()
     {
         if (_transaction != null)
+        {
             await _transaction.CommitAsync();
+        }
     }
 
     public async Task RollbackTransactionAsync()
     {
         if (_transaction != null)
+        {
             await _transaction.RollbackAsync();
+        }
     }
 
     // user

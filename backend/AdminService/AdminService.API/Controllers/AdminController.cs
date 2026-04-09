@@ -1,10 +1,12 @@
 namespace AdminService.API.Controllers;
 
-using Microsoft.AspNetCore.Mvc;
-using AdminService.Application.Interfaces;
-using AdminService.Application.DTOs;
-using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+
+using AdminService.Application.DTOs;
+using AdminService.Application.Interfaces;
+
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("admin")]
@@ -27,7 +29,9 @@ public class AdminController : ControllerBase
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (userId == null)
+            {
                 return Unauthorized();
+            }
 
             await _service.CreateAdmin(Guid.Parse(userId), request);
 

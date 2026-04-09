@@ -1,17 +1,18 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Text.Encodings.Web;
+
+using AdminService.Application.Interfaces;
 using AdminService.Infrastructure.Data;
+
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-
-using System.Text.Encodings.Web;
-using System.Security.Claims;
-using System.Linq;
-using System.Collections.Generic;
-using AdminService.Application.Interfaces;
 
 namespace AdminService.Tests;
 
@@ -41,7 +42,9 @@ public class TestingFactory : WebApplicationFactory<Program>
                 d => d.ServiceType == typeof(DbContextOptions<AdminDbContext>));
 
             if (descriptor != null)
+            {
                 services.Remove(descriptor);
+            }
 
             services.AddDbContext<AdminDbContext>(options =>
                 options.UseInMemoryDatabase(_dbName));
@@ -50,7 +53,9 @@ public class TestingFactory : WebApplicationFactory<Program>
                 d => d.ServiceType == typeof(IDoctorServiceClient));
 
             if (doctorDescriptor != null)
+            {
                 services.Remove(doctorDescriptor);
+            }
 
             services.AddScoped<IDoctorServiceClient, FakeDoctorServiceClient>();
 

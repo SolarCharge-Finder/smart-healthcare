@@ -1,8 +1,9 @@
 namespace Auth.API.Controllers;
 
-using Microsoft.AspNetCore.Mvc;
-using Auth.Application.Interfaces;
 using Auth.Application.DTOs;
+using Auth.Application.Interfaces;
+
+using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("auth")]
@@ -21,7 +22,9 @@ public class AuthController : ControllerBase
         try
         {
             if (!ModelState.IsValid)
+            {
                 return BadRequest(ModelState);
+            }
 
             await _authService.Register(request);
             return Ok();
@@ -42,7 +45,9 @@ public class AuthController : ControllerBase
         try
         {
             if (!ModelState.IsValid)
+            {
                 return BadRequest(ModelState);
+            }
 
             await _authService.Verify(request.Token);
             return Ok();
@@ -63,7 +68,9 @@ public class AuthController : ControllerBase
         try
         {
             if (!ModelState.IsValid)
+            {
                 return BadRequest(ModelState);
+            }
 
             var response = await _authService.Login(request);
             return Ok(response);
@@ -84,7 +91,9 @@ public class AuthController : ControllerBase
         try
         {
             if (!ModelState.IsValid)
+            {
                 return BadRequest(ModelState);
+            }
 
             await _authService.ForgotPassword(request);
         }
@@ -108,7 +117,9 @@ public class AuthController : ControllerBase
         try
         {
             if (!ModelState.IsValid)
+            {
                 return BadRequest(ModelState);
+            }
 
             await _authService.ResetPassword(request);
         }

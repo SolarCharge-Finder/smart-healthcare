@@ -1,5 +1,8 @@
-using AdminService.Infrastructure.Data;
+using System.Linq;
+using System.Net.Http.Json;
+
 using AdminService.Application.DTOs;
+using AdminService.Infrastructure.Data;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -7,10 +10,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Testcontainers.PostgreSql;
-using Xunit;
 
-using System.Net.Http.Json;
-using System.Linq;
+using Xunit;
 
 namespace AdminService.Tests;
 
@@ -100,7 +101,9 @@ public class PostgresIntegrationTests : IAsyncLifetime
                     d => d.ServiceType == typeof(DbContextOptions<AdminDbContext>));
 
                 if (descriptor != null)
+                {
                     services.Remove(descriptor);
+                }
 
                 services.AddDbContext<AdminDbContext>(options =>
                     options.UseNpgsql(_db.GetConnectionString()));

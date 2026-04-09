@@ -17,10 +17,14 @@ public class UserService : IUserService
         var user = await _repo.GetByIdAsync(userId);
 
         if (user == null)
+        {
             throw new InvalidOperationException("User not found");
+        }
 
         if (string.IsNullOrWhiteSpace(name))
+        {
             throw new InvalidOperationException("Name cannot be empty");
+        }
 
         user.Name = name.Trim();
 
@@ -32,20 +36,28 @@ public class UserService : IUserService
         var user = await _repo.GetByIdAsync(userId);
 
         if (user == null)
+        {
             throw new InvalidOperationException("User not found");
+        }
 
         // verify current password
         var isValid = BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash);
 
         if (!isValid)
+        {
             throw new UnauthorizedAccessException("Current password is incorrect");
+        }
 
         // basic validation
         if (string.IsNullOrWhiteSpace(newPassword))
+        {
             throw new InvalidOperationException("New password cannot be empty");
+        }
 
         if (newPassword.Length < 6)
+        {
             throw new InvalidOperationException("Password must be at least 6 characters");
+        }
 
         // update password
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
