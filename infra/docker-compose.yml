@@ -53,7 +53,9 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      Jwt_Key: ${JWT_KEY}
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=authdb;Username=postgres;Password=admin
+      App_FrontendUrl: ${APP_FRONTEND_URL}
     ports:
       - "5001:8080"
 
