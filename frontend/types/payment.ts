@@ -1,4 +1,5 @@
 export interface CreatePaymentIntentResponse {
+  paymentId: string;
   paymentIntentId: string;
   clientSecret: string;
   amount: number;

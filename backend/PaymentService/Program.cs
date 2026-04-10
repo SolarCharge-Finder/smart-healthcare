@@ -1,13 +1,19 @@
+using System.Text.Json;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+
 using PaymentService.Data;
 using PaymentService.Models;
 using PaymentService.Services;
+
 using Serilog;
 using Serilog.Context;
 using Serilog.Formatting.Json;
+
 using Stripe;
-using System.Text.Json;
+
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("PaymentService.Tests")]
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,7 +41,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:3001")
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:3002")
             .AllowAnyMethod()
             .AllowAnyHeader();
     });
@@ -127,7 +133,9 @@ app.Use(async (context, next) =>
             .FirstOrDefault();
 
     if (string.IsNullOrWhiteSpace(correlationId))
+    {
         correlationId = Guid.NewGuid().ToString();
+    }
 
     context.Response.Headers[headerName] = correlationId;
 
@@ -142,7 +150,9 @@ app.Use(async (context, next) =>
 static int DetermineStatusCode(string errorMessage)
 {
     if (string.IsNullOrWhiteSpace(errorMessage))
+    {
         return 500;
+    }
 
     var lowerMessage = errorMessage.ToLowerInvariant();
 
@@ -171,7 +181,9 @@ async (PaymentDbContext db) =>
     var canConnect = await db.Database.CanConnectAsync();
 
     if (!canConnect)
+    {
         return Results.StatusCode(503);
+    }
 
     return Results.Ok("ready");
 });
@@ -186,7 +198,9 @@ async (HttpRequest httpRequest, IPaymentService paymentService, ILogger<Program>
         using var jsonDoc = await JsonDocument.ParseAsync(httpRequest.Body);
 
         if (jsonDoc.RootElement.ValueKind != JsonValueKind.Object)
+        {
             return Results.BadRequest("Request body must be a JSON object.");
+        }
 
         var allowedFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -196,7 +210,9 @@ async (HttpRequest httpRequest, IPaymentService paymentService, ILogger<Program>
         foreach (var property in jsonDoc.RootElement.EnumerateObject())
         {
             if (!allowedFields.Contains(property.Name))
+            {
                 return Results.BadRequest($"Unsupported field '{property.Name}'. Send only appointmentId.");
+            }
         }
 
         request = jsonDoc.RootElement.Deserialize<CreatePaymentIntentRequest>(
@@ -206,7 +222,9 @@ async (HttpRequest httpRequest, IPaymentService paymentService, ILogger<Program>
             });
 
         if (request is null)
+        {
             return Results.BadRequest("Invalid request body.");
+        }
     }
     catch (JsonException ex)
     {
@@ -214,7 +232,9 @@ async (HttpRequest httpRequest, IPaymentService paymentService, ILogger<Program>
     }
 
     if (request.AppointmentId == Guid.Empty)
+    {
         return Results.BadRequest("AppointmentId is required");
+    }
 
     try
     {
@@ -222,6 +242,7 @@ async (HttpRequest httpRequest, IPaymentService paymentService, ILogger<Program>
 
         return Results.Ok(new CreatePaymentIntentResponse
         {
+            PaymentId = payment.Id,
             PaymentIntentId = payment.StripePaymentIntentId,
             ClientSecret = payment.ClientSecret,
             Amount = payment.Amount,
@@ -260,14 +281,21 @@ async (HttpRequest httpRequest, IPaymentService paymentService, ILogger<Program>
 });
 
 app.MapPost("/payments/webhook",
-async (HttpRequest httpRequest, IPaymentService paymentService, IOptions<StripeOptions> options, ILogger<Program> logger) =>
+async (HttpRequest httpRequest, IPaymentService paymentService, IOptions<StripeOptions> options, IOptions<AppointmentServiceOptions> appointmentOptions, ILogger<Program> logger, IHttpClientFactory httpClientFactory) =>
 {
     var json = await new StreamReader(httpRequest.Body).ReadToEndAsync();
     var signature = httpRequest.Headers["Stripe-Signature"].ToString();
     var webhookSecret = options.Value.WebhookSecret;
 
+    if (string.IsNullOrWhiteSpace(signature))
+    {
+        return Results.BadRequest("Missing Stripe-Signature header.");
+    }
+
     if (string.IsNullOrWhiteSpace(webhookSecret))
+    {
         return Results.Problem("Stripe webhook secret is not configured.", statusCode: 500);
+    }
 
     Event stripeEvent;
 
@@ -318,6 +346,50 @@ async (HttpRequest httpRequest, IPaymentService paymentService, IOptions<StripeO
                 stripeEvent.Id,
                 updatedPayment.Id,
                 updatedPayment.Status);
+
+            // If payment is successful, notify AppointmentService to mark appointment as Paid
+            if (updatedPayment.Status.Equals("Succeeded", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var appointmentServiceUrl = appointmentOptions.Value.BaseUrl;
+                    var appointmentId = updatedPayment.AppointmentId;
+
+                    using var client = httpClientFactory.CreateClient();
+                    var patchUrl = $"{appointmentServiceUrl}appointments/{appointmentId}/confirm-payment";
+
+                    var request = new HttpRequestMessage(HttpMethod.Patch, patchUrl);
+                    request.Headers.Add("X-API-KEY", builder.Configuration["API_KEY"] ?? "");
+
+                    logger.LogInformation(
+                        "Notifying AppointmentService to confirm payment for appointment {AppointmentId}",
+                        appointmentId);
+
+                    var response = await client.SendAsync(request);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        logger.LogInformation(
+                            "AppointmentService successfully confirmed payment for appointment {AppointmentId}",
+                            appointmentId);
+                    }
+                    else
+                    {
+                        logger.LogWarning(
+                            "AppointmentService returned {StatusCode} when confirming payment for appointment {AppointmentId}",
+                            response.StatusCode,
+                            appointmentId);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(
+                        ex,
+                        "Failed to notify AppointmentService about payment confirmation for appointment {AppointmentId}",
+                        updatedPayment.AppointmentId);
+                    // Don't fail the webhook if notification fails - it can be retried
+                }
+            }
         }
     }
     else
@@ -341,15 +413,66 @@ app.MapGet("/payments/config",
 });
 
 app.MapPost("/payments/{id:guid}/confirm",
-async (Guid id, ConfirmPaymentRequest request, IPaymentService paymentService) =>
+async (
+    Guid id,
+    ConfirmPaymentRequest request,
+    IPaymentService paymentService,
+    IOptions<AppointmentServiceOptions> appointmentOptions,
+    ILogger<Program> logger,
+    IHttpClientFactory httpClientFactory) =>
 {
     if (!request.IsSuccess && string.IsNullOrWhiteSpace(request.FailureReason))
+    {
         return Results.BadRequest("FailureReason is required when IsSuccess is false");
+    }
 
     var payment = await paymentService.ConfirmPaymentAsync(id, request);
 
     if (payment is null)
+    {
         return Results.NotFound();
+    }
+
+    if (request.IsSuccess &&
+        payment.Status.Equals("Succeeded", StringComparison.OrdinalIgnoreCase))
+    {
+        try
+        {
+            var appointmentServiceUrl = appointmentOptions.Value.BaseUrl;
+            var patchUrl = $"{appointmentServiceUrl}appointments/{payment.AppointmentId}/confirm-payment";
+
+            using var client = httpClientFactory.CreateClient();
+            using var confirmRequest = new HttpRequestMessage(HttpMethod.Patch, patchUrl);
+            confirmRequest.Headers.Add("X-API-KEY", builder.Configuration["API_KEY"] ?? "");
+
+            var response = await client.SendAsync(confirmRequest);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogWarning(
+                    "Appointment confirmation failed after payment confirm. AppointmentId={AppointmentId}, StatusCode={StatusCode}",
+                    payment.AppointmentId,
+                    response.StatusCode);
+
+                return Results.Problem(
+                    title: "Payment saved, but appointment confirmation failed",
+                    detail: "The payment is marked successful, but the appointment has not been confirmed yet. Please retry in a few seconds.",
+                    statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(
+                ex,
+                "Failed to confirm appointment after successful payment. AppointmentId={AppointmentId}",
+                payment.AppointmentId);
+
+            return Results.Problem(
+                title: "Payment saved, but appointment confirmation failed",
+                detail: "The payment is marked successful, but the appointment has not been confirmed yet. Please retry in a few seconds.",
+                statusCode: StatusCodes.Status503ServiceUnavailable);
+        }
+    }
 
     return Results.Ok(payment);
 });
@@ -360,7 +483,9 @@ async (Guid id, IPaymentService paymentService) =>
     var payment = await paymentService.GetPaymentAsync(id);
 
     if (payment is null)
+    {
         return Results.NotFound();
+    }
 
     return Results.Ok(ToPaymentReadResponse(payment));
 });
@@ -371,7 +496,9 @@ async (Guid appointmentId, IPaymentService paymentService) =>
     var payment = await paymentService.GetPaymentByAppointmentAsync(appointmentId);
 
     if (payment is null)
+    {
         return Results.NotFound();
+    }
 
     return Results.Ok(ToPaymentReadResponse(payment));
 });
@@ -400,3 +527,6 @@ static object ToPaymentReadResponse(Payment payment)
 }
 
 app.Run();
+
+// Make Program class accessible for integration tests using WebApplicationFactory
+internal partial class Program { }

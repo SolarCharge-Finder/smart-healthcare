@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
 using PaymentService.Data;
 using PaymentService.Models;
+
 using Stripe;
 
 namespace PaymentService.Services;

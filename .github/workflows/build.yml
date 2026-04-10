@@ -20,6 +20,21 @@ jobs:
       contents: read
       packages: write
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: smart_healthcare_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d smart_healthcare_test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
     steps:
       - name: checkout
         uses: actions/checkout@v5
@@ -39,6 +54,9 @@ jobs:
         run: dotnet build smart-healthcare.sln --configuration Release --no-restore
 
       - name: test (if any)
+        env:
+          ConnectionStrings__DefaultConnection: Host=127.0.0.1;Port=5433;Database=smart_healthcare_test;Username=postgres;Password=postgres;Include Error Detail=true
+          ASPNETCORE_ENVIRONMENT: Testing
         run: |
           set -e
           if find backend -name "*Tests.csproj" -print -quit | grep -q .; then

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import api from "../lib/api";
 import {
+  Payment,
   CreatePaymentIntentResponse,
   ConfirmPaymentRequest,
 } from "../types/payment";
@@ -50,10 +51,11 @@ export function useCreatePaymentIntent() {
 export function useConfirmPayment() {
   const queryClient = useQueryClient();
 
-  return useMutation<void, Error, { paymentId: string; payload: ConfirmPaymentRequest }>({
+  return useMutation<Payment, Error, { paymentId: string; payload: ConfirmPaymentRequest }>({
     mutationFn: async ({ paymentId, payload }) => {
       try {
-        await api.post(`/payments/${paymentId}/confirm`, payload);
+        const { data } = await api.post<Payment>(`/payments/${paymentId}/confirm`, payload);
+        return data;
       } catch (error) {
         throw extractApiError(error, "Failed to confirm payment.");
       }
@@ -62,4 +64,9 @@ export function useConfirmPayment() {
       queryClient.invalidateQueries({ queryKey: ["payments"] });
     },
   });
+}
+
+export async function getPaymentByAppointmentId(appointmentId: string) {
+  const { data } = await api.get<Payment>(`/payments/appointment/${appointmentId}`);
+  return data;
 }
