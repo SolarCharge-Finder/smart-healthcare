@@ -1,7 +1,10 @@
+using System.Text;
+
+using Microsoft.Extensions.Logging;
+
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using System.Text;
-using Microsoft.Extensions.Logging;
+
 using Serilog.Context;
 
 namespace NotificationService.Services;
@@ -34,10 +37,14 @@ public class RabbitMqConsumer : BackgroundService
         };
 
         if (!string.IsNullOrWhiteSpace(user))
+        {
             factory.UserName = user;
+        }
 
         if (!string.IsNullOrWhiteSpace(password))
+        {
             factory.Password = password;
+        }
 
         IConnection? connection = null;
 
@@ -189,15 +196,21 @@ public class RabbitMqConsumer : BackgroundService
         var props = eventArgs.BasicProperties;
 
         if (!string.IsNullOrWhiteSpace(props?.CorrelationId))
+        {
             return props!.CorrelationId;
+        }
 
         if (props?.Headers is null)
+        {
             return string.Empty;
+        }
 
         if (!props.Headers.TryGetValue(
             "x-correlation-id",
             out var headerValue))
+        {
             return string.Empty;
+        }
 
         return headerValue switch
         {

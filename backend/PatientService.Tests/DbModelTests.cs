@@ -1,7 +1,10 @@
-using PatientService.Infrastructure.Data;
-using PatientEntity = PatientService.Domain.Entities.Patient;
 using Microsoft.EntityFrameworkCore;
+
+using PatientService.Infrastructure.Data;
+
 using Xunit;
+
+using PatientEntity = PatientService.Domain.Entities.Patient;
 
 namespace PatientService.Tests;
 

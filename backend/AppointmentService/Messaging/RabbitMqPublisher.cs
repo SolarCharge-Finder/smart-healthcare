@@ -1,8 +1,12 @@
-using RabbitMQ.Client;
 using System.Text;
 using System.Text.Json;
+
 using AppointmentService.Logging;
+
 using Microsoft.Extensions.Logging;
+
+using RabbitMQ.Client;
+
 using Serilog.Context;
 
 namespace AppointmentService.Messaging;
@@ -33,10 +37,14 @@ public class RabbitMqPublisher
         };
 
         if (!string.IsNullOrWhiteSpace(user))
+        {
             _factory.UserName = user;
+        }
 
         if (!string.IsNullOrWhiteSpace(password))
+        {
             _factory.Password = password;
+        }
 
         _correlationIdAccessor = correlationIdAccessor;
         _logger = logger;
@@ -173,13 +181,17 @@ public class RabbitMqPublisher
     private async Task<IConnection> GetOrCreateConnectionAsync()
     {
         if (_connection is { IsOpen: true })
+        {
             return _connection;
+        }
 
         await _connectionLock.WaitAsync();
         try
         {
             if (_connection is { IsOpen: true })
+            {
                 return _connection;
+            }
 
             _connection = await _factory.CreateConnectionAsync();
             return _connection;

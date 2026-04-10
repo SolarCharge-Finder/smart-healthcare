@@ -1,14 +1,15 @@
 namespace Doctor.API.Extensions;
 
+using System.Text;
+
 using Doctor.Application.Interfaces;
 using Doctor.Application.Services;
 using Doctor.Infrastructure.Data;
 using Doctor.Infrastructure.Repositories;
 
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using Microsoft.OpenApi.Models;
 
 public static class ServiceExtensions

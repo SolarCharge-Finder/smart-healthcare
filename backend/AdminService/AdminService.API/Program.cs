@@ -1,6 +1,7 @@
 using AdminService.API.Extensions;
 using AdminService.Infrastructure.Data;
 using AdminService.Infrastructure.Extensions;
+
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);

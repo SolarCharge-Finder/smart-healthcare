@@ -1,7 +1,8 @@
 
+using System.Net.Http.Json;
+
 using AdminService.Application.DTOs;
 using AdminService.Application.Interfaces;
-using System.Net.Http.Json;
 
 public class DoctorServiceClient : IDoctorServiceClient
 {
@@ -23,6 +24,8 @@ public class DoctorServiceClient : IDoctorServiceClient
         var response = await _client.PutAsync($"/doctors/{id}/approve", null);
 
         if (!response.IsSuccessStatusCode)
+        {
             throw new Exception("Failed to approve doctor");
+        }
     }
 }

@@ -1,6 +1,7 @@
 namespace PatientService.Infrastructure.Data;
 
 using Microsoft.EntityFrameworkCore;
+
 using PatientService.Domain.Entities;
 
 public class PatientDbContext : DbContext

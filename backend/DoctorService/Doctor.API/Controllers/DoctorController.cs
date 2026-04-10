@@ -1,10 +1,12 @@
 namespace Doctor.API.Controllers;
 
-using Microsoft.AspNetCore.Mvc;
-using Doctor.Application.Interfaces;
-using Doctor.Application.DTOs;
-using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+
+using Doctor.Application.DTOs;
+using Doctor.Application.Interfaces;
+
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("doctors")]
@@ -26,7 +28,9 @@ public class DoctorController : ControllerBase
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (userId == null)
+            {
                 return Unauthorized();
+            }
 
             await _service.CreateDoctor(request, Guid.Parse(userId));
             return Ok();
@@ -66,7 +70,9 @@ public class DoctorController : ControllerBase
         var doctor = await _service.GetById(id);
 
         if (doctor == null)
+        {
             return NotFound();
+        }
 
         return Ok(doctor);
     }

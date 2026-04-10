@@ -1,10 +1,12 @@
 namespace PatientService.API.Controllers;
 
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
-using PatientService.Application.Interfaces;
+
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
 using PatientService.Application.DTOs;
+using PatientService.Application.Interfaces;
 
 [ApiController]
 [Route("patient")]
@@ -25,12 +27,16 @@ public class PatientController : ControllerBase
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
         if (userId == null)
+        {
             return Unauthorized();
+        }
 
         var user = await _service.GetByUserId(Guid.Parse(userId));
 
         if (user == null)
+        {
             return NotFound();
+        }
 
         return Ok(user);
     }
@@ -45,7 +51,9 @@ public class PatientController : ControllerBase
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (userId == null)
+            {
                 return Unauthorized();
+            }
 
             var id = await _service.CreatePatient(Guid.Parse(userId), request);
 
@@ -67,7 +75,9 @@ public class PatientController : ControllerBase
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (userId == null)
+            {
                 return Unauthorized();
+            }
 
             await _service.UpdatePatient(Guid.Parse(userId), request);
 
@@ -89,7 +99,9 @@ public class PatientController : ControllerBase
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (userId == null)
+            {
                 return Unauthorized();
+            }
 
             await _service.DeactivatePatient(Guid.Parse(userId));
             return Ok();
@@ -117,7 +129,9 @@ public class PatientController : ControllerBase
         var patient = await _service.GetById(id);
 
         if (patient == null)
+        {
             return NotFound();
+        }
 
         return Ok(patient);
     }

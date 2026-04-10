@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -37,6 +38,8 @@ namespace Auth.Infrastructure.Data.Migrations
                     Email = table.Column<string>(type: "text", nullable: false),
                     PasswordHash = table.Column<string>(type: "text", nullable: false),
                     Role = table.Column<int>(type: "integer", nullable: false),
+                    PasswordResetToken = table.Column<string>(type: "text", nullable: true),
+                    PasswordResetExpiresAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },

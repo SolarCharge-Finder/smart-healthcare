@@ -1,0 +1,16 @@
+# Normalize all text files to LF
+* text=auto eol=lf
+
+# Explicitly mark binaries (avoid corruption)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.pdf binary
+
+# Ensure scripts use LF (important for Linux)
+*.sh text eol=lf
+
+# Windows scripts keep CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf

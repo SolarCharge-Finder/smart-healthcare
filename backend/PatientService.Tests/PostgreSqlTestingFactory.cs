@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 using PatientService.Infrastructure.Data;
 
@@ -42,7 +42,9 @@ public class PostgreSqlTestingFactory : WebApplicationFactory<Program>
                 d => d.ServiceType == typeof(DbContextOptions<PatientDbContext>));
 
             if (descriptor != null)
+            {
                 services.Remove(descriptor);
+            }
 
             services.AddDbContext<PatientDbContext>(options =>
                 options.UseNpgsql(_db.GetConnectionString()));

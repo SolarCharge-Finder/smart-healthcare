@@ -62,6 +62,12 @@ export default function LoginForm() {
           required
         />
 
+        <div className="flex justify-end text-sm">
+          <a href="/forgot-password" className="text-blue-500 hover:underline">
+            Forgot password?
+          </a>
+        </div>
+
         {message && <Alert type="success">{message}</Alert>}
         {error && <Alert type="error">{error}</Alert>}
 

@@ -3,6 +3,7 @@ namespace Doctor.Infrastructure.Repositories;
 using Doctor.Application.Interfaces;
 using Doctor.Domain.Entities;
 using Doctor.Infrastructure.Data;
+
 using Microsoft.EntityFrameworkCore;
 
 public class DoctorRepository : IDoctorRepository

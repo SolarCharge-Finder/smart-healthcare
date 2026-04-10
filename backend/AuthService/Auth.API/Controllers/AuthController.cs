@@ -1,8 +1,9 @@
 namespace Auth.API.Controllers;
 
-using Microsoft.AspNetCore.Mvc;
-using Auth.Application.Interfaces;
 using Auth.Application.DTOs;
+using Auth.Application.Interfaces;
+
+using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("auth")]
@@ -16,10 +17,15 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register(RegisterRequest request)
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         try
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             await _authService.Register(request);
             return Ok();
         }
@@ -27,17 +33,22 @@ public class AuthController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return StatusCode(500, new { message = "Internal server error" });
+            return StatusCode(500, new { message = "Internal server error: " + ex.Message });
         }
     }
 
     [HttpPost("verify")]
-    public async Task<IActionResult> Verify(VerifyRequest request)
+    public async Task<IActionResult> Verify([FromBody] VerifyRequest request)
     {
         try
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             await _authService.Verify(request.Token);
             return Ok();
         }
@@ -45,17 +56,22 @@ public class AuthController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return StatusCode(500, new { message = "Internal server error" });
+            return StatusCode(500, new { message = "Internal server error: " + ex.Message });
         }
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(LoginRequest request)
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         try
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var response = await _authService.Login(request);
             return Ok(response);
         }
@@ -63,9 +79,62 @@ public class AuthController : ControllerBase
         {
             return Unauthorized(new { message = "Invalid credentials" });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return StatusCode(500, new { message = "Internal server error" });
+            return StatusCode(500, new { message = "Internal server error: " + ex.Message });
         }
     }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            await _authService.ForgotPassword(request);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Internal server error: " + ex.Message });
+        }
+        return Ok(new
+        {
+            message = "If an account with that email exists, a password reset link has been sent."
+        });
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            await _authService.ResetPassword(request);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Internal server error: " + ex.Message });
+        }
+        return Ok(new
+        {
+            message = "Password has been reset successfully."
+        });
+    }
+
 }
