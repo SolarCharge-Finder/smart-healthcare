@@ -1,6 +1,7 @@
 import "../styles/globals.css";
 import Providers from "../components/layout/providers";
 import Navbar from "../components/layout/navbar";
+import { AuthProvider } from "../modules/auth/AuthContext";
 
 export const metadata = {
   title: "SmartHealth Appointment System",
@@ -16,8 +17,10 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Providers>
-          <Navbar />
-          {children}
+          <AuthProvider>
+            <Navbar />
+            {children}
+          </AuthProvider>
         </Providers>
       </body>
     </html>

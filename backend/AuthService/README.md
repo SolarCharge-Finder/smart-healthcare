@@ -105,7 +105,22 @@ Client → Controller → AuthService → UserRepository → Database
 
 From project root:
 
-docker build -t authservice:v1 ./backend/AuthService
+docker build -t backend-auth-service:latest ./backend/AuthService
+
+---
+
+# Migrations
+
+dotnet ef migrations add InitialCreate --output-dir Data/Migrations --project backend/AuthService/Auth.Infrastructure --startup-project backend/AuthService/Auth.API
+
+dotnet ef database update --project backend/AuthService/Auth.Infrastructure --startup-project backend/AuthService/Auth.API
+
+dotnet ef database drop --project backend/AuthService/Auth.Infrastructure --startup-project backend/AuthService/Auth.API
+
+---
+
+# User Secrets - view  
+dotnet user-secrets list --project backend/AuthService/Auth.API
 
 ---
 

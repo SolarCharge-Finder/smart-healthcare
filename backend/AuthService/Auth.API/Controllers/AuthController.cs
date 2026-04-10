@@ -33,13 +33,31 @@ public class AuthController : ControllerBase
         }
     }
 
+    [HttpPost("verify")]
+    public async Task<IActionResult> Verify(VerifyRequest request)
+    {
+        try
+        {
+            await _authService.Verify(request.Token);
+            return Ok();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, new { message = "Internal server error" });
+        }
+    }
+
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request)
     {
         try
         {
-            var token = await _authService.Login(request);
-            return Ok(new { token });
+            var response = await _authService.Login(request);
+            return Ok(response);
         }
         catch (UnauthorizedAccessException)
         {
