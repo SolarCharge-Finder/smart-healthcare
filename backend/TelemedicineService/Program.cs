@@ -1,10 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+
+using Serilog;
+using Serilog.Context;
+using Serilog.Formatting.Json;
+
 using TelemedicineService.Data;
 using TelemedicineService.Models;
 using TelemedicineService.Services;
-using Serilog;
-using Serilog.Formatting.Json;
-using Serilog.Context;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("TelemedicineService.Tests")]
 
@@ -123,7 +125,9 @@ app.Use(async (context, next) =>
     var correlationId = context.Request.Headers[headerName].FirstOrDefault();
 
     if (string.IsNullOrWhiteSpace(correlationId))
+    {
         correlationId = Guid.NewGuid().ToString();
+    }
 
     context.Response.Headers[headerName] = correlationId;
     context.Items["CorrelationId"] = correlationId;
@@ -199,12 +203,16 @@ async Task<IResult> GetTelemedicineSession(
     try
     {
         if (appointmentId == Guid.Empty)
+        {
             return Results.BadRequest(new { error = "AppointmentId cannot be empty" });
+        }
 
         var session = await telemedicineService.GetActiveSessionAsync(appointmentId, cancellationToken);
 
         if (session is null)
+        {
             return Results.NotFound(new { error = $"No active session found for appointment {appointmentId}" });
+        }
 
         // Reuse CreateSessionAsync to get fresh tokens for the existing session
         var response = await telemedicineService.CreateSessionAsync(appointmentId, cancellationToken);

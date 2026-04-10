@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+
 using PaymentService.Data;
 using PaymentService.Models;
 using PaymentService.Services;
+
 using Stripe;
 
 namespace PaymentService.Tests;

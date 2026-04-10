@@ -340,13 +340,19 @@ async (
         .FirstOrDefaultAsync(a => a.Id == id);
 
     if (appointment is null)
+    {
         return Results.NotFound(new { error = "Appointment not found" });
+    }
 
     if (appointment.Status == "Paid")
+    {
         return Results.Ok(new { message = "Appointment already marked as Paid", appointment });
+    }
 
     if (appointment.Status == "Cancelled")
+    {
         return Results.BadRequest(new { error = "Cannot update cancelled appointment" });
+    }
 
     // Update appointment status to Paid after successful payment
     appointment.Status = "Paid";

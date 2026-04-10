@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+
 using TelemedicineService.Models;
 
 namespace TelemedicineService.Data;

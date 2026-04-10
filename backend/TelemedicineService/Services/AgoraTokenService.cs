@@ -1,4 +1,5 @@
 using AgoraIO.Media;
+
 using Microsoft.Extensions.Options;
 
 namespace TelemedicineService.Services;
@@ -22,10 +23,14 @@ public class AgoraTokenService : IAgoraTokenService
     public string GenerateToken(string channelName, uint expirySeconds = 3600)
     {
         if (string.IsNullOrWhiteSpace(_options.AppId))
+        {
             throw new InvalidOperationException("Agora AppId is not configured");
+        }
 
         if (string.IsNullOrWhiteSpace(_options.AppCertificate))
+        {
             throw new InvalidOperationException("Agora AppCertificate is not configured");
+        }
 
         try
         {
