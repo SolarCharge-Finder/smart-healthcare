@@ -15,7 +15,7 @@ public class ConsultationFlowIntegrationTests : IAsyncLifetime
         _factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
-                builder.UseSetting("ASPNETCORE_ENVIRONMENT", "Development");
+                builder.UseSetting("ASPNETCORE_ENVIRONMENT", "Testing");
                 // Factory will use in-memory services and default configurations
             });
 
