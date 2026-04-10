@@ -388,7 +388,13 @@ app.MapGet("/payments/config",
 });
 
 app.MapPost("/payments/{id:guid}/confirm",
-async (Guid id, ConfirmPaymentRequest request, IPaymentService paymentService) =>
+async (
+    Guid id,
+    ConfirmPaymentRequest request,
+    IPaymentService paymentService,
+    IOptions<AppointmentServiceOptions> appointmentOptions,
+    ILogger<Program> logger,
+    IHttpClientFactory httpClientFactory) =>
 {
     if (!request.IsSuccess && string.IsNullOrWhiteSpace(request.FailureReason))
         return Results.BadRequest("FailureReason is required when IsSuccess is false");
@@ -397,6 +403,47 @@ async (Guid id, ConfirmPaymentRequest request, IPaymentService paymentService) =
 
     if (payment is null)
         return Results.NotFound();
+
+    if (request.IsSuccess &&
+        payment.Status.Equals("Succeeded", StringComparison.OrdinalIgnoreCase))
+    {
+        try
+        {
+            var appointmentServiceUrl = appointmentOptions.Value.BaseUrl;
+            var patchUrl = $"{appointmentServiceUrl}appointments/{payment.AppointmentId}/confirm-payment";
+
+            using var client = httpClientFactory.CreateClient();
+            using var confirmRequest = new HttpRequestMessage(HttpMethod.Patch, patchUrl);
+            confirmRequest.Headers.Add("X-API-KEY", builder.Configuration["API_KEY"] ?? "");
+
+            var response = await client.SendAsync(confirmRequest);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogWarning(
+                    "Appointment confirmation failed after payment confirm. AppointmentId={AppointmentId}, StatusCode={StatusCode}",
+                    payment.AppointmentId,
+                    response.StatusCode);
+
+                return Results.Problem(
+                    title: "Payment saved, but appointment confirmation failed",
+                    detail: "The payment is marked successful, but the appointment has not been confirmed yet. Please retry in a few seconds.",
+                    statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(
+                ex,
+                "Failed to confirm appointment after successful payment. AppointmentId={AppointmentId}",
+                payment.AppointmentId);
+
+            return Results.Problem(
+                title: "Payment saved, but appointment confirmation failed",
+                detail: "The payment is marked successful, but the appointment has not been confirmed yet. Please retry in a few seconds.",
+                statusCode: StatusCodes.Status503ServiceUnavailable);
+        }
+    }
 
     return Results.Ok(payment);
 });

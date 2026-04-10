@@ -11,7 +11,7 @@ import Card from "../ui/Card";
 import Button from "../ui/Button";
 import Alert from "../ui/Alert";
 import Input from "../ui/Input";
-import { useConfirmPayment } from "../../hooks/usePayment";
+import { getPaymentByAppointmentId, useConfirmPayment } from "../../hooks/usePayment";
 
 
 interface PaymentFormProps {
@@ -19,6 +19,11 @@ interface PaymentFormProps {
   paymentId: string;
   amount: number;
   currency: string;
+}
+
+function isSuccessfulPaymentStatus(status: string | undefined | null) {
+  const normalized = (status ?? "").toLowerCase();
+  return normalized === "succeeded" || normalized === "success" || normalized === "complete" || normalized === "completed";
 }
 
 export default function PaymentForm({
@@ -62,8 +67,7 @@ export default function PaymentForm({
 
     try {
       console.log("Confirming payment with Stripe...");
-      
-      // Confirm payment with Stripe
+
       const confirmResult = await stripe.confirmPayment({
         elements,
         confirmParams: {
@@ -90,28 +94,48 @@ export default function PaymentForm({
         });
       } else if (paymentIntent) {
         console.log("Payment intent status:", paymentIntent.status);
-        
-        if (paymentIntent.status === "succeeded") {
-          if (paymentId) {
+
+        if (isSuccessfulPaymentStatus(paymentIntent.status)) {
+          let resolvedPaymentId = paymentId;
+
+          if (!resolvedPaymentId) {
             try {
-              await confirmPaymentAsync({
-                paymentId,
-                payload: { isSuccess: true },
-              });
-            } catch (confirmError) {
-              console.error("Failed to confirm payment in backend:", confirmError);
+              const payment = await getPaymentByAppointmentId(appointmentId);
+              resolvedPaymentId = payment.id;
+            } catch (lookupError) {
+              console.error("Failed to resolve payment record from appointment:", lookupError);
             }
+          }
+
+          if (!resolvedPaymentId) {
+            setStatus({
+              type: "error",
+              message: "Payment completed in Stripe, but the app could not find the stored payment record.",
+            });
+            return;
+          }
+
+          const confirmedPayment = await confirmPaymentAsync({
+            paymentId: resolvedPaymentId,
+            payload: { isSuccess: true },
+          });
+
+          if (!isSuccessfulPaymentStatus(confirmedPayment.status)) {
+            setStatus({
+              type: "error",
+              message: `Payment was not saved as successful. Current status: ${confirmedPayment.status}`,
+            });
+            return;
           }
 
           setStatus({
             type: "success",
-            message: "✅ Payment successful! Redirecting to your video consultation...",
+            message: "✅ Payment completed successfully! Redirecting to your video consultation...",
           });
           setEmail("");
-          // Give the backend confirmation call a short moment to settle before redirecting.
           setTimeout(() => {
             router.push(`/consultation?appointmentId=${appointmentId}`);
-          }, 3000);
+          }, 1500);
 
         } else if (paymentIntent.status === "processing") {
           setStatus({
@@ -153,7 +177,7 @@ export default function PaymentForm({
     <Card title="Payment Details">
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Payment amount info */}
-        <div className="rounded-lg bg-blue-50 p-4">
+        <div className="p-4 rounded-lg bg-blue-50">
           <div className="text-sm font-medium text-gray-700">
             Amount to Pay
           </div>
@@ -174,7 +198,7 @@ export default function PaymentForm({
         />
 
         {/* Stripe Payment Element */}
-        <div className="rounded-lg border border-gray-300 p-4">
+        <div className="p-4 border border-gray-300 rounded-lg">
           <PaymentElement
             options={{
               layout: "tabs",
@@ -201,7 +225,7 @@ export default function PaymentForm({
         </Button>
 
         {/* Security notice */}
-        <div className="text-center text-xs text-gray-500">
+        <div className="text-xs text-center text-gray-500">
           Your payment is secure and encrypted with Stripe
         </div>
       </form>

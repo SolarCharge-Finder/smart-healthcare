@@ -10,6 +10,11 @@ import { useStripeConfig } from "../../hooks/useStripeConfig";
 import { useCreatePaymentIntent } from "../../hooks/usePayment";
 import Alert from "../../components/ui/Alert";
 
+function isSuccessfulPaymentStatus(status: string | undefined | null) {
+  const normalized = (status ?? "").toLowerCase();
+  return normalized === "succeeded" || normalized === "success" || normalized === "complete" || normalized === "completed";
+}
+
 function PaymentPageContent() {
   const searchParams = useSearchParams();
   const [appointmentId, setAppointmentId] = useState<string>("");
@@ -82,9 +87,8 @@ function PaymentPageContent() {
     const createIntent = async () => {
       try {
         const response = await createPaymentIntentAsync({ appointmentId });
-        const normalizedStatus = (response.status || "").toLowerCase();
 
-        if (normalizedStatus === "succeeded") {
+        if (isSuccessfulPaymentStatus(response.status)) {
           setInitInfo("This appointment payment is already completed. Your consultation is ready.");
           setClientSecret(null);
         } else if (!response.clientSecret) {
