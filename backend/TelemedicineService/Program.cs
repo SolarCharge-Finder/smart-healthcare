@@ -31,6 +31,7 @@ builder.Services.AddSwaggerGen();
 var frontendOrigin = builder.Configuration["Frontend:Origin"];
 var enableCors =
     builder.Environment.IsDevelopment() ||
+    builder.Environment.IsEnvironment("Testing") ||
     !string.IsNullOrWhiteSpace(frontendOrigin);
 
 if (enableCors)

@@ -269,6 +269,9 @@ async (HttpRequest httpRequest, IPaymentService paymentService, IOptions<StripeO
     var signature = httpRequest.Headers["Stripe-Signature"].ToString();
     var webhookSecret = options.Value.WebhookSecret;
 
+    if (string.IsNullOrWhiteSpace(signature))
+        return Results.BadRequest("Missing Stripe-Signature header.");
+
     if (string.IsNullOrWhiteSpace(webhookSecret))
         return Results.Problem("Stripe webhook secret is not configured.", statusCode: 500);
 
