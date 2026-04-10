@@ -332,19 +332,19 @@ async (HttpRequest httpRequest, IPaymentService paymentService, IOptions<StripeO
                 {
                     var appointmentServiceUrl = appointmentOptions.Value.BaseUrl;
                     var appointmentId = updatedPayment.AppointmentId;
-                    
+
                     using var client = httpClientFactory.CreateClient();
                     var patchUrl = $"{appointmentServiceUrl}appointments/{appointmentId}/confirm-payment";
-                    
+
                     var request = new HttpRequestMessage(HttpMethod.Patch, patchUrl);
                     request.Headers.Add("X-API-KEY", builder.Configuration["API_KEY"] ?? "");
-                    
+
                     logger.LogInformation(
                         "Notifying AppointmentService to confirm payment for appointment {AppointmentId}",
                         appointmentId);
-                    
+
                     var response = await client.SendAsync(request);
-                    
+
                     if (response.IsSuccessStatusCode)
                     {
                         logger.LogInformation(

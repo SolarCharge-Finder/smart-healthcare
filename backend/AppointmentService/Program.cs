@@ -333,7 +333,7 @@ async (
 
     // Update appointment status to Paid after successful payment
     appointment.Status = "Paid";
-    
+
     var paymentConfirmedEvent = new
     {
         appointment.Id,
@@ -355,11 +355,11 @@ async (
     logger.LogInformation(
         "Appointment {AppointmentId} marked as Paid after successful payment",
         appointment.Id);
-    
+
     Metrics.IncAppointmentsPaid();
 
-    return Results.Ok(new 
-    { 
+    return Results.Ok(new
+    {
         message = "Appointment payment confirmed",
         appointmentId = appointment.Id,
         status = appointment.Status
