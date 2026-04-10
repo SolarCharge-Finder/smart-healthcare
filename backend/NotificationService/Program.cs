@@ -1,9 +1,11 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+
 using NotificationService.Health;
 using NotificationService.Services;
+
 using Serilog;
-using Serilog.Formatting.Json;
 using Serilog.Context;
+using Serilog.Formatting.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,7 +55,9 @@ app.Use(async (context, next) =>
             .FirstOrDefault();
 
     if (string.IsNullOrWhiteSpace(correlationId))
+    {
         correlationId = Guid.NewGuid().ToString();
+    }
 
     context.Response.Headers[headerName] = correlationId;
     context.Items["CorrelationId"] = correlationId;
@@ -76,7 +80,9 @@ async (HealthCheckService healthChecks) =>
     var result = await healthChecks.CheckHealthAsync();
 
     if (result.Status != HealthStatus.Healthy)
+    {
         return Results.StatusCode(503);
+    }
 
     return Results.Ok("ready");
 });

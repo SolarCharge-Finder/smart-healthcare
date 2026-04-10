@@ -1,7 +1,8 @@
 namespace Auth.Infrastructure.Services;
 
-using Auth.Application.Interfaces;
 using System.Security.Cryptography;
+
+using Auth.Application.Interfaces;
 
 public class VerificationService : IVerificationService
 {

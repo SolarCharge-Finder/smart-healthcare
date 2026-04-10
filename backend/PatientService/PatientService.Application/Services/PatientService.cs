@@ -1,7 +1,7 @@
 namespace PatientService.Application.Services;
 
-using PatientService.Application.Interfaces;
 using PatientService.Application.DTOs;
+using PatientService.Application.Interfaces;
 using PatientService.Domain.Entities;
 
 public class PatientServiceImplementation : IPatientService
@@ -43,7 +43,9 @@ public class PatientServiceImplementation : IPatientService
         var patient = await _repo.GetByUserIdAsync(userId);
 
         if (patient == null || !patient.IsActive)
+        {
             return null;
+        }
 
         return Map(patient);
     }
@@ -53,7 +55,9 @@ public class PatientServiceImplementation : IPatientService
         var patient = await _repo.GetByIdAsync(id);
 
         if (patient == null || !patient.IsActive)
+        {
             return null;
+        }
 
         return Map(patient);
     }
@@ -73,10 +77,14 @@ public class PatientServiceImplementation : IPatientService
         var patient = await _repo.GetByUserIdAsync(userId);
 
         if (patient == null)
+        {
             throw new Exception("Patient not found");
+        }
 
         if (!patient.IsActive)
+        {
             throw new Exception("Patient is deactivated");
+        }
 
         patient.FullName = request.FullName;
         patient.UpdatedAt = DateTime.UtcNow;
@@ -89,10 +97,14 @@ public class PatientServiceImplementation : IPatientService
         var patient = await _repo.GetByUserIdAsync(userId);
 
         if (patient == null)
+        {
             throw new Exception("Patient not found");
+        }
 
         if (!patient.IsActive)
+        {
             throw new Exception("Patient already deactivated");
+        }
 
         patient.IsActive = false;
         patient.UpdatedAt = DateTime.UtcNow;
@@ -105,7 +117,9 @@ public class PatientServiceImplementation : IPatientService
         var patient = await _repo.GetByIdAsync(id);
 
         if (patient == null)
+        {
             throw new Exception("Patient not found");
+        }
 
         await _repo.RemoveAsync(patient);
         await _repo.SaveChangesAsync();

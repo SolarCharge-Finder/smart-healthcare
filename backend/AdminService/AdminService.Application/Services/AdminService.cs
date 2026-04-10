@@ -1,7 +1,7 @@
 namespace AdminService.Application.Services;
 
-using AdminService.Application.Interfaces;
 using AdminService.Application.DTOs;
+using AdminService.Application.Interfaces;
 using AdminService.Domain.Entities;
 
 public class AdminServiceImplementation : IAdminService
@@ -21,7 +21,9 @@ public class AdminServiceImplementation : IAdminService
         var existing = await _repo.GetByUserIdAsync(userId);
 
         if (existing != null)
+        {
             throw new Exception("Admin already exists");
+        }
 
         var admin = new Admin
         {
@@ -64,10 +66,14 @@ public class AdminServiceImplementation : IAdminService
         var admin = await _repo.GetByIdAsync(id);
 
         if (admin == null)
+        {
             throw new Exception("Admin not found");
+        }
 
         if (admin.IsApproved)
+        {
             throw new Exception("Admin already approved");
+        }
 
         admin.IsApproved = true;
 
@@ -79,7 +85,9 @@ public class AdminServiceImplementation : IAdminService
         var admin = await _repo.GetByIdAsync(id);
 
         if (admin == null)
+        {
             throw new Exception("Admin not found");
+        }
 
         await _repo.RemoveAsync(admin);
 

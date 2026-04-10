@@ -1,5 +1,6 @@
 using Auth.API.Extensions;
 using Auth.Infrastructure.Data;
+
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);

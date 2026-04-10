@@ -1,13 +1,14 @@
 namespace PatientService.API.Extensions;
 
-using PatientService.Application.Interfaces;
-using PatientService.Application.Services;
-using PatientService.Infrastructure.Extensions;
+using System.Text;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using Microsoft.OpenApi.Models;
+
+using PatientService.Application.Interfaces;
+using PatientService.Application.Services;
+using PatientService.Infrastructure.Extensions;
 
 public static class ServiceExtensions
 {

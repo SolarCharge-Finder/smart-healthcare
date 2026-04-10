@@ -1,14 +1,15 @@
 namespace AdminService.API.Extensions;
 
+using System.Text;
+
 using AdminService.Application.Interfaces;
 using AdminService.Application.Services;
 using AdminService.Infrastructure.Data;
 using AdminService.Infrastructure.Repositories;
 
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using Microsoft.OpenApi.Models;
 
 public static class ServiceExtensions

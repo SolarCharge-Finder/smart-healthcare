@@ -3,6 +3,7 @@ namespace PatientService.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+
 using PatientService.Application.Interfaces;
 using PatientService.Infrastructure.Data;
 using PatientService.Infrastructure.Repositories;

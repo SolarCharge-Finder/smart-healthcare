@@ -1,13 +1,15 @@
+using System.Security.Claims;
+using System.Text.Encodings.Web;
+
 using Doctor.Infrastructure.Data;
+
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using System.Text.Encodings.Web;
-using System.Security.Claims;
 
 namespace DoctorService.Tests;
 
@@ -37,7 +39,9 @@ public class TestingFactory : WebApplicationFactory<Program>
                 d => d.ServiceType == typeof(DbContextOptions<DoctorDbContext>));
 
             if (descriptor != null)
+            {
                 services.Remove(descriptor);
+            }
 
             services.AddDbContext<DoctorDbContext>(options =>
                 options.UseInMemoryDatabase("doctor-tests"));

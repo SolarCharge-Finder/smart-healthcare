@@ -2,6 +2,7 @@ namespace PatientService.Infrastructure.Data.Configurations;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
 using PatientService.Domain.Entities;
 
 public class PatientConfiguration : IEntityTypeConfiguration<Patient>

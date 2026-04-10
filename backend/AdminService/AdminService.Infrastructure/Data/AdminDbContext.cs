@@ -1,7 +1,8 @@
 namespace AdminService.Infrastructure.Data;
 
-using Microsoft.EntityFrameworkCore;
 using AdminService.Domain.Entities;
+
+using Microsoft.EntityFrameworkCore;
 
 public class AdminDbContext : DbContext
 {

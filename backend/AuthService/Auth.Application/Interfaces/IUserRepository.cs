@@ -9,8 +9,10 @@ public interface IUserRepository
     Task CommitTransactionAsync();
     Task RollbackTransactionAsync();
     Task<bool> ExistsByEmailAsync(string email);
+    Task<User?> GetByIdAsync(Guid userId);
     Task<PendingUser?> GetPendingByEmailAsync(string email);
     Task<PendingUser?> GetPendingByTokenAsync(string token);
+    Task<User?> GetByPasswordResetTokenAsync(string token);
     //rate limiting
     Task<PendingUser?> GetRecentPendingByEmailAsync(string email);
     Task AddAsync(User user);

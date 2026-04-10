@@ -1,11 +1,15 @@
 using AppointmentService.Data;
+
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+
 using StackExchange.Redis;
+
 using Testcontainers.PostgreSql;
+
 using Xunit;
 
 namespace AppointmentService.Tests;
@@ -79,7 +83,9 @@ public class PostgresIntegrationTests
                         typeof(DbContextOptions<AppointmentDbContext>));
 
                 if (dbDescriptor is not null)
+                {
                     services.Remove(dbDescriptor);
+                }
 
                 services.AddDbContext<AppointmentDbContext>(options =>
                     options.UseNpgsql(_db.GetConnectionString()));
@@ -90,7 +96,9 @@ public class PostgresIntegrationTests
                         typeof(IConnectionMultiplexer));
 
                 if (redisDescriptor is not null)
+                {
                     services.Remove(redisDescriptor);
+                }
 
                 services.AddSingleton<IConnectionMultiplexer>(_ =>
                     ConnectionMultiplexer.Connect(

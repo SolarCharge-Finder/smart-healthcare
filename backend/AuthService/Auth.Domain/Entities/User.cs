@@ -9,6 +9,8 @@ public class User
     public string Email { get; set; } = "";
     public string PasswordHash { get; set; } = "";
     public UserRole Role { get; set; } = UserRole.Undefined;
+    public string? PasswordResetToken { get; set; }
+    public DateTime? PasswordResetExpiresAt { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; }
 }

@@ -2,11 +2,11 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-
 using Auth.Application.Interfaces;
 using Auth.Domain.Entities;
+
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Auth.Infrastructure.Services;
 

@@ -1,13 +1,18 @@
+using System.Net.Http.Json;
+
+using Doctor.Application.DTOs;
 using Doctor.Infrastructure.Data;
+
+using FluentAssertions;
+
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+
 using Testcontainers.PostgreSql;
+
 using Xunit;
-using System.Net.Http.Json;
-using Doctor.Application.DTOs;
-using FluentAssertions;
 
 namespace DoctorService.Tests;
 
@@ -109,7 +114,9 @@ public class PostgresIntegrationTests : IAsyncLifetime
                     d => d.ServiceType == typeof(DbContextOptions<DoctorDbContext>));
 
                 if (descriptor != null)
+                {
                     services.Remove(descriptor);
+                }
 
                 services.AddDbContext<DoctorDbContext>(options =>
                     options.UseNpgsql(_db.GetConnectionString()));

@@ -1,6 +1,8 @@
-using AdminService.Infrastructure.Data;
 using AdminService.Domain.Entities;
+using AdminService.Infrastructure.Data;
+
 using Microsoft.EntityFrameworkCore;
+
 using Xunit;
 
 namespace AdminService.Tests;

@@ -1,6 +1,8 @@
-using Auth.Infrastructure.Data;
 using Auth.Domain.Entities;
+using Auth.Infrastructure.Data;
+
 using Microsoft.EntityFrameworkCore;
+
 using Xunit;
 
 namespace AuthService.Tests;

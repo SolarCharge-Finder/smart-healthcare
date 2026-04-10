@@ -1,16 +1,16 @@
+using System.Text;
+using System.Text.Json.Serialization;
+
 using Auth.Application.Interfaces;
 using Auth.Application.Services;
 using Auth.Infrastructure.Data;
 using Auth.Infrastructure.Repositories;
+using Auth.Infrastructure.Services;
 
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-
-using System.Text;
-using System.Text.Json.Serialization;
-using Auth.Infrastructure.Services;
 
 namespace Auth.API.Extensions;
 
@@ -45,6 +45,8 @@ public static class ServiceExtensions
         services.AddScoped<IEmailService, EmailService>();
 
         services.AddScoped<IVerificationService, VerificationService>();
+
+        services.AddScoped<IUserService, UserService>();
 
         return services;
     }

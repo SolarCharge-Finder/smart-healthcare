@@ -1,9 +1,11 @@
 namespace Auth.Infrastructure.Services;
 
+using Auth.Application.Interfaces;
+
+using Microsoft.Extensions.Configuration;
+
 using SendGrid;
 using SendGrid.Helpers.Mail;
-using Auth.Application.Interfaces;
-using Microsoft.Extensions.Configuration;
 
 public class EmailService : IEmailService
 {
@@ -20,14 +22,18 @@ public class EmailService : IEmailService
         var fromEmail = _config["SendGrid:FromEmail"];
         var fromName = _config["SendGrid:FromName"];
 
+        var frontendUrl = _config["FrontendUrl"] ?? "http://localhost:3000";
+
         if (string.IsNullOrEmpty(apiKey))
+        {
             throw new Exception("SendGrid API key not configured");
+        }
 
         var client = new SendGridClient(apiKey);
 
         var encodedToken = Uri.EscapeDataString(token);
 
-        var link = $"http://localhost:3000/verify?token={encodedToken}";
+        var link = $"{frontendUrl}/verify?token={encodedToken}";
 
         var msg = new SendGridMessage()
         {
@@ -42,6 +48,44 @@ public class EmailService : IEmailService
         var response = await client.SendEmailAsync(msg);
 
         // for debugging - throw if email failed
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Body.ReadAsStringAsync();
+            throw new Exception($"Email failed: {body}");
+        }
+    }
+
+    public async Task SendPasswordResetEmail(string email, string token)
+    {
+        var apiKey = _config["SendGrid:ApiKey"];
+        var fromEmail = _config["SendGrid:FromEmail"];
+        var fromName = _config["SendGrid:FromName"];
+
+        var frontendUrl = _config["FrontendUrl"] ?? "http://localhost:3000";
+
+        if (string.IsNullOrEmpty(apiKey))
+        {
+            throw new Exception("SendGrid API key not configured");
+        }
+
+        var client = new SendGridClient(apiKey);
+
+        var encodedToken = Uri.EscapeDataString(token);
+
+        var link = $"{frontendUrl}/reset-password?token={encodedToken}";
+
+        var msg = new SendGridMessage()
+        {
+            From = new EmailAddress(fromEmail, fromName),
+            Subject = "Reset your SmartHealth password",
+            PlainTextContent = $"Click this link to reset your password:\n\n{link}",
+            HtmlContent = $"<strong>Click here:</strong> <a href='{link}'>Reset Password</a>"
+        };
+
+        msg.AddTo(new EmailAddress(email));
+
+        var response = await client.SendEmailAsync(msg);
+
         if (!response.IsSuccessStatusCode)
         {
             var body = await response.Body.ReadAsStringAsync();

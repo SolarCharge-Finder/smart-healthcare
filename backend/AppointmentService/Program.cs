@@ -1,16 +1,21 @@
+using System.Data;
+using System.Text.Json;
+
 using AppointmentService.Data;
 using AppointmentService.Logging;
+using AppointmentService.Messaging;
+using AppointmentService.Models;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
-using AppointmentService.Models;
-using AppointmentService.Messaging;
-using System.Data;
+
 using Npgsql;
+
 using Serilog;
-using Serilog.Formatting.Json;
 using Serilog.Context;
+using Serilog.Formatting.Json;
+
 using StackExchange.Redis;
-using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -138,7 +143,9 @@ app.Use(async (context, next) =>
             .FirstOrDefault();
 
     if (string.IsNullOrWhiteSpace(correlationId))
+    {
         correlationId = Guid.NewGuid().ToString();
+    }
 
     context.Response.Headers[headerName] = correlationId;
     context.Items["CorrelationId"] = correlationId;
@@ -178,7 +185,9 @@ async (AppointmentDbContext db) =>
     var canConnect = await db.Database.CanConnectAsync();
 
     if (!canConnect)
+    {
         return Results.StatusCode(503);
+    }
 
     return Results.Ok("ready");
 });
@@ -246,7 +255,9 @@ async (Guid id, AppointmentDbContext db) =>
         .FirstOrDefaultAsync();
 
     if (appointment is null)
+    {
         return Results.NotFound();
+    }
 
     return Results.Ok(appointment);
 });
@@ -264,14 +275,18 @@ async (
     AppointmentDbContext db) =>
 {
     if (from >= to)
+    {
         return Results.BadRequest(
             "`from` must be earlier than `to`"
         );
+    }
 
     if ((to - from).TotalDays > 30)
+    {
         return Results.BadRequest(
             "Range must not exceed 30 days"
         );
+    }
 
     var booked = await db.Appointments
         .AsNoTracking()
@@ -295,7 +310,9 @@ async (
     while (cursor <= to)
     {
         if (!bookedSet.Contains(cursor))
+        {
             available.Add(cursor);
+        }
 
         cursor = cursor.Add(step);
     }
@@ -395,17 +412,23 @@ async (
         .FirstOrDefaultAsync(a => a.Id == id);
 
     if (appointment is null)
+    {
         return Results.NotFound();
+    }
 
     if (appointment.Status == "Cancelled")
+    {
         return Results.BadRequest(
             "Appointment already cancelled"
         );
+    }
 
     if (appointment.SlotTime < DateTime.UtcNow)
+    {
         return Results.BadRequest(
             "Cannot cancel past appointment"
         );
+    }
 
     appointment.Status = "Cancelled";
 
@@ -456,7 +479,9 @@ async (
     var redisLockUnavailable = false;
 
     if (string.IsNullOrWhiteSpace(idempotencyKey))
+    {
         idempotencyKey = null;
+    }
 
     var lockKey = BuildLockKey(appointment);
 
@@ -601,7 +626,9 @@ async (
         catch (Exception ex) when (IsUniqueConstraintViolation(ex))
         {
             if (tx is not null)
+            {
                 await TryRollbackAsync(tx);
+            }
 
             if (!string.IsNullOrWhiteSpace(idempotencyKey))
             {
@@ -634,7 +661,9 @@ async (
         catch (Exception ex) when (IsSerializationFailure(ex))
         {
             if (tx is not null)
+            {
                 await TryRollbackAsync(tx);
+            }
 
             if (attempt == maxRetries)
             {
@@ -694,7 +723,9 @@ static RouteHandlerBuilder RequireApiKey(
         if (string.IsNullOrWhiteSpace(expected) ||
             string.IsNullOrWhiteSpace(provided) ||
             provided != expected)
+        {
             return Results.Unauthorized();
+        }
 
         return await next(context);
     });
@@ -718,12 +749,16 @@ static bool IsUniqueConstraintViolation(Exception ex)
 static bool HasPostgresSqlState(Exception ex, string sqlState)
 {
     if (ex is PostgresException pg && pg.SqlState == sqlState)
+    {
         return true;
+    }
 
     if (ex is DbUpdateException dbEx &&
         dbEx.InnerException is PostgresException pgInner &&
         pgInner.SqlState == sqlState)
+    {
         return true;
+    }
 
     return ex.InnerException is not null &&
            HasPostgresSqlState(ex.InnerException, sqlState);
