@@ -51,3 +51,6 @@ spec:
 
             - name: Jwt__Audience
               value: smart-healthcare
+
+            - name: AUTH_SERVICE_URL
+              value: http://auth-service
