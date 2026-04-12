@@ -98,7 +98,9 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> SetRoleInternal(Guid userId, [FromBody] SetRole dto)
     {
         if (dto == null)
+        {
             return BadRequest("Role is required");
+        }
 
         await _userService.SetRoleAsync(userId, dto.Role);
 

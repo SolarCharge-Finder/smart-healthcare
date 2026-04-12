@@ -2,8 +2,8 @@ namespace Doctor.Infrastructure.Services;
 
 using System.Net.Http.Json;
 
-using Doctor.Application.Interfaces;
 using Doctor.Application.DTOs;
+using Doctor.Application.Interfaces;
 
 using Shared.Contracts.Enums;
 
@@ -22,12 +22,16 @@ public class AuthServiceClient : IAuthServiceClient
         var tokenResponse = await _httpClient.PostAsync("/internal/auth/token", null);
 
         if (!tokenResponse.IsSuccessStatusCode)
+        {
             throw new Exception("Failed to get internal token from AuthService");
+        }
 
         var token = (await tokenResponse.Content.ReadFromJsonAsync<TokenResponse>())?.Token;
 
         if (string.IsNullOrEmpty(token))
+        {
             throw new Exception("Internal token is null");
+        }
 
         // create request with token
         var request = new HttpRequestMessage(
@@ -45,6 +49,8 @@ public class AuthServiceClient : IAuthServiceClient
         var response = await _httpClient.SendAsync(request);
 
         if (!response.IsSuccessStatusCode)
+        {
             throw new Exception("Failed to update user role in AuthService");
+        }
     }
 }
