@@ -25,6 +25,7 @@ public interface ITelemedicineService
     /// <exception cref="InvalidOperationException">Appointment not in valid state (not Paid/Confirmed)</exception>
     Task<TelemedicineSessionResponse> CreateSessionAsync(
         Guid appointmentId,
+        Guid requesterUserId,
         CancellationToken cancellationToken = default);
 
     /// <summary>

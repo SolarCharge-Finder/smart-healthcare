@@ -9,10 +9,43 @@ import PageHeader from "../../components/ui/PageHeader";
 import { useStripeConfig } from "../../hooks/useStripeConfig";
 import { useCreatePaymentIntent } from "../../hooks/usePayment";
 import Alert from "../../components/ui/Alert";
+import Card from "../../components/ui/Card";
+import Button from "../../components/ui/Button";
+import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
+import api from "../../lib/api";
+import { generateRecipePdf } from "../../lib/recipePdf";
+import { Payment } from "../../types/payment";
+import { Appointment } from "../../types/appointment";
 
 function isSuccessfulPaymentStatus(status: string | undefined | null) {
   const normalized = (status ?? "").toLowerCase();
   return normalized === "succeeded" || normalized === "success" || normalized === "complete" || normalized === "completed";
+}
+
+function PaymentSuccessBanner() {
+  return (
+    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-800">
+      <div className="flex items-center gap-3">
+        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600 text-white">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className="h-5 w-5"
+            aria-hidden="true"
+          >
+            <path
+              fillRule="evenodd"
+              d="M16.704 5.29a1 1 0 010 1.414l-7.16 7.16a1 1 0 01-1.414 0l-3.16-3.16a1 1 0 011.415-1.414l2.452 2.452 6.452-6.452a1 1 0 011.415 0z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </span>
+        <p className="text-sm font-semibold">Payment successful</p>
+      </div>
+    </div>
+  );
 }
 
 function PaymentPageContent() {
@@ -27,11 +60,23 @@ function PaymentPageContent() {
   const [initError, setInitError] = useState<string | null>(null);
   const [initInfo, setInitInfo] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [confirmedPayment, setConfirmedPayment] = useState<Payment | null>(null);
+  const flow = searchParams.get("flow");
+  const isVideoConsultationFlow = flow === "video";
   // Single stable ref tracks which appointmentId has been processed to prevent double-fire
   const processedAppointmentRef = useRef<string | null>(null);
   const inFlightRef = useRef(false);
 
   const { mutateAsync: createPaymentIntentAsync } = useCreatePaymentIntent();
+
+  const appointment = useQuery<Appointment>({
+    queryKey: ["appointment", appointmentId],
+    enabled: Boolean(appointmentId),
+    queryFn: async () => {
+      const { data } = await api.get<Appointment>(`/appointments/${appointmentId}`);
+      return data;
+    },
+  });
 
   // Step 1: Read appointmentId from URL
   useEffect(() => {
@@ -134,6 +179,67 @@ function PaymentPageContent() {
     [clientSecret]
   );
 
+  const downloadRecipePdf = async () => {
+    if (!confirmedPayment) return;
+    const amountPaid = `${(confirmedPayment.amount / 100).toFixed(2)} ${confirmedPayment.currency.toUpperCase()}`;
+    const channelDateTime = appointment.data?.slotTime
+      ? new Date(appointment.data.slotTime).toLocaleString()
+      : "-";
+
+    const userRows: Array<[string, string]> = [
+      ["Patient ID", appointment.data?.patientId ?? "-"],
+      ["User ID", appointment.data?.userId ?? appointment.data?.guestUserId ?? "-"],
+      ["Guest Name", appointment.data?.guestUser?.fullName ?? "-"],
+      ["Guest Email", appointment.data?.guestUser?.email ?? "-"],
+      ["Guest Phone", appointment.data?.guestUser?.phoneNumber ?? "-"],
+    ];
+
+    const doctorRows: Array<[string, string]> = [
+      ["Doctor", appointment.data?.doctorName ?? "-"],
+      ["Specialization", appointment.data?.specialization ?? "-"],
+      ["Hospital", appointment.data?.hospitalName ?? "-"],
+      ["Channeling Date/Time", channelDateTime],
+      ["Booking Reference", appointment.data?.bookingReferenceId ?? "-"],
+    ];
+
+    const paymentRows: Array<[string, string]> = [
+      ["My Appointment Number", appointment.data?.appointmentNumber ? `#${appointment.data.appointmentNumber}` : "-"],
+      ["Appointment ID", appointmentId],
+      ["Payment ID", confirmedPayment.id],
+      ["Status", confirmedPayment.status?.toUpperCase() ?? "CONFIRMED"],
+      ["Amount Paid", amountPaid],
+    ];
+
+    await generateRecipePdf({
+      fileId: appointmentId,
+      userDetails: userRows,
+      doctorDetails: doctorRows,
+      paymentSummary: paymentRows,
+    });
+  };
+
+  useEffect(() => {
+    if (!confirmedPayment || !appointmentId || !isVideoConsultationFlow) return;
+
+    if (typeof window === "undefined") return;
+
+    try {
+      const storageKey = "video-consultation-payments";
+      const raw = window.localStorage.getItem(storageKey);
+      const parsed = raw ? JSON.parse(raw) : {};
+
+      const nextMap =
+        parsed && typeof parsed === "object"
+          ? (parsed as Record<string, true>)
+          : {};
+
+      nextMap[appointmentId] = true;
+      window.localStorage.setItem(storageKey, JSON.stringify(nextMap));
+    } catch {
+      // Ignore storage failures; payment flow should continue.
+    }
+  }, [confirmedPayment, appointmentId, isVideoConsultationFlow]);
+
   if (configError || initError) {
     return (
       <main className="flex flex-col max-w-6xl min-h-screen gap-6 px-6 py-10 mx-auto">
@@ -155,6 +261,7 @@ function PaymentPageContent() {
           title="Secure Payment"
           subtitle="Complete your payment with trusted providers."
         />
+        <PaymentSuccessBanner />
         <Alert type="info">{initInfo}</Alert>
       </main>
     );
@@ -185,20 +292,61 @@ function PaymentPageContent() {
         title="Secure Payment"
         subtitle="Complete your payment with trusted providers."
       />
-      <div className="max-w-xl">
-        <Elements 
-          stripe={stripePromise} 
-          key={clientSecret}
-          options={elementsOptions}
-        >
-          <PaymentForm
-            appointmentId={appointmentId}
-            paymentId={paymentId}
-            amount={amount}
-            currency={currency}
-          />
-        </Elements>
-      </div>
+
+      {!confirmedPayment ? (
+        <div className="max-w-xl">
+          <Elements
+            stripe={stripePromise}
+            key={clientSecret}
+            options={elementsOptions}
+          >
+            <PaymentForm
+              appointmentId={appointmentId}
+              paymentId={paymentId}
+              amount={amount}
+              currency={currency}
+              onPaymentSuccess={setConfirmedPayment}
+            />
+          </Elements>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <PaymentSuccessBanner />
+
+          <Card title="Doctor Channelling Summary">
+            <div className="grid gap-2 text-sm text-gray-700 md:grid-cols-2">
+              <p><span className="font-semibold">Appointment ID:</span> {appointmentId}</p>
+              <p><span className="font-semibold">Appointment Number:</span> {appointment.data?.appointmentNumber ? `#${appointment.data.appointmentNumber}` : "-"}</p>
+              <p><span className="font-semibold">Payment ID:</span> {confirmedPayment.id}</p>
+              <p><span className="font-semibold">Doctor:</span> {appointment.data?.doctorName ?? "-"}</p>
+              <p><span className="font-semibold">Hospital:</span> {appointment.data?.hospitalName ?? "-"}</p>
+              <p><span className="font-semibold">Specialization:</span> {appointment.data?.specialization ?? "-"}</p>
+              <p>
+                <span className="font-semibold">Channeling Date/Time:</span>{" "}
+                {appointment.data?.slotTime
+                  ? new Date(appointment.data.slotTime).toLocaleString()
+                  : "-"}
+              </p>
+              <p><span className="font-semibold">Booking Reference:</span> {appointment.data?.bookingReferenceId ?? "-"}</p>
+              <p><span className="font-semibold">Status:</span> {confirmedPayment.status?.toUpperCase() ?? appointment.data?.status ?? "CONFIRMED"}</p>
+              <p><span className="font-semibold">Amount Paid:</span> {(confirmedPayment.amount / 100).toFixed(2)} {confirmedPayment.currency.toUpperCase()}</p>
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link href="/appointments/history" className="inline-block">
+                <Button variant="secondary">View Appointment History</Button>
+              </Link>
+              {isVideoConsultationFlow ? (
+                <Link href={`/consultation/${appointmentId}`} className="inline-block">
+                  <Button>Join Consultation</Button>
+                </Link>
+              ) : (
+                <Button onClick={downloadRecipePdf}>Download recipe</Button>
+              )}
+            </div>
+          </Card>
+        </div>
+      )}
     </main>
   );
 }

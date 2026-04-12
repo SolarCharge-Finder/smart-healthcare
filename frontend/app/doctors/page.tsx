@@ -1,95 +1,82 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import Card from "../../components/ui/Card";
 import PageHeader from "../../components/ui/PageHeader";
+import Alert from "../../components/ui/Alert";
+import api from "../../lib/api";
 
-const doctors = [
-  {
-    id: "D-1001",
-    name: "Dr. Ayesha Perera",
-    specialization: "Cardiology",
-    location: "Colombo"
-  },
-  {
-    id: "D-1002",
-    name: "Dr. Nimal Silva",
-    specialization: "Dermatology",
-    location: "Kandy"
-  },
-  {
-    id: "D-1003",
-    name: "Dr. Shanika Fernando",
-    specialization: "Pediatrics",
-    location: "Galle"
-  }
-];
+type DoctorListItem = {
+  doctorId: string;
+  doctorName: string;
+  specialization: string;
+  hospitalId: string;
+  hospitalName: string;
+  nextAvailableSlot: string;
+};
+
+function getTodayLocalDateString() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 export default function DoctorsPage() {
-  const [specialization, setSpecialization] = useState("");
-  const [location, setLocation] = useState("");
+  const defaultDate = getTodayLocalDateString();
 
-  const filtered = useMemo(() => {
-    return doctors.filter((doctor) => {
-      const specOk = specialization
-        ? doctor.specialization === specialization
-        : true;
-      const locOk = location ? doctor.location === location : true;
-      return specOk && locOk;
-    });
-  }, [specialization, location]);
+  const doctors = useQuery<DoctorListItem[]>({
+    queryKey: ["doctor-list"],
+    queryFn: async () => {
+      const { data } = await api.get<DoctorListItem[]>("/doctors");
+      return data;
+    },
+  });
 
   return (
     <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-6 py-10">
       <PageHeader
         title="Find Doctors"
-        subtitle="Browse by specialization or location."
+        subtitle="All doctors from the database."
       />
 
-      <Card title="Search">
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="block space-y-1">
-            <span className="text-sm font-medium text-gray-700">
-              Specialization
-            </span>
-            <select
-              className="w-full rounded-lg border border-gray-300 bg-white p-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-              value={specialization}
-              onChange={(e) => setSpecialization(e.target.value)}
-            >
-              <option value="">All</option>
-              <option value="Cardiology">Cardiology</option>
-              <option value="Dermatology">Dermatology</option>
-              <option value="Pediatrics">Pediatrics</option>
-            </select>
-          </label>
-          <label className="block space-y-1">
-            <span className="text-sm font-medium text-gray-700">
-              Location
-            </span>
-            <select
-              className="w-full rounded-lg border border-gray-300 bg-white p-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-            >
-              <option value="">All</option>
-              <option value="Colombo">Colombo</option>
-              <option value="Kandy">Kandy</option>
-              <option value="Galle">Galle</option>
-            </select>
-          </label>
-        </div>
-      </Card>
+      {doctors.isLoading ? <Alert type="info">Loading doctors...</Alert> : null}
+
+      {doctors.isError ? (
+        <Alert type="error">Unable to load doctors from database.</Alert>
+      ) : null}
+
+      {doctors.isSuccess && doctors.data.length === 0 ? (
+        <Alert type="info">No doctors found in database.</Alert>
+      ) : null}
+
+      <Alert type="info">
+        Click a doctor card to view available hospitals, dates, and time slots.
+      </Alert>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {filtered.map((doctor) => (
-          <Card key={doctor.id} title={doctor.name}>
-            <div className="text-sm text-gray-600">
-              <p>Specialization: {doctor.specialization}</p>
-              <p>Location: {doctor.location}</p>
-              <p>Doctor ID: {doctor.id}</p>
-            </div>
-          </Card>
+        {(doctors.data ?? []).map((doctor) => (
+          <Link
+            key={`${doctor.doctorId}-${doctor.hospitalId}`}
+            href={`/doctors/results?doctorName=${encodeURIComponent(doctor.doctorName)}&date=${defaultDate}`}
+            className="block rounded-2xl transition hover:-translate-y-0.5"
+          >
+            <Card title={doctor.doctorName}>
+              <div className="text-sm text-gray-600">
+                <p>Specialization: {doctor.specialization}</p>
+                <p>Hospital: {doctor.hospitalName}</p>
+                <p>Doctor ID: {doctor.doctorId}</p>
+                <p>
+                  Next Slot: {doctor.nextAvailableSlot
+                    ? new Date(doctor.nextAvailableSlot).toLocaleString()
+                    : "-"}
+                </p>
+                <p className="mt-3 font-medium text-blue-600">View Available Times</p>
+              </div>
+            </Card>
+          </Link>
         ))}
       </div>
     </main>
