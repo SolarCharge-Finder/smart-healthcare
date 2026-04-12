@@ -4,10 +4,12 @@ using System.Text;
 
 using Doctor.Application.Interfaces;
 using Doctor.Application.Services;
+using Doctor.Infrastructure.Authorization;
 using Doctor.Infrastructure.Data;
 using Doctor.Infrastructure.Repositories;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -27,9 +29,13 @@ public static class ServiceExtensions
         services.AddDbContext<DoctorDbContext>(options =>
             options.UseNpgsql(connectionString));
 
+        services.AddHttpContextAccessor();
 
         services.AddScoped<IDoctorService, DoctorService>();
+        services.AddScoped<IAvailabilityService, AvailabilityService>();
+        services.AddScoped<IAvailabilityRepository, AvailabilityRepository>();
         services.AddScoped<IDoctorRepository, DoctorRepository>();
+        services.AddScoped<IAuthorizationHandler, DoctorOwnerHandler>();
     }
 
 
@@ -65,6 +71,18 @@ public static class ServiceExtensions
                     },
                     new string[] {}
                 }
+            });
+        });
+    }
+
+    public static void AddAuthorizationPolicies(this IServiceCollection services)
+    {
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy("DoctorOwner", policy =>
+            {
+                policy.RequireRole("Doctor");
+                policy.AddRequirements(new DoctorOwnerRequirement());
             });
         });
     }
