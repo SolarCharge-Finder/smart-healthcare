@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 
 using Doctor.Application.DTOs;
@@ -5,8 +6,6 @@ using Doctor.Infrastructure.Data;
 
 using FluentAssertions;
 
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -20,7 +19,7 @@ public class PostgresIntegrationTests : IAsyncLifetime
 {
     private PostgreSqlContainer _db = null!;
     private HttpClient _client = null!;
-    private TestingFactory _factory = null!;
+    private PostgreSqlTestingFactory _factory = null!;
 
     public async Task InitializeAsync()
     {
@@ -49,7 +48,7 @@ public class PostgresIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task CreateDoctor_Should_Work_With_Postgres()
+    public async Task CreateDoctor_Should_Persist_In_Postgres()
     {
         var request = new CreateDoctorRequest
         {
@@ -60,67 +59,94 @@ public class PostgresIntegrationTests : IAsyncLifetime
 
         var response = await _client.PostAsJsonAsync("/doctors", request);
 
-        response.EnsureSuccessStatusCode();
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<DoctorDbContext>();
 
-        var doctor = await db.Doctors.ToListAsync();
+        var doctors = await db.Doctors.ToListAsync();
 
-        doctor.Should().NotBeEmpty();
+        doctors.Should().Contain(d => d.FullName == "Dr Postgres");
     }
 
     [Fact]
-    public async Task ApproveDoctor_Should_Persist_In_Postgres()
+    public async Task ApproveDoctor_Should_Update_IsApproved_In_Database()
     {
-        var request = new CreateDoctorRequest
+        var create = await _client.PostAsJsonAsync("/doctors", new CreateDoctorRequest
         {
             FullName = "Dr PG Approve",
             Specialization = "Test",
             Hospital = "DB"
-        };
+        });
 
-        await _client.PostAsJsonAsync("/doctors", request);
+        create.EnsureSuccessStatusCode();
 
         var doctors = await _client.GetFromJsonAsync<List<DoctorResponse>>("/doctors");
+        var doctor = doctors!.Single(d => d.FullName == "Dr PG Approve");
 
-        var id = doctors!.First().Id;
+        var approveResponse = await _client.PutAsync($"/doctors/{doctor.Id}/approve", null);
 
-        await _client.PutAsync($"/doctors/{id}/approve", null);
+        approveResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var approved = await _client.GetFromJsonAsync<List<DoctorResponse>>("/doctors/approved");
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<DoctorDbContext>();
 
-        approved.Should().Contain(d => d.Id == id && d.IsApproved);
+        var updated = await db.Doctors.FirstAsync(d => d.Id == doctor.Id);
+
+        updated.IsApproved.Should().BeTrue();
     }
 
-    public class PostgreSqlTestingFactory : TestingFactory
+    [Fact]
+    public async Task GetApproved_Should_Return_Approved_Doctors_From_Postgres()
     {
-        private readonly PostgreSqlContainer _db;
-
-        public PostgreSqlTestingFactory(PostgreSqlContainer db)
+        var create = await _client.PostAsJsonAsync("/doctors", new CreateDoctorRequest
         {
-            _db = db;
-        }
+            FullName = "Dr PG Approved",
+            Specialization = "Cardio",
+            Hospital = "DB"
+        });
 
-        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        create.EnsureSuccessStatusCode();
+
+        var doctors = await _client.GetFromJsonAsync<List<DoctorResponse>>("/doctors");
+        var doctor = doctors!.Single(d => d.FullName == "Dr PG Approved");
+
+        await _client.PutAsync($"/doctors/{doctor.Id}/approve", null);
+
+        var response = await _client.GetAsync("/doctors/approved");
+
+        response.EnsureSuccessStatusCode();
+
+        var approved = await response.Content.ReadFromJsonAsync<List<DoctorResponse>>();
+
+        approved.Should().NotBeNull();
+        approved!.Should().Contain(d => d.Id == doctor.Id && d.IsApproved);
+    }
+
+    [Fact]
+    public async Task DeleteDoctor_Should_Remove_From_Postgres()
+    {
+        var create = await _client.PostAsJsonAsync("/doctors", new CreateDoctorRequest
         {
-            base.ConfigureWebHost(builder);
+            FullName = "Dr PG Delete",
+            Specialization = "Ortho",
+            Hospital = "DB"
+        });
 
-            builder.UseEnvironment("Testing");
+        create.EnsureSuccessStatusCode();
 
-            builder.ConfigureServices(services =>
-            {
-                var descriptor = services.FirstOrDefault(
-                    d => d.ServiceType == typeof(DbContextOptions<DoctorDbContext>));
+        var doctors = await _client.GetFromJsonAsync<List<DoctorResponse>>("/doctors");
+        var doctor = doctors!.Single(d => d.FullName == "Dr PG Delete");
 
-                if (descriptor != null)
-                {
-                    services.Remove(descriptor);
-                }
+        var delete = await _client.DeleteAsync($"/doctors/{doctor.Id}");
 
-                services.AddDbContext<DoctorDbContext>(options =>
-                    options.UseNpgsql(_db.GetConnectionString()));
-            });
-        }
+        delete.EnsureSuccessStatusCode();
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<DoctorDbContext>();
+
+        var exists = await db.Doctors.AnyAsync(d => d.Id == doctor.Id);
+
+        exists.Should().BeFalse();
     }
 }

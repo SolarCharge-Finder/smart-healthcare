@@ -1,27 +1,32 @@
-using System.Security.Claims;
-using System.Text.Encodings.Web;
-
 using Doctor.Application.Interfaces;
 using Doctor.Infrastructure.Data;
 using DoctorService.Tests.Fakes;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
+
+using Testcontainers.PostgreSql;
 
 namespace DoctorService.Tests;
 
-public class TestingFactory : WebApplicationFactory<Program>
+public class PostgreSqlTestingFactory : TestingFactory
 {
+    private readonly PostgreSqlContainer _db;
+
+    public PostgreSqlTestingFactory(PostgreSqlContainer db)
+    {
+        _db = db;
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        base.ConfigureWebHost(builder);
+
         builder.UseEnvironment("Testing");
 
-        // inject JWT config (prevents null crash)
         builder.ConfigureAppConfiguration((context, config) =>
         {
             var dict = new Dictionary<string, string?>
@@ -36,7 +41,7 @@ public class TestingFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
-            // Replace DB with in-memory
+            // replace DB
             var dbDescriptor = services.FirstOrDefault(
                 d => d.ServiceType == typeof(DbContextOptions<DoctorDbContext>));
 
@@ -44,9 +49,9 @@ public class TestingFactory : WebApplicationFactory<Program>
                 services.Remove(dbDescriptor);
 
             services.AddDbContext<DoctorDbContext>(options =>
-                options.UseInMemoryDatabase("doctor-tests"));
+                options.UseNpgsql(_db.GetConnectionString()));
 
-
+            // replace auth client
             var authDescriptor = services.FirstOrDefault(
                 d => d.ServiceType == typeof(IAuthServiceClient));
 
@@ -55,15 +60,7 @@ public class TestingFactory : WebApplicationFactory<Program>
 
             services.AddScoped<IAuthServiceClient, FakeAuthServiceClient>();
 
-            // Override authentication
-            services.AddAuthentication("Test")
-                .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
-
-            services.PostConfigure<AuthenticationOptions>(options =>
-            {
-                options.DefaultAuthenticateScheme = "Test";
-                options.DefaultChallengeScheme = "Test";
-            });
+            // 🚫 DO NOT TOUCH AUTHENTICATION HERE
         });
     }
 }
