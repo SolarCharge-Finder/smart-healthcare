@@ -95,7 +95,8 @@ dotnet sln add backend/DoctorService/DoctorService.Infrastructure/DoctorService.
 
 Build image:
 ```
-docker build -t backend-doctor-service:latest ./backend/DoctorService
+
+docker build -t backend-doctor-service:latest -f ./backend/DoctorService/Dockerfile ./backend
 ```
 
 ---

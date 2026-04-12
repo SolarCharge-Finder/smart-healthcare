@@ -105,7 +105,7 @@ Client → Controller → AuthService → UserRepository → Database
 
 From project root:
 
-docker build -t backend-auth-service:latest ./backend/AuthService
+docker build -t backend-auth-service:latest -f ./backend/AuthService/Dockerfile ./backend
 
 ---
 
