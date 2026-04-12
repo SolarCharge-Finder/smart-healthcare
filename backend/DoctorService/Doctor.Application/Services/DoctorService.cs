@@ -7,10 +7,11 @@ using Doctor.Domain.Entities;
 public class DoctorService : IDoctorService
 {
     private readonly IDoctorRepository _repo;
-
-    public DoctorService(IDoctorRepository repo)
+    private readonly IAuthServiceClient _authClient;
+    public DoctorService(IDoctorRepository repo, IAuthServiceClient authClient)
     {
         _repo = repo;
+        _authClient = authClient;
     }
 
     public async Task<Guid> CreateDoctor(CreateDoctorRequest request, Guid userId)
@@ -55,6 +56,8 @@ public class DoctorService : IDoctorService
         doctor.IsApproved = true;
 
         await _repo.SaveChangesAsync();
+
+        await _authClient.GrantRoleAsync(doctor.UserId, "Doctor"); 
     }
 
     public async Task<List<DoctorResponse>> GetAll()
