@@ -1,4 +1,5 @@
 namespace Doctor.Application.Interfaces;
+
 using Doctor.Domain.Entities;
 
 public interface IAvailabilityRepository
