@@ -1,5 +1,6 @@
 using Auth.Application.Interfaces;
 using Auth.Domain.Entities;
+using Shared.Contracts.Enums;
 
 namespace Auth.Application.Services;
 
@@ -61,6 +62,18 @@ public class UserService : IUserService
 
         // update password
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+
+        await _repo.SaveChangesAsync();
+    }
+
+    public async Task SetRoleAsync(Guid userId, UserRole role)
+    {
+        var user = await _repo.GetByIdAsync(userId);
+
+        if (user == null)
+            throw new InvalidOperationException("User not found");
+
+        user.Role = role;
 
         await _repo.SaveChangesAsync();
     }

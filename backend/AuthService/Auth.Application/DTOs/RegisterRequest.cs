@@ -3,7 +3,7 @@ namespace Auth.Application.DTOs;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-using Auth.Domain.Enums;
+using Shared.Contracts.Enums;
 
 public class RegisterRequest
 {

@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Doctor.Domain\Doctor.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared.Contracts\Shared.Contracts.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

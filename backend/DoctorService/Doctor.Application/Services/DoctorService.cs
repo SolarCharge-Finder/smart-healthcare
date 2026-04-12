@@ -3,6 +3,7 @@ namespace Doctor.Application.Services;
 using Doctor.Application.DTOs;
 using Doctor.Application.Interfaces;
 using Doctor.Domain.Entities;
+using Shared.Contracts.Enums;
 
 public class DoctorService : IDoctorService
 {
@@ -57,7 +58,7 @@ public class DoctorService : IDoctorService
 
         await _repo.SaveChangesAsync();
 
-        await _authClient.GrantRoleAsync(doctor.UserId, "Doctor");
+        await _authClient.GrantRoleAsync(doctor.UserId, UserRole.Doctor);
     }
 
     public async Task<List<DoctorResponse>> GetAll()

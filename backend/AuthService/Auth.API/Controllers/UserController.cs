@@ -84,4 +84,11 @@ public class UsersController : ControllerBase
             return StatusCode(500, new { message = "Internal server error" });
         }
     }
+
+    [HttpPost("{userId}/role")]
+    public async Task<IActionResult> SetRole(Guid userId, [FromBody] SetRole dto)
+    {
+        await _userService.SetRoleAsync(userId, dto.Role);
+        return NoContent();
+    }
 }
