@@ -11,7 +11,7 @@ builder.Services
     .AddApiServices() // controllers + swagger
     .AddJwtAuth(builder.Configuration); // JWT auth
 
-builder.Services.AddAuthorization(); // authorization
+builder.Services.AddAuthorizationPolicies(); // authorization
 
 var app = builder.Build();
 

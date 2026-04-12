@@ -85,10 +85,23 @@ public class UsersController : ControllerBase
         }
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost("{userId}/role")]
     public async Task<IActionResult> SetRole(Guid userId, [FromBody] SetRole dto)
     {
         await _userService.SetRoleAsync(userId, dto.Role);
+        return NoContent();
+    }
+
+    [HttpPost("internal/{userId}/role")]
+    [Authorize(Policy = "InternalService")]
+    public async Task<IActionResult> SetRoleInternal(Guid userId, [FromBody] SetRole dto)
+    {
+        if (dto == null)
+            return BadRequest("Role is required");
+
+        await _userService.SetRoleAsync(userId, dto.Role);
+
         return NoContent();
     }
 }
