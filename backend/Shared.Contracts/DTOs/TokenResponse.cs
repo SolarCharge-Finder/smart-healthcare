@@ -1,4 +1,4 @@
-namespace Doctor.Application.DTOs;
+namespace Shared.Contracts.DTOs;
 
 public class TokenResponse
 {

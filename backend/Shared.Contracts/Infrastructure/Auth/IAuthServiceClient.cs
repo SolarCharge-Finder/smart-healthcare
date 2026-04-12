@@ -1,6 +1,6 @@
 using Shared.Contracts.Enums;
 
-namespace Doctor.Application.Interfaces;
+namespace Shared.Contracts.Infrastructure.Auth;
 
 public interface IAuthServiceClient
 {

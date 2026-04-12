@@ -1,10 +1,8 @@
-namespace Doctor.Infrastructure.Services;
+namespace Shared.Contracts.Infrastructure.Auth;
 
 using System.Net.Http.Json;
 
-using Doctor.Application.DTOs;
-using Doctor.Application.Interfaces;
-
+using Shared.Contracts.DTOs;
 using Shared.Contracts.Enums;
 
 public class AuthServiceClient : IAuthServiceClient

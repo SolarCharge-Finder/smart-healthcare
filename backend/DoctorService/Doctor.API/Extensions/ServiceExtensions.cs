@@ -7,7 +7,7 @@ using Doctor.Application.Services;
 using Doctor.Infrastructure.Authorization;
 using Doctor.Infrastructure.Data;
 using Doctor.Infrastructure.Repositories;
-using Doctor.Infrastructure.Services;
+using Shared.Contracts.Infrastructure.Auth;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;

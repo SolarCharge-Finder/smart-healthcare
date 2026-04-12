@@ -5,6 +5,7 @@ using Doctor.Application.Interfaces;
 using Doctor.Domain.Entities;
 
 using Shared.Contracts.Enums;
+using Shared.Contracts.Infrastructure.Auth;
 
 public class DoctorService : IDoctorService
 {
@@ -59,7 +60,14 @@ public class DoctorService : IDoctorService
 
         await _repo.SaveChangesAsync();
 
-        await _authClient.GrantRoleAsync(doctor.UserId, UserRole.Doctor);
+        try
+        {
+            await _authClient.GrantRoleAsync(doctor.UserId, UserRole.Doctor);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Failed to grant doctor role", ex);
+        }
     }
 
     public async Task<List<DoctorResponse>> GetAll()
