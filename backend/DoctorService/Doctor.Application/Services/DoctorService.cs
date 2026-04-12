@@ -3,6 +3,7 @@ namespace Doctor.Application.Services;
 using Doctor.Application.DTOs;
 using Doctor.Application.Interfaces;
 using Doctor.Domain.Entities;
+
 using Shared.Contracts.Enums;
 
 public class DoctorService : IDoctorService

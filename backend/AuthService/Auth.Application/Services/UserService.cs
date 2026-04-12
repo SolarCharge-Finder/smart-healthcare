@@ -1,5 +1,6 @@
 using Auth.Application.Interfaces;
 using Auth.Domain.Entities;
+
 using Shared.Contracts.Enums;
 
 namespace Auth.Application.Services;
@@ -71,7 +72,9 @@ public class UserService : IUserService
         var user = await _repo.GetByIdAsync(userId);
 
         if (user == null)
+        {
             throw new InvalidOperationException("User not found");
+        }
 
         user.Role = role;
 

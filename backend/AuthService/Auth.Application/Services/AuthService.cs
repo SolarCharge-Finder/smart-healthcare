@@ -4,6 +4,7 @@ using Auth.Application.DTOs;
 using Auth.Application.Interfaces;
 using Auth.Application.Utilities;
 using Auth.Domain.Entities;
+
 using Shared.Contracts.Enums;
 
 public class AuthService : IAuthService
