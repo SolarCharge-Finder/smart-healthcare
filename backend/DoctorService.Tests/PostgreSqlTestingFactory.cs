@@ -1,5 +1,6 @@
 using Doctor.Application.Interfaces;
 using Doctor.Infrastructure.Data;
+
 using DoctorService.Tests.Fakes;
 
 using Microsoft.AspNetCore.Authentication;
@@ -46,7 +47,9 @@ public class PostgreSqlTestingFactory : TestingFactory
                 d => d.ServiceType == typeof(DbContextOptions<DoctorDbContext>));
 
             if (dbDescriptor != null)
+            {
                 services.Remove(dbDescriptor);
+            }
 
             services.AddDbContext<DoctorDbContext>(options =>
                 options.UseNpgsql(_db.GetConnectionString()));
@@ -56,7 +59,9 @@ public class PostgreSqlTestingFactory : TestingFactory
                 d => d.ServiceType == typeof(IAuthServiceClient));
 
             if (authDescriptor != null)
+            {
                 services.Remove(authDescriptor);
+            }
 
             services.AddScoped<IAuthServiceClient, FakeAuthServiceClient>();
 

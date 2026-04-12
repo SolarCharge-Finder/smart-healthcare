@@ -3,6 +3,7 @@ using System.Text.Encodings.Web;
 
 using Doctor.Application.Interfaces;
 using Doctor.Infrastructure.Data;
+
 using DoctorService.Tests.Fakes;
 
 using Microsoft.AspNetCore.Authentication;
@@ -41,7 +42,9 @@ public class TestingFactory : WebApplicationFactory<Program>
                 d => d.ServiceType == typeof(DbContextOptions<DoctorDbContext>));
 
             if (dbDescriptor != null)
+            {
                 services.Remove(dbDescriptor);
+            }
 
             services.AddDbContext<DoctorDbContext>(options =>
                 options.UseInMemoryDatabase("doctor-tests"));
@@ -51,7 +54,9 @@ public class TestingFactory : WebApplicationFactory<Program>
                 d => d.ServiceType == typeof(IAuthServiceClient));
 
             if (authDescriptor != null)
+            {
                 services.Remove(authDescriptor);
+            }
 
             services.AddScoped<IAuthServiceClient, FakeAuthServiceClient>();
 
