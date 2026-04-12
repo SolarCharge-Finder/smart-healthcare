@@ -9,6 +9,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+using Shared.Contracts.Infrastructure.Auth;
+
 using Testcontainers.PostgreSql;
 
 namespace DoctorService.Tests;
@@ -65,7 +67,6 @@ public class PostgreSqlTestingFactory : TestingFactory
 
             services.AddScoped<IAuthServiceClient, FakeAuthServiceClient>();
 
-            // 🚫 DO NOT TOUCH AUTHENTICATION HERE
         });
     }
 }

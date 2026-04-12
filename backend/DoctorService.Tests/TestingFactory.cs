@@ -14,6 +14,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
+using Shared.Contracts.Infrastructure.Auth;
+
 namespace DoctorService.Tests;
 
 public class TestingFactory : WebApplicationFactory<Program>

@@ -1,8 +1,7 @@
 namespace DoctorService.Tests.Fakes;
 
-using Doctor.Application.Interfaces;
-
 using Shared.Contracts.Enums;
+using Shared.Contracts.Infrastructure.Auth;
 
 public class FakeAuthServiceClient : IAuthServiceClient
 {
