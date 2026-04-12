@@ -134,12 +134,15 @@ Port forward:
 ```
 kubectl port-forward svc/postgres 5432:5432
 ```
+## Migrations
 
-Run migrations:
 ```
+dotnet ef migrations add InitialCreate --output-dir Data/Migrations --project backend/DoctorService/Doctor.Infrastructure --startup-project backend/DoctorService/Doctor.API
+
 dotnet ef database update --project backend/DoctorService/Doctor.Infrastructure --startup-project backend/DoctorService/Doctor.API
-```
 
+dotnet ef database drop --project backend/DoctorService/Doctor.Infrastructure --startup-project backend/DoctorService/Doctor.API
+```
 ---
 
 ## 📌 Design Decisions
