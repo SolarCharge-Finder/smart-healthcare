@@ -57,7 +57,7 @@ public class DoctorService : IDoctorService
 
         await _repo.SaveChangesAsync();
 
-        await _authClient.GrantRoleAsync(doctor.UserId, "Doctor"); 
+        await _authClient.GrantRoleAsync(doctor.UserId, "Doctor");
     }
 
     public async Task<List<DoctorResponse>> GetAll()

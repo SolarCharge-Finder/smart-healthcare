@@ -1,6 +1,7 @@
 namespace Doctor.Infrastructure.Services;
 
 using System.Net.Http.Json;
+
 using Doctor.Application.Interfaces;
 
 public class AuthServiceClient : IAuthServiceClient
