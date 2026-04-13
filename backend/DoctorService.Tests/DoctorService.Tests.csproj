@@ -28,6 +28,7 @@
   <ItemGroup>
     <ProjectReference Include="..\DoctorService\Doctor.API\Doctor.API.csproj" />
     <ProjectReference Include="..\DoctorService\Doctor.Infrastructure\Doctor.Infrastructure.csproj" />
+    <ProjectReference Include="..\Shared.Contracts\Shared.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

@@ -6,16 +6,16 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // register services
-builder.Services.AddApplicationServices(builder.Configuration);
+builder.Services.AddApplicationServices(builder.Configuration); //ServiceExtension
 
 // controllers + swagger
-builder.Services.AddApiServices();
+builder.Services.AddApiServices(); //ServiceExtension
 
 // JWT auth
 builder.Services.AddJwtAuth(builder.Configuration);
 
-// authorization
-builder.Services.AddAuthorization();
+// authorizations
+builder.Services.AddAuthorizationPolicies();
 
 var app = builder.Build();
 

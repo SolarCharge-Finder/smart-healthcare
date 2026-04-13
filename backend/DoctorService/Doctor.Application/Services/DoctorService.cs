@@ -4,13 +4,17 @@ using Doctor.Application.DTOs;
 using Doctor.Application.Interfaces;
 using Doctor.Domain.Entities;
 
+using Shared.Contracts.Enums;
+using Shared.Contracts.Infrastructure.Auth;
+
 public class DoctorService : IDoctorService
 {
     private readonly IDoctorRepository _repo;
-
-    public DoctorService(IDoctorRepository repo)
+    private readonly IAuthServiceClient _authClient;
+    public DoctorService(IDoctorRepository repo, IAuthServiceClient authClient)
     {
         _repo = repo;
+        _authClient = authClient;
     }
 
     public async Task<Guid> CreateDoctor(CreateDoctorRequest request, Guid userId)
@@ -55,6 +59,15 @@ public class DoctorService : IDoctorService
         doctor.IsApproved = true;
 
         await _repo.SaveChangesAsync();
+
+        try
+        {
+            await _authClient.GrantRoleAsync(doctor.UserId, UserRole.Doctor);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Failed to grant doctor role", ex);
+        }
     }
 
     public async Task<List<DoctorResponse>> GetAll()

@@ -1,6 +1,6 @@
 namespace Auth.Domain.Entities;
 
-using Auth.Domain.Enums;
+using Shared.Contracts.Enums;
 
 public class PendingUser
 {

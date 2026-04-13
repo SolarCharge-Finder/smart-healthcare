@@ -4,13 +4,17 @@ using System.Text;
 
 using Doctor.Application.Interfaces;
 using Doctor.Application.Services;
+using Doctor.Infrastructure.Authorization;
 using Doctor.Infrastructure.Data;
 using Doctor.Infrastructure.Repositories;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+
+using Shared.Contracts.Infrastructure.Auth;
 
 public static class ServiceExtensions
 {
@@ -21,15 +25,24 @@ public static class ServiceExtensions
         var db = config["DB_NAME"] ?? "doctordb";
         var user = config["DB_USER"] ?? "change-me";
         var pass = config["DB_PASSWORD"] ?? "change-me";
+        var authServiceUrl = config["AUTH_SERVICE_URL"] ?? "http://auth-service";
 
         var connectionString = $"Host={host};Port={port};Database={db};Username={user};Password={pass}";
 
         services.AddDbContext<DoctorDbContext>(options =>
             options.UseNpgsql(connectionString));
 
+        services.AddHttpContextAccessor();
 
         services.AddScoped<IDoctorService, DoctorService>();
+        services.AddScoped<IAvailabilityService, AvailabilityService>();
+        services.AddScoped<IAvailabilityRepository, AvailabilityRepository>();
         services.AddScoped<IDoctorRepository, DoctorRepository>();
+        services.AddScoped<IAuthorizationHandler, DoctorOwnerHandler>();
+        services.AddHttpClient<IAuthServiceClient, AuthServiceClient>(client =>
+        {
+            client.BaseAddress = new Uri(authServiceUrl);
+        });
     }
 
 
@@ -65,6 +78,18 @@ public static class ServiceExtensions
                     },
                     new string[] {}
                 }
+            });
+        });
+    }
+
+    public static void AddAuthorizationPolicies(this IServiceCollection services)
+    {
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy("DoctorOwner", policy =>
+            {
+                policy.RequireRole("Doctor");
+                policy.AddRequirements(new DoctorOwnerRequirement());
             });
         });
     }

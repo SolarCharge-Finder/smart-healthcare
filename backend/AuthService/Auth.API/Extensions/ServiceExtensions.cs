@@ -107,6 +107,18 @@ public static class ServiceExtensions
         return services;
     }
 
+    public static void AddAuthorizationPolicies(this IServiceCollection services)
+    {
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy("InternalService", policy =>
+            {
+                policy.RequireClaim("scope", "internal");
+                policy.RequireClaim("service", "doctor-service");
+            });
+        });
+    }
+
     // Auth setup
     public static IServiceCollection AddJwtAuth(this IServiceCollection services, IConfiguration config)
     {
