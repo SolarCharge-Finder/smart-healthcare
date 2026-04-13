@@ -4,13 +4,18 @@ using PatientService.Application.DTOs;
 using PatientService.Application.Interfaces;
 using PatientService.Domain.Entities;
 
+using Shared.Contracts.Enums;
+using Shared.Contracts.Infrastructure.Auth;
+
 public class PatientServiceImplementation : IPatientService
 {
     private readonly IPatientRepository _repo;
+    private readonly IAuthServiceClient _authClient;
 
-    public PatientServiceImplementation(IPatientRepository repo)
+    public PatientServiceImplementation(IPatientRepository repo, IAuthServiceClient authClient)
     {
         _repo = repo;
+        _authClient = authClient;
     }
 
     public async Task<Guid> CreatePatient(Guid userId, CreatePatientRequest request)
@@ -34,6 +39,15 @@ public class PatientServiceImplementation : IPatientService
 
         await _repo.AddAsync(patient);
         await _repo.SaveChangesAsync();
+
+        try
+        {
+            await _authClient.GrantRoleAsync(userId, UserRole.Patient);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Failed to grant patient role" + ex);
+        }
 
         return patient.Id;
     }
