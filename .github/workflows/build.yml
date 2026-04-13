@@ -150,7 +150,7 @@ jobs:
         uses: docker/build-push-action@v7
         if: github.ref == 'refs/heads/main'
         with:
-          context: backend/AuthService
+          context: backend
           file: backend/AuthService/Dockerfile
           push: true
           cache-from: type=gha,scope=auth-service
@@ -163,7 +163,7 @@ jobs:
         uses: docker/build-push-action@v7
         if: github.ref == 'refs/heads/main'
         with:
-          context: backend/DoctorService
+          context: backend
           file: backend/DoctorService/Dockerfile
           push: true
           cache-from: type=gha,scope=doctor-service
