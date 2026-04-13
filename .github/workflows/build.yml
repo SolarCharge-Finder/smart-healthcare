@@ -53,11 +53,6 @@ jobs:
       - name: build
         run: dotnet build smart-healthcare.sln --configuration Release --no-restore
 
-      - name: build payment service (explicit)
-        run: |
-          dotnet restore backend/PaymentService/PaymentService.csproj
-          dotnet build backend/PaymentService/PaymentService.csproj --configuration Release --no-restore
-
       - name: test (if any)
         env:
           ConnectionStrings__DefaultConnection: Host=127.0.0.1;Port=5433;Database=smart_healthcare_test;Username=postgres;Password=postgres;Include Error Detail=true
