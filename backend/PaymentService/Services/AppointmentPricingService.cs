@@ -114,6 +114,26 @@ public class AppointmentPricingService : IAppointmentPricingService
 
     private (long Amount, string Currency) ResolvePricingFromAppointment(AppointmentLookupResponse appointment)
     {
+        if (appointment.TotalFee > 0)
+        {
+            var computedAmount = ConvertToMinorUnit(appointment.TotalFee);
+            var currencyFromAppointment = string.IsNullOrWhiteSpace(appointment.Currency)
+                ? _pricingOptions.Currency
+                : appointment.Currency;
+
+            var normalizedCurrency = string.IsNullOrWhiteSpace(currencyFromAppointment)
+                ? "lkr"
+                : currencyFromAppointment.ToLowerInvariant();
+
+            _logger.LogInformation(
+                "Using appointment total fee {TotalFee} ({Amount} minor units) for appointment {AppointmentId}",
+                appointment.TotalFee,
+                computedAmount,
+                appointment.Id);
+
+            return (computedAmount, normalizedCurrency);
+        }
+
         var amount = _pricingOptions.DefaultAmount;
 
         if (_pricingOptions.DoctorFees.TryGetValue(appointment.DoctorId.ToString(), out var doctorFee)
@@ -146,6 +166,12 @@ public class AppointmentPricingService : IAppointmentPricingService
         return (amount, currency);
     }
 
+    private static long ConvertToMinorUnit(decimal majorAmount)
+    {
+        // Stripe expects amount in the smallest currency unit (e.g., cents).
+        return (long)Math.Round(majorAmount * 100m, 0, MidpointRounding.AwayFromZero);
+    }
+
     private (long Amount, string Currency) GetFallbackPricing()
     {
         var amount = _pricingOptions.DefaultAmount > 0
@@ -168,5 +194,7 @@ public class AppointmentPricingService : IAppointmentPricingService
     {
         public Guid Id { get; set; }
         public Guid DoctorId { get; set; }
+        public decimal TotalFee { get; set; }
+        public string? Currency { get; set; }
     }
 }

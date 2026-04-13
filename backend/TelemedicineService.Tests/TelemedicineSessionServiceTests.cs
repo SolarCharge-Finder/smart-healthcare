@@ -18,11 +18,18 @@ public class TelemedicineSessionServiceTests
     public async Task CreateSessionAsync_WithPaidAppointment_CreatesSessionAndReturnsResponse()
     {
         var appointmentId = Guid.NewGuid();
+        var requesterUserId = Guid.NewGuid();
         await using var db = CreateDbContext();
 
         using var client = new HttpClient(new JsonResponseHandler(
             HttpStatusCode.OK,
-            JsonSerializer.Serialize(new { id = appointmentId, status = "Paid" })))
+            JsonSerializer.Serialize(new
+            {
+                id = appointmentId,
+                status = "Paid",
+                userId = requesterUserId,
+                slotTime = DateTime.UtcNow.AddMinutes(30)
+            })))
         {
             BaseAddress = new Uri("http://appointment-service/")
         };
@@ -30,7 +37,7 @@ public class TelemedicineSessionServiceTests
         var tokenService = new FakeAgoraTokenService();
         var service = CreateService(db, tokenService, client);
 
-        var result = await service.CreateSessionAsync(appointmentId);
+        var result = await service.CreateSessionAsync(appointmentId, requesterUserId);
 
         Assert.Equal(appointmentId, result.AppointmentId);
         Assert.Equal("app-id", result.AgoraAppId);
@@ -46,6 +53,7 @@ public class TelemedicineSessionServiceTests
     [Fact]
     public async Task CreateSessionAsync_WithMissingAppointment_ThrowsKeyNotFoundException()
     {
+        var requesterUserId = Guid.NewGuid();
         await using var db = CreateDbContext();
 
         using var client = new HttpClient(new StatusThrowingHandler(HttpStatusCode.NotFound))
@@ -55,25 +63,32 @@ public class TelemedicineSessionServiceTests
 
         var service = CreateService(db, new FakeAgoraTokenService(), client);
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => service.CreateSessionAsync(Guid.NewGuid()));
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => service.CreateSessionAsync(Guid.NewGuid(), requesterUserId));
     }
 
     [Fact]
     public async Task CreateSessionAsync_WithUnpaidAppointment_ThrowsInvalidOperationException()
     {
         var appointmentId = Guid.NewGuid();
+        var requesterUserId = Guid.NewGuid();
         await using var db = CreateDbContext();
 
         using var client = new HttpClient(new JsonResponseHandler(
             HttpStatusCode.OK,
-            JsonSerializer.Serialize(new { id = appointmentId, status = "Pending" })))
+            JsonSerializer.Serialize(new
+            {
+                id = appointmentId,
+                status = "Pending",
+                userId = requesterUserId,
+                slotTime = DateTime.UtcNow.AddMinutes(30)
+            })))
         {
             BaseAddress = new Uri("http://appointment-service/")
         };
 
         var service = CreateService(db, new FakeAgoraTokenService(), client);
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => service.CreateSessionAsync(appointmentId));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => service.CreateSessionAsync(appointmentId, requesterUserId));
         Assert.Contains("must be 'Paid'", ex.Message);
     }
 
@@ -81,6 +96,7 @@ public class TelemedicineSessionServiceTests
     public async Task CreateSessionAsync_WithExistingActiveSession_DoesNotCreateDuplicate()
     {
         var appointmentId = Guid.NewGuid();
+        var requesterUserId = Guid.NewGuid();
         await using var db = CreateDbContext();
 
         db.TelemedicineSessions.Add(new TelemedicineSession
@@ -94,7 +110,13 @@ public class TelemedicineSessionServiceTests
 
         using var client = new HttpClient(new JsonResponseHandler(
             HttpStatusCode.OK,
-            JsonSerializer.Serialize(new { id = appointmentId, status = "Paid" })))
+            JsonSerializer.Serialize(new
+            {
+                id = appointmentId,
+                status = "Paid",
+                userId = requesterUserId,
+                slotTime = DateTime.UtcNow.AddMinutes(30)
+            })))
         {
             BaseAddress = new Uri("http://appointment-service/")
         };
@@ -102,7 +124,7 @@ public class TelemedicineSessionServiceTests
         var tokenService = new FakeAgoraTokenService();
         var service = CreateService(db, tokenService, client);
 
-        var result = await service.CreateSessionAsync(appointmentId);
+        var result = await service.CreateSessionAsync(appointmentId, requesterUserId);
 
         Assert.Equal($"appointment-{appointmentId}", result.ChannelName);
         Assert.Equal(1, await db.TelemedicineSessions.CountAsync(s => s.AppointmentId == appointmentId));
@@ -152,6 +174,11 @@ public class TelemedicineSessionServiceTests
                 AppId = "app-id",
                 AppCertificate = "app-cert",
                 TokenExpirySeconds = 3600
+            }),
+            Options.Create(new TelemedicineSessionOptions
+            {
+                JoinWindowMinutesBefore = 30,
+                JoinWindowMinutesAfter = 120
             }));
     }
 

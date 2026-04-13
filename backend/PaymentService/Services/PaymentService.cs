@@ -64,9 +64,26 @@ public class PaymentProcessorService : IPaymentService
                 return existing;
             }
 
+            var amountChanged = existing.Amount != pricing.Amount;
+            var currencyChanged = !string.Equals(
+                existing.Currency,
+                normalizedCurrency,
+                StringComparison.OrdinalIgnoreCase);
+
+            if (amountChanged || currencyChanged)
+            {
+                _logger.LogInformation(
+                    "Recreating payment intent for appointment {AppointmentId} because pricing changed (amount: {OldAmount}->{NewAmount}, currency: {OldCurrency}->{NewCurrency}).",
+                    request.AppointmentId,
+                    existing.Amount,
+                    pricing.Amount,
+                    existing.Currency,
+                    normalizedCurrency);
+            }
+
             if (existing.Status is PaymentStatus.Pending or PaymentStatus.Processing or PaymentStatus.RequiresAction)
             {
-                if (!string.IsNullOrWhiteSpace(existing.ClientSecret))
+                if (!string.IsNullOrWhiteSpace(existing.ClientSecret) && !amountChanged && !currencyChanged)
                 {
                     return existing;
                 }

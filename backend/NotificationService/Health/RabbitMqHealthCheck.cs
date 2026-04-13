@@ -1,4 +1,7 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
+
+using NotificationService.Configuration;
 
 using RabbitMQ.Client;
 
@@ -6,23 +9,33 @@ namespace NotificationService.Health;
 
 public class RabbitMqHealthCheck : IHealthCheck
 {
-    private readonly IConfiguration _config;
+    private readonly RabbitMqOptions _options;
 
-    public RabbitMqHealthCheck(IConfiguration config)
+    public RabbitMqHealthCheck(IOptions<RabbitMqOptions> options)
     {
-        _config = config;
+        _options = options.Value;
     }
 
     public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
         CancellationToken cancellationToken = default)
     {
-        var host = _config["RabbitMQ__Host"] ?? "rabbitmq";
+        var host = Environment.GetEnvironmentVariable("RABBITMQ_HOST") ?? _options.Host;
 
         var factory = new ConnectionFactory
         {
             HostName = host
         };
+
+        if (!string.IsNullOrWhiteSpace(_options.User))
+        {
+            factory.UserName = _options.User;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_options.Password))
+        {
+            factory.Password = _options.Password;
+        }
 
         try
         {

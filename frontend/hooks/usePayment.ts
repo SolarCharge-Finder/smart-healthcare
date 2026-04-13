@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import api from "../lib/api";
+import { paymentApi } from "../lib/api";
 import {
   Payment,
   CreatePaymentIntentResponse,
@@ -36,7 +36,7 @@ export function useCreatePaymentIntent() {
   return useMutation<CreatePaymentIntentResponse, Error, CreatePaymentIntentPayload>({
     mutationFn: async (payload) => {
       try {
-        const { data } = await api.post<CreatePaymentIntentResponse>(
+        const { data } = await paymentApi.post<CreatePaymentIntentResponse>(
           "/payments/intents",
           payload
         );
@@ -54,7 +54,7 @@ export function useConfirmPayment() {
   return useMutation<Payment, Error, { paymentId: string; payload: ConfirmPaymentRequest }>({
     mutationFn: async ({ paymentId, payload }) => {
       try {
-        const { data } = await api.post<Payment>(`/payments/${paymentId}/confirm`, payload);
+        const { data } = await paymentApi.post<Payment>(`/payments/${paymentId}/confirm`, payload);
         return data;
       } catch (error) {
         throw extractApiError(error, "Failed to confirm payment.");
@@ -62,11 +62,12 @@ export function useConfirmPayment() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payments"] });
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
     },
   });
 }
 
 export async function getPaymentByAppointmentId(appointmentId: string) {
-  const { data } = await api.get<Payment>(`/payments/appointment/${appointmentId}`);
+  const { data } = await paymentApi.get<Payment>(`/payments/appointment/${appointmentId}`);
   return data;
 }

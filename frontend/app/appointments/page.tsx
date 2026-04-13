@@ -7,7 +7,7 @@ const items = [
   {
     title: "Book Appointment",
     description: "Reserve a slot with your preferred doctor.",
-    href: "/appointments/book",
+    href: "/",
     cta: "Book Now"
   },
   {

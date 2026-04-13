@@ -1,8 +1,30 @@
 export type Appointment = {
   id: string;
   patientId: string;
+  userId?: string | null;
   doctorId: string;
+  doctorName: string;
+  hospitalId: string;
+  hospitalName: string;
+  specialization: string;
   slotTime: string;
+  appointmentDate: string;
+  appointmentNumber: number;
+  bookingReferenceId: string;
+  doctorFee: number;
+  hospitalFee: number;
+  eChannellingFee: number;
+  discount: number;
+  totalFee: number;
+  guestUserId?: string | null;
+  guestUser?: {
+    id: string;
+    fullName: string;
+    email: string;
+    phoneNumber: string;
+    area: string;
+    nicOrPassport: string;
+  } | null;
   status: string;
   createdAt: string;
 };
