@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Moq;
+
 using StackExchange.Redis;
 
 using Xunit;
@@ -64,8 +66,7 @@ public class HealthEndpointsTests
                 }
 
                 services.AddSingleton<IConnectionMultiplexer>(_ =>
-                    ConnectionMultiplexer.Connect(
-                        "localhost:6379,abortConnect=false,connectTimeout=100"));
+                    new Mock<IConnectionMultiplexer>().Object);
             });
         }
     }

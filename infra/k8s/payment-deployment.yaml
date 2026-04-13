@@ -58,13 +58,22 @@ spec:
               key: API_KEY
 
         - name: Stripe__SecretKey
-          value: "sk_test_51TGCiA3rCMm65r19rZ8h6oEdjJnFpJTC5rAfhhH2xrkEQKUNElPlgcsICDddelXlQso0vLe52m7s33pWXlLWGK1a0057J4V8qT"
+          valueFrom:
+            secretKeyRef:
+              name: smarthealth-secrets
+              key: STRIPE_SECRET_KEY
 
         - name: Stripe__PublishableKey
-          value: "pk_test_51TGCiA3rCMm65r19DWJeCITL86GG0yUqdXCHMlTyxTaHh20YxHezVRI0MiV5FOkblYwXyajzZc8AjtKDxVzkxzFU005xYvTlsO"
+          valueFrom:
+            secretKeyRef:
+              name: smarthealth-secrets
+              key: STRIPE_PUBLISHABLE_KEY
 
         - name: Stripe__WebhookSecret
-          value: "whsec_eb38d66d51f24a5989f1f0217cf393962c07c5eaf6a83a1284eeee1d8658a1e8"
+          valueFrom:
+            secretKeyRef:
+              name: smarthealth-secrets
+              key: STRIPE_WEBHOOK_SECRET
 
         livenessProbe:
           httpGet:

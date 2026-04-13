@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin
     ports:
-      - "5433:5432"
+      - "5434:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -103,6 +103,7 @@ services:
       redis:
         condition: service_healthy
     environment:
+      Frontend__Origin: http://localhost:3000
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=appointmentdb;Username=postgres;Password=admin
       RabbitMQ__Host: rabbitmq
       RabbitMQ__User: guest
@@ -116,13 +117,40 @@ services:
     build: ../backend/NotificationService
     container_name: sh-notification
     depends_on:
+      postgres:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     environment:
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=notificationdb;Username=postgres;Password=admin
+      Jwt__Key: ${JWT_KEY}
+      Jwt__Issuer: auth-service
+      Jwt__Audience: smart-healthcare
       RabbitMQ__Host: rabbitmq
       RabbitMQ__User: guest
       RabbitMQ__Password: guest
+    ports:
+      - "8082:8080"
     restart: always
+
+
+  telemedicine-service:
+    build: ../backend/TelemedicineService
+    container_name: sh-telemedicine
+    depends_on:
+      postgres:
+        condition: service_healthy
+      appointment-service:
+        condition: service_started
+    environment:
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=telemedicinedb;Username=postgres;Password=admin
+      AppointmentService__BaseUrl: http://appointment-service:8080/
+      Frontend__Origin: http://localhost:3000
+      Agora__AppId: ${NEXT_PUBLIC_AGORA_APP_ID}
+      Agora__AppCertificate: ${AGORA_APP_CERTIFICATE}
+      Agora__TokenExpirySeconds: 3600
+    ports:
+      - "5005:8080"
 
 
   payment-service:
