@@ -115,10 +115,12 @@ using (var scope = app.Services.CreateScope())
     else
     {
         db.Database.Migrate();
-    }
 
-    await EnsureDynamicSchemaAsync(db);
-    await SeedDoctorAvailabilitiesAsync(db);
+        // Relational dynamic SQL and mock data seeding are for runtime environments.
+        // Skip these in Testing where the in-memory provider is used by test hosts.
+        await EnsureDynamicSchemaAsync(db);
+        await SeedDoctorAvailabilitiesAsync(db);
+    }
 }
 
 app.UseSwagger();
