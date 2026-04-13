@@ -10,12 +10,20 @@ using PatientService.Application.Interfaces;
 using PatientService.Application.Services;
 using PatientService.Infrastructure.Extensions;
 
+using Shared.Contracts.Infrastructure.Auth;
+
 public static class ServiceExtensions
 {
     // applicatoin layer 
     public static void AddApplicationServices(this IServiceCollection services, IConfiguration config)
     {
+        var authServiceUrl = config["AUTH_SERVICE_URL"] ?? "http://auth-service";
+
         services.AddScoped<IPatientService, PatientServiceImplementation>();
+        services.AddHttpClient<IAuthServiceClient, AuthServiceClient>(client =>
+        {
+            client.BaseAddress = new Uri(authServiceUrl);
+        });
 
         // call infrastructure
         services.AddInfrastructureServices(config);
