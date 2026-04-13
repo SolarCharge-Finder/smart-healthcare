@@ -7,13 +7,16 @@ using AppointmentService.Data;
 using AppointmentService.Logging;
 using AppointmentService.Messaging;
 using AppointmentService.Models;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+
 using Npgsql;
 
 using Serilog;
 using Serilog.Context;
 using Serilog.Formatting.Json;
+
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -336,7 +339,9 @@ async (
     var nowUtc = DateTime.UtcNow;
     var today = DateOnly.FromDateTime(nowUtc.Date);
     if (date < today)
+    {
         return Results.BadRequest("Date must be today or in the future.");
+    }
 
     var dayStart = ToUtc(date.ToDateTime(TimeOnly.MinValue));
     var dayEnd = dayStart.AddDays(1);
@@ -348,16 +353,24 @@ async (
             d.SlotTime < dayEnd);
 
     if (!string.IsNullOrWhiteSpace(doctorName))
+    {
         query = query.Where(d => d.DoctorName == doctorName);
+    }
 
     if (!string.IsNullOrWhiteSpace(specialization))
+    {
         query = query.Where(d => d.Specialization == specialization);
+    }
 
     if (!string.IsNullOrWhiteSpace(hospitalId))
+    {
         query = query.Where(d => d.HospitalId == hospitalId);
+    }
 
     if (date == today)
+    {
         query = query.Where(d => d.SlotTime >= nowUtc);
+    }
 
     var candidateSlots = await query
         .OrderBy(d => d.DoctorName)
@@ -365,7 +378,9 @@ async (
         .ToListAsync();
 
     if (candidateSlots.Count == 0)
+    {
         return Results.Ok(Array.Empty<object>());
+    }
 
     var doctorIds = candidateSlots
         .Select(s => s.DoctorId)
@@ -491,7 +506,9 @@ async (
         .FirstOrDefaultAsync();
 
     if (slot is null)
+    {
         return Results.NotFound("Pricing not found for selected doctor.");
+    }
 
     return Results.Ok(ToPricingResponse(slot));
 });
@@ -539,10 +556,14 @@ async (
         .Where(a => a.Status == "PENDING_PAYMENT");
 
     if (userId.HasValue)
+    {
         query = query.Where(a => a.UserId == userId.Value);
+    }
 
     if (!string.IsNullOrWhiteSpace(guestEmail))
+    {
         query = query.Where(a => a.GuestUser != null && a.GuestUser.Email == guestEmail);
+    }
 
     var items = await query
         .OrderByDescending(a => a.CreatedAt)
@@ -563,10 +584,14 @@ async (
     var toUtc = ToUtc(to);
 
     if (fromUtc >= toUtc)
+    {
         return Results.BadRequest("`from` must be earlier than `to`");
+    }
 
     if ((toUtc - fromUtc).TotalDays > 30)
+    {
         return Results.BadRequest("Range must not exceed 30 days");
+    }
 
     var slots = await db.DoctorAvailabilities
         .AsNoTracking()
@@ -688,10 +713,14 @@ async (
 
     if (string.Equals(appointment.Status, "CANCELLED", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(appointment.Status, "Cancelled", StringComparison.OrdinalIgnoreCase))
+    {
         return Results.BadRequest("Appointment already cancelled");
+    }
 
     if (appointment.SlotTime < DateTime.UtcNow)
+    {
         return Results.BadRequest("Cannot cancel past appointment");
+    }
 
     appointment.Status = "CANCELLED";
 
@@ -788,19 +817,27 @@ async (
     ILogger<Program> logger) =>
 {
     if (request.DoctorId == Guid.Empty)
+    {
         return Results.BadRequest("DoctorId is required.");
+    }
 
     if (string.IsNullOrWhiteSpace(request.HospitalId))
+    {
         return Results.BadRequest("HospitalId is required.");
+    }
 
     var slotTimeUtc = ToUtc(request.SlotTime);
     if (slotTimeUtc < DateTime.UtcNow)
+    {
         return Results.BadRequest("Selected slot must be current or future time.");
+    }
 
     var appointmentDateUtc = DateTime.SpecifyKind(slotTimeUtc.Date, DateTimeKind.Utc);
 
     if (request.UserId is null && request.Guest is null)
+    {
         return Results.BadRequest("UserId or guest details are required.");
+    }
 
     if (request.UserId is null)
     {
@@ -916,7 +953,9 @@ async (
                     a.SlotTime == slotTimeUtc);
 
             if (availability is null)
+            {
                 return Results.BadRequest("Selected slot is not available.");
+            }
 
             var exists = await db.Appointments
                 .AnyAsync(a =>
@@ -1132,7 +1171,9 @@ async (
         finally
         {
             if (tx is not null)
+            {
                 await tx.DisposeAsync();
+            }
 
             if (lockToken is not null)
             {
@@ -1160,14 +1201,18 @@ async (
         .FirstOrDefaultAsync(a => a.Id == id);
 
     if (appointment is null)
+    {
         return Results.NotFound();
+    }
 
     if (appointment.Status == "CONFIRMED")
+    {
         return Results.Ok(new
         {
             appointmentId = appointment.Id,
             status = appointment.Status
         });
+    }
 
     appointment.Status = "CONFIRMED";
 
@@ -1209,7 +1254,9 @@ async (
         .FirstOrDefaultAsync(a => a.Id == request.AppointmentId);
 
     if (appointment is null)
+    {
         return Results.NotFound("Appointment not found.");
+    }
 
     return Results.Ok(new
     {
@@ -1231,7 +1278,9 @@ async (
         .FirstOrDefaultAsync(a => a.Id == request.AppointmentId);
 
     if (appointment is null)
+    {
         return Results.NotFound("Appointment not found.");
+    }
 
     if (!string.Equals(request.PaymentStatus, "SUCCESS", StringComparison.OrdinalIgnoreCase))
     {
@@ -1414,7 +1463,9 @@ static async Task<List<ApprovedDoctorDto>> FetchApprovedDoctorsAsync(IConfigurat
     var candidateBaseUrls = new List<string>();
 
     if (!string.IsNullOrWhiteSpace(configuredBaseUrl))
+    {
         candidateBaseUrls.Add(configuredBaseUrl);
+    }
 
     candidateBaseUrls.Add("http://doctor-service:8080");
     candidateBaseUrls.Add("http://host.docker.internal:30002");
@@ -1432,7 +1483,9 @@ static async Task<List<ApprovedDoctorDto>> FetchApprovedDoctorsAsync(IConfigurat
 
             var doctors = await client.GetFromJsonAsync<List<ApprovedDoctorDto>>(endpoint);
             if (doctors is not null)
+            {
                 return doctors;
+            }
         }
         catch
         {
@@ -1612,7 +1665,9 @@ static async Task EnsureDynamicSchemaAsync(AppointmentDbContext db)
 static async Task SeedDoctorAvailabilitiesAsync(AppointmentDbContext db)
 {
     if (await db.DoctorAvailabilities.AnyAsync())
+    {
         return;
+    }
 
     var path = Path.Combine(
         AppContext.BaseDirectory,
@@ -1620,7 +1675,9 @@ static async Task SeedDoctorAvailabilitiesAsync(AppointmentDbContext db)
         "doctor-availability.json");
 
     if (!File.Exists(path))
+    {
         return;
+    }
 
     var json = await File.ReadAllTextAsync(path);
 
@@ -1632,7 +1689,9 @@ static async Task SeedDoctorAvailabilitiesAsync(AppointmentDbContext db)
         });
 
     if (rows is null || rows.Count == 0)
+    {
         return;
+    }
 
     foreach (var row in rows)
     {
@@ -1642,7 +1701,9 @@ static async Task SeedDoctorAvailabilitiesAsync(AppointmentDbContext db)
                 CultureInfo.InvariantCulture,
                 DateTimeStyles.None,
                 out var date))
+        {
             continue;
+        }
 
         if (!TimeOnly.TryParseExact(
                 row.Time,
@@ -1650,7 +1711,9 @@ static async Task SeedDoctorAvailabilitiesAsync(AppointmentDbContext db)
                 CultureInfo.InvariantCulture,
                 DateTimeStyles.None,
                 out var time))
+        {
             continue;
+        }
 
         var slotTime = ToUtc(date.ToDateTime(time));
 

@@ -416,7 +416,9 @@ app.MapPost("/payments/initiate",
 async (CreatePaymentIntentRequest request, IPaymentService paymentService) =>
 {
     if (request.AppointmentId == Guid.Empty)
+    {
         return Results.BadRequest("AppointmentId is required");
+    }
 
     try
     {
@@ -462,7 +464,9 @@ async (
     var payment = await paymentService.ConfirmPaymentAsync(paymentId.Value, request);
 
     if (payment is null)
+    {
         return Results.NotFound();
+    }
 
     return Results.Ok(new
     {
