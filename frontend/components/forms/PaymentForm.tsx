@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   PaymentElement,
   useStripe,
@@ -12,6 +11,7 @@ import Button from "../ui/Button";
 import Alert from "../ui/Alert";
 import Input from "../ui/Input";
 import { getPaymentByAppointmentId, useConfirmPayment } from "../../hooks/usePayment";
+import { Payment } from "../../types/payment";
 
 
 interface PaymentFormProps {
@@ -19,6 +19,7 @@ interface PaymentFormProps {
   paymentId: string;
   amount: number;
   currency: string;
+  onPaymentSuccess?: (payment: Payment) => void;
 }
 
 function isSuccessfulPaymentStatus(status: string | undefined | null) {
@@ -31,10 +32,10 @@ export default function PaymentForm({
   paymentId,
   amount,
   currency,
+  onPaymentSuccess,
 }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
-  const router = useRouter();
   const { mutateAsync: confirmPaymentAsync } = useConfirmPayment();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -130,12 +131,11 @@ export default function PaymentForm({
 
           setStatus({
             type: "success",
-            message: "✅ Payment completed successfully! Redirecting to your video consultation...",
+            message: "Payment completed successfully. Your doctor channeling summary is ready below.",
           });
+
+          onPaymentSuccess?.(confirmedPayment);
           setEmail("");
-          setTimeout(() => {
-            router.push(`/consultation?appointmentId=${appointmentId}`);
-          }, 1500);
 
         } else if (paymentIntent.status === "processing") {
           setStatus({

@@ -3,9 +3,21 @@ import api from "../lib/api";
 import { Appointment } from "../types/appointment";
 
 export type CreateAppointmentPayload = {
-  patientId: string;
+  patientId?: string;
+  userId?: string;
   doctorId: string;
+  doctorName?: string;
+  hospitalId?: string;
+  hospitalName?: string;
+  specialization?: string;
   slotTime: string;
+  guest?: {
+    fullName: string;
+    email: string;
+    phoneNumber: string;
+    area: string;
+    nicOrPassport: string;
+  };
 };
 
 export function useCreateAppointment() {

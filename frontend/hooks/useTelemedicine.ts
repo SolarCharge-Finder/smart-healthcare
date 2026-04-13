@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { telemedicineApi } from "../lib/api";
 import { TelemedicineSessionResponse, CreateSessionRequest } from "../types/telemedicine";
+import { authStorage } from "../modules/auth/authStorage";
 
 function extractTelemedicineError(error: unknown, fallback: string): Error {
   if (axios.isAxiosError(error)) {
@@ -35,9 +36,19 @@ export function useCreateTelemedicineSession() {
   return useMutation<TelemedicineSessionResponse, Error, CreateSessionRequest>({
     mutationFn: async (payload) => {
       try {
+        const token = authStorage.getToken();
+        const rawApiKey = process.env.NEXT_PUBLIC_API_KEY;
+        const apiKey = rawApiKey && rawApiKey !== "change-me" ? rawApiKey : "dev-key";
+
         const { data } = await telemedicineApi.post<TelemedicineSessionResponse>(
           "/telemedicine/session",
-          payload
+          payload,
+          {
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              ...(apiKey ? { "X-API-KEY": apiKey } : {}),
+            },
+          }
         );
         return data;
       } catch (error) {

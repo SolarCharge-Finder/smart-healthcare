@@ -2,17 +2,94 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import PageHeader from "../../components/ui/PageHeader";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import Alert from "../../components/ui/Alert";
 import { useCreateTelemedicineSession } from "../../hooks/useTelemedicine";
 import { TelemedicineSessionResponse } from "../../types/telemedicine";
+import { Appointment } from "../../types/appointment";
+import api from "../../lib/api";
+import PaymentSummary from "../../components/booking/PaymentSummary";
+import { authStorage } from "../../modules/auth/authStorage";
+
+type JwtPayload = {
+  [key: string]: unknown;
+};
+
+function parseUserIdFromToken(token: string | null): string | null {
+  if (!token) return null;
+
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+
+    const normalized = payload
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+
+    const padded = normalized.padEnd(
+      Math.ceil(normalized.length / 4) * 4,
+      "="
+    );
+
+    const decoded = JSON.parse(atob(padded)) as JwtPayload;
+    const claim =
+      decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+
+    return typeof claim === "string" ? claim : null;
+  } catch {
+    return null;
+  }
+}
 
 // ─── Video Room Component ─────────────────────────────────────────────────────
 
 interface VideoRoomProps {
   session: TelemedicineSessionResponse;
+}
+
+type VideoConsultationDoctor = {
+  doctorId: string;
+  doctorName: string;
+  specialization: string;
+  hospitalId: string;
+  hospitalName: string;
+  isVideoConsultation: boolean;
+  nextAvailableSlot: string;
+  doctorFee: number;
+  hospitalFee: number;
+  eChannellingFee: number;
+  discount: number;
+  totalFee: number;
+};
+
+function formatConsultationDate(iso: string) {
+  if (!iso) return "-";
+
+  const value = new Date(iso);
+  if (Number.isNaN(value.getTime())) return "-";
+
+  return value.toLocaleDateString();
+}
+
+function formatConsultationTime(iso: string) {
+  if (!iso) return "-";
+
+  const value = new Date(iso);
+  if (Number.isNaN(value.getTime())) return "-";
+
+  return value.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
+}
+
+function getTodayLocalDateString() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function VideoRoom({ session }: VideoRoomProps) {
@@ -243,26 +320,104 @@ function VideoRoom({ session }: VideoRoomProps) {
 
 function ConsultationPageContent() {
   const searchParams = useSearchParams();
+  const todayDate = getTodayLocalDateString();
   const [appointmentId, setAppointmentId] = useState("");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
   const [session, setSession] = useState<TelemedicineSessionResponse | null>(null);
-  const [urlError, setUrlError] = useState<string | null>(null);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [hasRequested, setHasRequested] = useState(false);
 
   const createSession = useCreateTelemedicineSession();
 
+  const consultationDoctors = useQuery<VideoConsultationDoctor[]>({
+    queryKey: ["video-consultation-doctors"],
+    enabled: !appointmentId,
+    queryFn: async () => {
+      const { data } = await api.get<VideoConsultationDoctor[]>("/doctors");
+      return data.filter((doctor) => doctor.isVideoConsultation);
+    },
+  });
+
+  const appointment = useQuery<Appointment>({
+    queryKey: ["appointment", appointmentId],
+    enabled: Boolean(appointmentId),
+    queryFn: async () => {
+      const { data } = await api.get<Appointment>(`/appointments/${appointmentId}`);
+      return data;
+    },
+  });
+
+  const appointmentStatus = appointment.data?.status?.toUpperCase() ?? "";
+  const isPaymentSuccessful = appointmentStatus === "PAID";
+
+  useEffect(() => {
+    const token = authStorage.getToken();
+    setCurrentUserId(parseUserIdFromToken(token));
+    setIsAuthReady(true);
+  }, []);
+
   useEffect(() => {
     const apt = searchParams.get("appointmentId");
     if (!apt) {
-      setUrlError("Missing appointmentId in URL. Please go back and complete your payment.");
+      setAppointmentId("");
       return;
     }
     setAppointmentId(apt);
   }, [searchParams]);
 
+  const eligibilityError = (() => {
+    if (!appointmentId || !isAuthReady) return null;
+
+    if (!currentUserId) {
+      return "Please log in to join your consultation.";
+    }
+
+    if (appointment.isError) {
+      return "Unable to load appointment details for this consultation.";
+    }
+
+    if (!appointment.data) {
+      return null;
+    }
+
+    const ownerId = appointment.data.userId;
+    if (!ownerId || ownerId.toLowerCase() !== currentUserId.toLowerCase()) {
+      return "You are not authorized to join this consultation.";
+    }
+
+    if ((appointment.data.status ?? "").toUpperCase() !== "PAID") {
+      return "Your appointment payment is not confirmed yet. Please complete payment before joining.";
+    }
+
+    const slotTime = new Date(appointment.data.slotTime);
+    if (Number.isNaN(slotTime.getTime())) {
+      return "Consultation time is invalid. Please contact support.";
+    }
+
+    const now = new Date();
+    const startWindow = new Date(slotTime.getTime() - 30 * 60 * 1000);
+    const endWindow = new Date(slotTime.getTime() + 2 * 60 * 60 * 1000);
+
+    if (now < startWindow || now > endWindow) {
+      return `Consultation can be joined from ${startWindow.toLocaleString()} to ${endWindow.toLocaleString()}.`;
+    }
+
+    return null;
+  })();
+
   useEffect(() => {
-    if (!appointmentId || hasRequested) return;
+    if (
+      !appointmentId ||
+      hasRequested ||
+      !isAuthReady ||
+      appointment.isLoading ||
+      !appointment.data ||
+      Boolean(eligibilityError)
+    ) {
+      return;
+    }
 
     setHasRequested(true);
     setSessionError(null);
@@ -278,7 +433,6 @@ function ConsultationPageContent() {
           const lowerMessage = message.toLowerCase();
           const shouldRetry =
             lowerMessage.includes("not found") ||
-            lowerMessage.includes("paid") ||
             lowerMessage.includes("temporarily unavailable") ||
             lowerMessage.includes("html") ||
             lowerMessage.includes("resource") ||
@@ -297,17 +451,100 @@ function ConsultationPageContent() {
         },
       }
     );
-  }, [appointmentId, hasRequested, createSession, retryCount]);
+  }, [
+    appointmentId,
+    hasRequested,
+    createSession,
+    retryCount,
+    isAuthReady,
+    appointment.isLoading,
+    appointment.data,
+    eligibilityError,
+  ]);
+
+  useEffect(() => {
+    if (eligibilityError) {
+      setSessionError(eligibilityError);
+      setHasRequested(false);
+    }
+  }, [eligibilityError]);
 
   // ── Render states ──
-  if (urlError) {
+  if (!appointmentId) {
     return (
       <main className="flex flex-col max-w-6xl min-h-screen gap-6 px-6 py-10 mx-auto">
         <PageHeader
-          title="Video Consultation"
-          subtitle="Connect with your doctor in a secure virtual room."
+          title="Video Consultation Doctors"
+          subtitle="Doctors available for medicine consultation through secure video call."
         />
-        <Alert type="error">{urlError}</Alert>
+
+        {consultationDoctors.isLoading ? (
+          <Alert type="info">Loading video consultation doctors...</Alert>
+        ) : null}
+
+        {consultationDoctors.isError ? (
+          <Alert type="error">Unable to load video consultation doctors.</Alert>
+        ) : null}
+
+        {consultationDoctors.isSuccess && consultationDoctors.data.length === 0 ? (
+          <Alert type="info">No doctors currently marked for video consultation.</Alert>
+        ) : null}
+
+        <div className="grid gap-4 md:grid-cols-2">
+          {(consultationDoctors.data ?? []).map((doctor) => (
+            <Link
+              key={`${doctor.doctorId}-${doctor.hospitalId}`}
+              href={`/doctors/results?doctorName=${encodeURIComponent(doctor.doctorName)}&date=${todayDate}&telemedicine=1`}
+              className="block rounded-2xl transition hover:-translate-y-0.5"
+            >
+              <div className="relative">
+                <span
+                  className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-red-600 text-white shadow"
+                  title="Video Consultation"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="h-5 w-5"
+                    aria-hidden="true"
+                  >
+                    <rect x="3" y="6" width="14" height="12" rx="2" />
+                    <path d="M17 10l4-2v8l-4-2z" />
+                  </svg>
+                </span>
+
+                <Card title={doctor.doctorName}>
+                  <div className="space-y-2 text-sm text-gray-700">
+                    <p>
+                      <span className="font-semibold">Doctor ID:</span> {doctor.doctorId}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Specialization:</span> {doctor.specialization}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Date:</span> {formatConsultationDate(doctor.nextAvailableSlot)}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Time:</span> {formatConsultationTime(doctor.nextAvailableSlot)}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Doctor Fee:</span> Rs. {doctor.doctorFee.toFixed(2)}
+                    </p>
+                    <p>
+                      <span className="font-semibold">eChannelling Fee:</span> Rs. {doctor.eChannellingFee.toFixed(2)}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Total Fee:</span> Rs. {doctor.totalFee.toFixed(2)}
+                    </p>
+                    <p className="pt-1 font-medium text-blue-600">View Available Date and Time</p>
+                  </div>
+                </Card>
+              </div>
+            </Link>
+          ))}
+        </div>
       </main>
     );
   }
@@ -319,6 +556,23 @@ function ConsultationPageContent() {
           title="Video Consultation"
           subtitle="Connect with your doctor in a secure virtual room."
         />
+
+        {isPaymentSuccessful ? (
+          <Alert type="success">
+            Your payment was successful. Your doctor channeling is confirmed.
+          </Alert>
+        ) : null}
+
+        {isPaymentSuccessful && appointment.data ? (
+          <PaymentSummary
+            doctorFee={appointment.data.doctorFee}
+            hospitalFee={appointment.data.hospitalFee}
+            eChannellingFee={appointment.data.eChannellingFee}
+            discount={appointment.data.discount}
+            totalFee={appointment.data.totalFee}
+          />
+        ) : null}
+
         <div className="flex items-center justify-center min-h-64">
           <div className="text-center">
             <div className="inline-block mb-4">
@@ -339,6 +593,23 @@ function ConsultationPageContent() {
           title="Video Consultation"
           subtitle="Connect with your doctor in a secure virtual room."
         />
+
+        {isPaymentSuccessful ? (
+          <Alert type="success">
+            Your payment was successful. Your doctor channeling is confirmed.
+          </Alert>
+        ) : null}
+
+        {isPaymentSuccessful && appointment.data ? (
+          <PaymentSummary
+            doctorFee={appointment.data.doctorFee}
+            hospitalFee={appointment.data.hospitalFee}
+            eChannellingFee={appointment.data.eChannellingFee}
+            discount={appointment.data.discount}
+            totalFee={appointment.data.totalFee}
+          />
+        ) : null}
+
         <Alert type="error">
           {isNotPaid
             ? "⚠️ Your appointment payment is not confirmed yet. Please complete payment before joining."
@@ -355,6 +626,23 @@ function ConsultationPageContent() {
           title="Video Consultation"
           subtitle="Connect with your doctor in a secure virtual room."
         />
+
+        {isPaymentSuccessful ? (
+          <Alert type="success">
+            Your payment was successful. Your doctor channeling is confirmed.
+          </Alert>
+        ) : null}
+
+        {isPaymentSuccessful && appointment.data ? (
+          <PaymentSummary
+            doctorFee={appointment.data.doctorFee}
+            hospitalFee={appointment.data.hospitalFee}
+            eChannellingFee={appointment.data.eChannellingFee}
+            discount={appointment.data.discount}
+            totalFee={appointment.data.totalFee}
+          />
+        ) : null}
+
         <Alert type="info">Loading session details...</Alert>
       </main>
     );
@@ -366,6 +654,23 @@ function ConsultationPageContent() {
         title="Video Consultation"
         subtitle="Connect with your doctor in a secure virtual room."
       />
+
+      {isPaymentSuccessful ? (
+        <Alert type="success">
+          Your payment was successful. Your doctor channeling is confirmed.
+        </Alert>
+      ) : null}
+
+      {isPaymentSuccessful && appointment.data ? (
+        <PaymentSummary
+          doctorFee={appointment.data.doctorFee}
+          hospitalFee={appointment.data.hospitalFee}
+          eChannellingFee={appointment.data.eChannellingFee}
+          discount={appointment.data.discount}
+          totalFee={appointment.data.totalFee}
+        />
+      ) : null}
+
       <Card title="Live Video Consultation">
         <VideoRoom session={session} />
       </Card>

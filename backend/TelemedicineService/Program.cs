@@ -1,4 +1,11 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 using Serilog;
 using Serilog.Context;
@@ -27,7 +34,74 @@ builder.Host.UseSerilog();
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter: Bearer YOUR_TOKEN"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
+builder.Services
+    .AddOptions<TelemedicineSessionOptions>()
+    .Bind(builder.Configuration.GetSection(TelemedicineSessionOptions.SectionName));
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var configuredKey =
+            Environment.GetEnvironmentVariable("JWT_KEY") ??
+            builder.Configuration["Jwt_Key"] ??
+            builder.Configuration["Jwt:Key"];
+
+        if (string.IsNullOrWhiteSpace(configuredKey))
+        {
+            options.UseSecurityTokenValidators = true;
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                ValidateIssuerSigningKey = false,
+                RequireSignedTokens = false,
+                SignatureValidator = (token, _) => new JwtSecurityToken(token)
+            };
+
+            return;
+        }
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(configuredKey))
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 // CORS
 var frontendOrigin = builder.Configuration["Frontend:Origin"];
@@ -118,6 +192,8 @@ if (enableCors)
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.Use(async (context, next) =>
 {
@@ -137,20 +213,21 @@ app.Use(async (context, next) =>
 
 // Endpoints
 var telemedicineGroup = app.MapGroup("/telemedicine")
-    .WithTags("Telemedicine");
+    .WithTags("Telemedicine")
+    .RequireAuthorization();
 
-telemedicineGroup.MapPost("/session", CreateTelemedicineSession)
+RequireApiKey(telemedicineGroup.MapPost("/session", CreateTelemedicineSession)
     .WithName("CreateTelemedicineSession")
     .WithDescription("Create a new telemedicine session for an appointment. Generates Agora tokens server-side.")
     .Produces<TelemedicineSessionResponse>(StatusCodes.Status200OK)
     .Produces(StatusCodes.Status404NotFound)
-    .Produces(StatusCodes.Status400BadRequest);
+    .Produces(StatusCodes.Status400BadRequest));
 
-telemedicineGroup.MapGet("/session/{appointmentId:guid}", GetTelemedicineSession)
+RequireApiKey(telemedicineGroup.MapGet("/session/{appointmentId:guid}", GetTelemedicineSession)
     .WithName("GetTelemedicineSession")
     .WithDescription("Get an existing active telemedicine session for an appointment.")
     .Produces<TelemedicineSessionResponse>(StatusCodes.Status200OK)
-    .Produces(StatusCodes.Status404NotFound);
+    .Produces(StatusCodes.Status404NotFound));
 
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = serviceName }))
     .WithName("HealthCheck")
@@ -159,12 +236,19 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = servi
 // Endpoint handlers
 async Task<IResult> CreateTelemedicineSession(
     CreateSessionRequest request,
+    ClaimsPrincipal user,
     ITelemedicineService telemedicineService,
     ILogger<Program> logger,
     CancellationToken cancellationToken)
 {
     try
     {
+        var requesterUserId = GetRequesterUserId(user);
+        if (requesterUserId is null)
+        {
+            return Results.Unauthorized();
+        }
+
         if (request.AppointmentId == Guid.Empty)
         {
             logger.LogWarning("CreateTelemedicineSession called with empty appointmentId");
@@ -173,6 +257,7 @@ async Task<IResult> CreateTelemedicineSession(
 
         var response = await telemedicineService.CreateSessionAsync(
             request.AppointmentId,
+            requesterUserId.Value,
             cancellationToken);
 
         return Results.Ok(response);
@@ -196,12 +281,19 @@ async Task<IResult> CreateTelemedicineSession(
 
 async Task<IResult> GetTelemedicineSession(
     Guid appointmentId,
+    ClaimsPrincipal user,
     ITelemedicineService telemedicineService,
     ILogger<Program> logger,
     CancellationToken cancellationToken)
 {
     try
     {
+        var requesterUserId = GetRequesterUserId(user);
+        if (requesterUserId is null)
+        {
+            return Results.Unauthorized();
+        }
+
         if (appointmentId == Guid.Empty)
         {
             return Results.BadRequest(new { error = "AppointmentId cannot be empty" });
@@ -215,7 +307,10 @@ async Task<IResult> GetTelemedicineSession(
         }
 
         // Reuse CreateSessionAsync to get fresh tokens for the existing session
-        var response = await telemedicineService.CreateSessionAsync(appointmentId, cancellationToken);
+        var response = await telemedicineService.CreateSessionAsync(
+            appointmentId,
+            requesterUserId.Value,
+            cancellationToken);
         return Results.Ok(response);
     }
     catch (KeyNotFoundException ex)
@@ -233,6 +328,41 @@ async Task<IResult> GetTelemedicineSession(
         logger.LogError(ex, "Unexpected error in GetTelemedicineSession");
         return Results.StatusCode(500);
     }
+}
+
+static Guid? GetRequesterUserId(ClaimsPrincipal user)
+{
+    var rawUserId =
+        user.FindFirstValue(ClaimTypes.NameIdentifier) ??
+        user.FindFirstValue("sub");
+
+    return Guid.TryParse(rawUserId, out var parsedUserId)
+        ? parsedUserId
+        : null;
+}
+
+static RouteHandlerBuilder RequireApiKey(RouteHandlerBuilder endpoint)
+{
+    return endpoint.AddEndpointFilter(async (context, next) =>
+    {
+        var http = context.HttpContext;
+
+        var configured =
+            Environment.GetEnvironmentVariable("API_KEY") ??
+            http.RequestServices.GetRequiredService<IConfiguration>()["ApiKey"] ??
+            "dev-key";
+
+        var provided = http.Request.Headers["X-API-KEY"]
+            .FirstOrDefault();
+
+        if (!string.IsNullOrWhiteSpace(configured) &&
+            !string.Equals(configured, provided, StringComparison.Ordinal))
+        {
+            return Results.Unauthorized();
+        }
+
+        return await next(context);
+    });
 }
 
 app.Run();

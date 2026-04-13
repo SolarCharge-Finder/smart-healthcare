@@ -20,23 +20,27 @@ public class TelemedicineSessionService : ITelemedicineService
     private readonly HttpClient _appointmentServiceClient;
     private readonly ILogger<TelemedicineSessionService> _logger;
     private readonly AgoraOptions _agoraOptions;
+    private readonly TelemedicineSessionOptions _sessionOptions;
 
     public TelemedicineSessionService(
         TelemedicineDbContext dbContext,
         IAgoraTokenService agoraTokenService,
         HttpClient appointmentServiceClient,
         ILogger<TelemedicineSessionService> logger,
-        IOptions<AgoraOptions> agoraOptions)
+        IOptions<AgoraOptions> agoraOptions,
+        IOptions<TelemedicineSessionOptions> sessionOptions)
     {
         _dbContext = dbContext;
         _agoraTokenService = agoraTokenService;
         _appointmentServiceClient = appointmentServiceClient;
         _logger = logger;
         _agoraOptions = agoraOptions.Value;
+        _sessionOptions = sessionOptions.Value;
     }
 
     public async Task<TelemedicineSessionResponse> CreateSessionAsync(
         Guid appointmentId,
+        Guid requesterUserId,
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Creating telemedicine session for appointment: {AppointmentId}", appointmentId);
@@ -62,7 +66,7 @@ public class TelemedicineSessionService : ITelemedicineService
         }
 
         // 3. Validate appointment status
-        ValidateAppointmentStatus(appointment);
+        ValidateAppointmentEligibility(appointment, requesterUserId);
 
         // 4. Generate channel name
         var channelName = $"appointment-{appointmentId}";
@@ -160,7 +164,7 @@ public class TelemedicineSessionService : ITelemedicineService
         }
     }
 
-    private void ValidateAppointmentStatus(AppointmentDto appointment)
+    private void ValidateAppointmentEligibility(AppointmentDto appointment, Guid requesterUserId)
     {
         // Per architecture: Only PAID appointments can generate telemedicine tokens
         // Token generation happens AFTER payment is successfully completed
@@ -172,6 +176,33 @@ public class TelemedicineSessionService : ITelemedicineService
                          $"Current status: '{appointment.Status}'. " +
                          $"Payment must be completed first. Please complete payment before joining video.";
 
+            _logger.LogWarning(message);
+            throw new InvalidOperationException(message);
+        }
+
+        if (!appointment.UserId.HasValue)
+        {
+            var message = $"Appointment {appointment.Id} is not linked to an authenticated user.";
+            _logger.LogWarning(message);
+            throw new InvalidOperationException(message);
+        }
+
+        if (appointment.UserId.Value != requesterUserId)
+        {
+            var message = $"User {requesterUserId} is not authorized to join appointment {appointment.Id}.";
+            _logger.LogWarning(message);
+            throw new InvalidOperationException(message);
+        }
+
+        var nowUtc = DateTime.UtcNow;
+        var windowStart = appointment.SlotTime.AddMinutes(-_sessionOptions.JoinWindowMinutesBefore);
+        var windowEnd = appointment.SlotTime.AddMinutes(_sessionOptions.JoinWindowMinutesAfter);
+
+        if (nowUtc < windowStart || nowUtc > windowEnd)
+        {
+            var message =
+                $"Consultation session for appointment {appointment.Id} can only be joined between " +
+                $"{windowStart:O} and {windowEnd:O}. Current UTC time: {nowUtc:O}.";
             _logger.LogWarning(message);
             throw new InvalidOperationException(message);
         }
@@ -218,4 +249,15 @@ public class AppointmentDto
 {
     public Guid Id { get; set; }
     public string Status { get; set; } = string.Empty;
+    public Guid? UserId { get; set; }
+    public DateTime SlotTime { get; set; }
+}
+
+public class TelemedicineSessionOptions
+{
+    public const string SectionName = "TelemedicineSession";
+
+    public int JoinWindowMinutesBefore { get; set; } = 30;
+
+    public int JoinWindowMinutesAfter { get; set; } = 120;
 }
