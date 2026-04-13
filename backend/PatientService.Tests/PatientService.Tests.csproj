@@ -28,6 +28,7 @@
   <ItemGroup>
     <ProjectReference Include="..\PatientService\PatientService.API\PatientService.API.csproj" />
     <ProjectReference Include="..\PatientService\PatientService.Infrastructure\PatientService.Infrastructure.csproj" />
+    <ProjectReference Include="..\Shared.Contracts\Shared.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

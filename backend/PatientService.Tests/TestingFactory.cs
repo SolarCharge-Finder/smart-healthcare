@@ -1,9 +1,13 @@
+using System.Security.Claims;
+using System.Text.Encodings.Web;
+
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 using PatientService.Infrastructure.Data;
 
@@ -11,23 +15,15 @@ using PatientService.Tests.Fakes;
 
 using Shared.Contracts.Infrastructure.Auth;
 
-using Testcontainers.PostgreSql;
-
 namespace PatientService.Tests;
 
-public class PostgreSqlTestingFactory : WebApplicationFactory<Program>
+public class TestingFactory : WebApplicationFactory<Program>
 {
-    private readonly PostgreSqlContainer _db;
-
-    public PostgreSqlTestingFactory(PostgreSqlContainer db)
-    {
-        _db = db;
-    }
-
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
 
+        // inject JWT config (prevents null crash)
         builder.ConfigureAppConfiguration((context, config) =>
         {
             var dict = new Dictionary<string, string?>
@@ -42,7 +38,7 @@ public class PostgreSqlTestingFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
-            // replace DB
+            // Replace DB with in-memory
             var dbDescriptor = services.FirstOrDefault(
                 d => d.ServiceType == typeof(DbContextOptions<PatientDbContext>));
 
@@ -52,9 +48,9 @@ public class PostgreSqlTestingFactory : WebApplicationFactory<Program>
             }
 
             services.AddDbContext<PatientDbContext>(options =>
-                options.UseNpgsql(_db.GetConnectionString()));
+                options.UseInMemoryDatabase("patient-tests"));
 
-            // replace auth client (IMPORTANT - matches Doctor setup)
+            // replace auth client
             var authDescriptor = services.FirstOrDefault(
                 d => d.ServiceType == typeof(IAuthServiceClient));
 
@@ -65,7 +61,7 @@ public class PostgreSqlTestingFactory : WebApplicationFactory<Program>
 
             services.AddScoped<IAuthServiceClient, FakeAuthServiceClient>();
 
-            // test auth scheme
+            // Override authentication
             services.AddAuthentication("Test")
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
 

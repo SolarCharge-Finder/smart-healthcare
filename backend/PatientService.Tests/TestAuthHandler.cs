@@ -9,23 +9,24 @@ namespace PatientService.Tests;
 
 public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
-    private static readonly string UserId = Guid.NewGuid().ToString();
-
     public TestAuthHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
-        UrlEncoder encoder,
-        ISystemClock clock)
-        : base(options, logger, encoder, clock)
+        UrlEncoder encoder)
+        : base(options, logger, encoder)
     {
     }
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
+        // read user id from header or fallback 
+        var userId = Request.Headers["x-user-id"].FirstOrDefault()
+                     ?? Guid.NewGuid().ToString();
+
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, UserId),
-            new Claim(ClaimTypes.Email, "test@test.com"),
+            new Claim(ClaimTypes.NameIdentifier, userId),
+            new Claim(ClaimTypes.Email, $"{userId}@test.com"),
             new Claim(ClaimTypes.Role, "Admin")
         };
 
