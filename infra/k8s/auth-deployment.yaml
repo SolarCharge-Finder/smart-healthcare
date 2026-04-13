@@ -21,7 +21,13 @@ spec:
           env:
             - name: ASPNETCORE_ENVIRONMENT
               value: Development
-
+# internal api key for inter-service communication
+            - name: InternalAuth__ApiKey
+              valueFrom:
+                secretKeyRef:
+                  name: smarthealth-secrets
+                  key: INTERNAL_API_KEY
+                  
 # Email service connection settings
             - name: SendGrid__ApiKey
               valueFrom:

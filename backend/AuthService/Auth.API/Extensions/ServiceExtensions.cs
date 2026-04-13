@@ -114,7 +114,7 @@ public static class ServiceExtensions
             options.AddPolicy("InternalService", policy =>
             {
                 policy.RequireClaim("scope", "internal");
-                policy.RequireClaim("service", "doctor-service");
+                policy.RequireClaim("service");
             });
         });
     }

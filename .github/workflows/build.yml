@@ -189,7 +189,7 @@ jobs:
         uses: docker/build-push-action@v7
         if: github.ref == 'refs/heads/main'
         with:
-          context: backend/PatientService
+          context: backend
           file: backend/PatientService/Dockerfile
           push: true
           cache-from: type=gha,scope=patient-service
