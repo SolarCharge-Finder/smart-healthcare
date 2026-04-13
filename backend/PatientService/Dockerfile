@@ -7,6 +7,8 @@ COPY ["PatientService/PatientService.Application/PatientService.Application.cspr
 COPY ["PatientService/PatientService.Domain/PatientService.Domain.csproj", "PatientService/PatientService.Domain/"]
 COPY ["PatientService/PatientService.Infrastructure/PatientService.Infrastructure.csproj", "PatientService/PatientService.Infrastructure/"]
 
+COPY ["Shared.Contracts/Shared.Contracts.csproj", "Shared.Contracts/"]
+
 # restore dependencies
 RUN dotnet restore "PatientService/PatientService.API/PatientService.API.csproj"
 
