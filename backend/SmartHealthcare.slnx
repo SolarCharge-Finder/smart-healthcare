@@ -3,4 +3,10 @@
   <Project Path="AIService/AIService.csproj" />
   <Project Path="AppointmentService.Tests/AppointmentService.Tests.csproj" />
   <Project Path="NotificationService/NotificationService.csproj" />
+  <Project Path="PaymentService/PaymentService.csproj" />
+
+  <Project Path="AuthService/Auth.API/Auth.API.csproj" />
+  <Project Path="DoctorService/Doctor.API/Doctor.API.csproj" />
+  <Project Path="DoctorService.Tests/DoctorService.Tests.csproj" />
+  <Project Path="AuthService.Tests/AuthService.Tests.csproj" />
 </Solution>

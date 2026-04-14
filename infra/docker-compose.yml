@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -53,9 +53,44 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      Jwt_Key: ${JWT_KEY}
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=authdb;Username=postgres;Password=admin
+      App_FrontendUrl: ${APP_FRONTEND_URL}
     ports:
       - "5001:8080"
+
+  patient-service: 
+    build: ../backend/PatientService
+    container_name: sh-patient
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=patientdb;Username=postgres;Password=admin
+    ports:
+      - "5002:8080"
+  
+  doctor-service: 
+    build: ../backend/DoctorService
+    container_name: sh-doctor
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=doctordb;Username=postgres;Password=admin
+    ports:
+      - "5003:8080"
+
+  admin-service: 
+    build: ../backend/AdminService
+    container_name: sh-admin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=admindb;Username=postgres;Password=admin
+    ports:
+      - "5004:8080"
 
   appointment-service:
     build: ../backend/AppointmentService
@@ -68,6 +103,7 @@ services:
       redis:
         condition: service_healthy
     environment:
+      Frontend__Origin: http://localhost:3000
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=appointmentdb;Username=postgres;Password=admin
       RabbitMQ__Host: rabbitmq
       RabbitMQ__User: guest
@@ -104,13 +140,56 @@ services:
     build: ../backend/NotificationService
     container_name: sh-notification
     depends_on:
+      postgres:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     environment:
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=notificationdb;Username=postgres;Password=admin
+      Jwt__Key: ${JWT_KEY}
+      Jwt__Issuer: auth-service
+      Jwt__Audience: smart-healthcare
       RabbitMQ__Host: rabbitmq
       RabbitMQ__User: guest
       RabbitMQ__Password: guest
+    ports:
+      - "8082:8080"
     restart: always
+
+
+  telemedicine-service:
+    build: ../backend/TelemedicineService
+    container_name: sh-telemedicine
+    depends_on:
+      postgres:
+        condition: service_healthy
+      appointment-service:
+        condition: service_started
+    environment:
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=telemedicinedb;Username=postgres;Password=admin
+      AppointmentService__BaseUrl: http://appointment-service:8080/
+      Frontend__Origin: http://localhost:3000
+      Agora__AppId: ${NEXT_PUBLIC_AGORA_APP_ID}
+      Agora__AppCertificate: ${AGORA_APP_CERTIFICATE}
+      Agora__TokenExpirySeconds: 3600
+    ports:
+      - "5005:8080"
+
+
+  payment-service:
+    build: ../backend/PaymentService
+    container_name: sh-payment
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=appointmentdb;Username=postgres;Password=admin
+      API_KEY: dev-key
+      Stripe__SecretKey: ${STRIPE_SECRET_KEY}
+      Stripe__PublishableKey: ${STRIPE_PUBLISHABLE_KEY}
+      Stripe__WebhookSecret: ${STRIPE_WEBHOOK_SECRET}
+    ports:
+      - "8081:8080"
 
 
   prometheus:

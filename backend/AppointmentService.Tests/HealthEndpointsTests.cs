@@ -1,9 +1,14 @@
 using AppointmentService.Data;
+
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+
+using Moq;
+
 using StackExchange.Redis;
+
 using Xunit;
 
 namespace AppointmentService.Tests;
@@ -43,7 +48,9 @@ public class HealthEndpointsTests
                         typeof(DbContextOptions<AppointmentDbContext>));
 
                 if (dbDescriptor is not null)
+                {
                     services.Remove(dbDescriptor);
+                }
 
                 services.AddDbContext<AppointmentDbContext>(options =>
                     options.UseInMemoryDatabase("appointment-tests"));
@@ -54,11 +61,12 @@ public class HealthEndpointsTests
                         typeof(IConnectionMultiplexer));
 
                 if (redisDescriptor is not null)
+                {
                     services.Remove(redisDescriptor);
+                }
 
                 services.AddSingleton<IConnectionMultiplexer>(_ =>
-                    ConnectionMultiplexer.Connect(
-                        "localhost:6379,abortConnect=false,connectTimeout=100"));
+                    new Mock<IConnectionMultiplexer>().Object);
             });
         }
     }

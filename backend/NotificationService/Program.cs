@@ -1,9 +1,22 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
+
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+
+using NotificationService.Configuration;
+using NotificationService.Data;
 using NotificationService.Health;
+using NotificationService.Repositories;
 using NotificationService.Services;
+
 using Serilog;
-using Serilog.Formatting.Json;
 using Serilog.Context;
+using Serilog.Formatting.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,26 +36,144 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
+builder.Services
+    .AddOptions<RabbitMqOptions>()
+    .Bind(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
+
+builder.Services
+    .AddOptions<JwtOptions>()
+    .Bind(builder.Configuration.GetSection(JwtOptions.SectionName));
+
+builder.Services.AddDbContext<NotificationDbContext>(options =>
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<INotificationService, NotificationService.Services.NotificationService>();
+builder.Services.AddScoped<IAppointmentNotificationProcessor, AppointmentNotificationProcessor>();
+
 builder.Services.AddHostedService<RabbitMqConsumer>();
+builder.Services.AddHostedService<ReminderScheduler>();
+
+builder.Services.AddControllers();
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var jwtOptions = builder.Configuration
+            .GetSection(JwtOptions.SectionName)
+            .Get<JwtOptions>() ?? new JwtOptions();
+        var configuredKey =
+            Environment.GetEnvironmentVariable("JWT_KEY") ??
+            builder.Configuration["Jwt_Key"] ??
+            jwtOptions.Key;
+
+        if (string.IsNullOrWhiteSpace(configuredKey))
+        {
+            // Dev fallback: allow token parsing when signing key is not configured.
+            // This preserves authenticated flows in local environments where JWT_KEY is missing.
+            // The custom SignatureValidator returns JwtSecurityToken, so force legacy validators.
+            options.UseSecurityTokenValidators = true;
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                ValidateIssuerSigningKey = false,
+                RequireSignedTokens = false,
+                SignatureValidator = (token, _) => new JwtSecurityToken(token)
+            };
+
+            return;
+        }
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtOptions.Issuer,
+            ValidAudience = jwtOptions.Audience,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(configuredKey))
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter: Bearer YOUR_TOKEN"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:3000", "http://localhost:3001")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 builder.Services
     .AddHealthChecks()
+    .AddDbContextCheck<NotificationDbContext>("postgres")
     .AddCheck<RabbitMqHealthCheck>("rabbitmq");
 
 var app = builder.Build();
 
-app.MapGet("/", () => "Notification Service Running");
-
-app.MapGet("/metrics", () =>
+using (var scope = app.Services.CreateScope())
 {
-    return Results.Json(Metrics.Snapshot());
-});
+    var db = scope.ServiceProvider.GetRequiredService<NotificationDbContext>();
+    db.Database.EnsureCreated();
 
-app.MapGet("/metrics/prometheus", () =>
-{
-    return Results.Text(
-        Metrics.SnapshotPrometheus(),
-        "text/plain");
-});
+    await db.Database.ExecuteSqlRawAsync(
+        """
+        CREATE INDEX IF NOT EXISTS "IX_Notifications_UserId" ON "Notifications" ("UserId");
+        CREATE INDEX IF NOT EXISTS "IX_Notifications_CreatedAt" ON "Notifications" ("CreatedAt");
+        CREATE INDEX IF NOT EXISTS "IX_Notifications_IsRead" ON "Notifications" ("IsRead");
+        CREATE INDEX IF NOT EXISTS "IX_Notifications_UserId_IsRead" ON "Notifications" ("UserId", "IsRead");
+
+        CREATE UNIQUE INDEX IF NOT EXISTS "IX_ProcessedEvents_EventKey" ON "ProcessedEvents" ("EventKey");
+
+        CREATE UNIQUE INDEX IF NOT EXISTS "IX_AppointmentProjections_AppointmentId" ON "AppointmentProjections" ("AppointmentId");
+        CREATE INDEX IF NOT EXISTS "IX_AppointmentProjections_UserId_SlotTimeUtc" ON "AppointmentProjections" ("UserId", "SlotTimeUtc");
+        CREATE INDEX IF NOT EXISTS "IX_AppointmentProjections_ReminderSentAt" ON "AppointmentProjections" ("ReminderSentAt");
+        """);
+}
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
+app.UseCors("AllowFrontend");
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.Use(async (context, next) =>
 {
@@ -53,10 +184,11 @@ app.Use(async (context, next) =>
             .FirstOrDefault();
 
     if (string.IsNullOrWhiteSpace(correlationId))
+    {
         correlationId = Guid.NewGuid().ToString();
+    }
 
     context.Response.Headers[headerName] = correlationId;
-    context.Items["CorrelationId"] = correlationId;
 
     using (LogContext.PushProperty(
         "correlationId", correlationId))
@@ -65,10 +197,14 @@ app.Use(async (context, next) =>
     }
 });
 
-app.MapGet("/health/live", () =>
-{
-    return Results.Ok("alive");
-});
+app.MapGet("/", () => "Notification Service Running");
+
+app.MapGet("/metrics", () => Results.Json(NotificationMetrics.Snapshot()));
+
+app.MapGet("/metrics/prometheus", () =>
+    Results.Text(NotificationMetrics.SnapshotPrometheus(), "text/plain"));
+
+app.MapGet("/health/live", () => Results.Ok("alive"));
 
 app.MapGet("/health/ready",
 async (HealthCheckService healthChecks) =>
@@ -76,60 +212,13 @@ async (HealthCheckService healthChecks) =>
     var result = await healthChecks.CheckHealthAsync();
 
     if (result.Status != HealthStatus.Healthy)
+    {
         return Results.StatusCode(503);
+    }
 
     return Results.Ok("ready");
 });
 
+app.MapControllers();
+
 app.Run();
-
-static class Metrics
-{
-    private static long _appointmentsCreatedTotal = 0;
-    private static long _appointmentsCancelledTotal = 0;
-    private static long _appointmentsConflictTotal = 0;
-    private static long _rabbitMqPublishSuccessTotal = 0;
-    private static long _rabbitMqPublishFailureTotal = 0;
-
-    public static void IncAppointmentsCreated() =>
-        Interlocked.Increment(ref _appointmentsCreatedTotal);
-
-    public static void IncAppointmentsCancelled() =>
-        Interlocked.Increment(ref _appointmentsCancelledTotal);
-
-    public static void IncAppointmentsConflict() =>
-        Interlocked.Increment(ref _appointmentsConflictTotal);
-
-    public static void IncRabbitMqPublishSuccess() =>
-        Interlocked.Increment(ref _rabbitMqPublishSuccessTotal);
-
-    public static void IncRabbitMqPublishFailure() =>
-        Interlocked.Increment(ref _rabbitMqPublishFailureTotal);
-
-    public static object Snapshot()
-    {
-        return new
-        {
-            appointments_created_total =
-                Interlocked.Read(ref _appointmentsCreatedTotal),
-            appointments_cancelled_total =
-                Interlocked.Read(ref _appointmentsCancelledTotal),
-            appointments_conflict_total =
-                Interlocked.Read(ref _appointmentsConflictTotal),
-            rabbitmq_publish_success_total =
-                Interlocked.Read(ref _rabbitMqPublishSuccessTotal),
-            rabbitmq_publish_failure_total =
-                Interlocked.Read(ref _rabbitMqPublishFailureTotal)
-        };
-    }
-
-    public static string SnapshotPrometheus()
-    {
-        return
-            $"appointments_created_total {Interlocked.Read(ref _appointmentsCreatedTotal)}\n" +
-            $"appointments_cancelled_total {Interlocked.Read(ref _appointmentsCancelledTotal)}\n" +
-            $"appointments_conflict_total {Interlocked.Read(ref _appointmentsConflictTotal)}\n" +
-            $"rabbitmq_publish_success_total {Interlocked.Read(ref _rabbitMqPublishSuccessTotal)}\n" +
-            $"rabbitmq_publish_failure_total {Interlocked.Read(ref _rabbitMqPublishFailureTotal)}\n";
-    }
-}

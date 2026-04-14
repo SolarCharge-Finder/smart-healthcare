@@ -20,6 +20,21 @@ jobs:
       contents: read
       packages: write
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: smart_healthcare_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d smart_healthcare_test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
     steps:
       - name: checkout
         uses: actions/checkout@v5
@@ -33,16 +48,24 @@ jobs:
             backend/**/packages.lock.json
 
       - name: restore
-        run: dotnet restore backend/SmartHealthcare.slnx
+        run: dotnet restore smart-healthcare.sln
 
       - name: build
-        run: dotnet build backend/SmartHealthcare.slnx --configuration Release --no-restore
+        run: dotnet build smart-healthcare.sln --configuration Release --no-restore
+
+      - name: build payment service (explicit)
+        run: |
+          dotnet restore backend/PaymentService/PaymentService.csproj
+          dotnet build backend/PaymentService/PaymentService.csproj --configuration Release --no-restore
 
       - name: test (if any)
+        env:
+          ConnectionStrings__DefaultConnection: Host=127.0.0.1;Port=5433;Database=smart_healthcare_test;Username=postgres;Password=postgres;Include Error Detail=true
+          ASPNETCORE_ENVIRONMENT: Testing
         run: |
           set -e
           if find backend -name "*Tests.csproj" -print -quit | grep -q .; then
-            dotnet test backend/SmartHealthcare.slnx --configuration Release --no-build
+            dotnet test smart-healthcare.sln --configuration Release --no-build
           else
             echo "No test projects found, skipping."
           fi
@@ -51,7 +74,7 @@ jobs:
         run: |
           dotnet tool install -g dotnet-format
           export PATH="$PATH:$HOME/.dotnet/tools"
-          dotnet format backend/SmartHealthcare.slnx --verify-no-changes
+          dotnet format smart-healthcare.sln --verify-no-changes
 
       - name: setup node
         uses: actions/setup-node@v5
@@ -123,6 +146,71 @@ jobs:
             ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/notification-service:latest
             ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/notification-service:${{ github.sha }}
 
+      - name: build and push auth service
+        uses: docker/build-push-action@v7
+        if: github.ref == 'refs/heads/main'
+        with:
+          context: backend
+          file: backend/AuthService/Dockerfile
+          push: true
+          cache-from: type=gha,scope=auth-service
+          cache-to: type=gha,scope=auth-service,mode=max
+          tags: |
+            ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/auth-service:latest
+            ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/auth-service:${{ github.sha }}
+
+      - name: build and push doctor service
+        uses: docker/build-push-action@v7
+        if: github.ref == 'refs/heads/main'
+        with:
+          context: backend
+          file: backend/DoctorService/Dockerfile
+          push: true
+          cache-from: type=gha,scope=doctor-service
+          cache-to: type=gha,scope=doctor-service,mode=max
+          tags: |
+            ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/doctor-service:latest
+            ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/doctor-service:${{ github.sha }}
+
+      - name: build and push admin service
+        uses: docker/build-push-action@v7
+        if: github.ref == 'refs/heads/main'
+        with:
+          context: backend/AdminService
+          file: backend/AdminService/Dockerfile
+          push: true
+          cache-from: type=gha,scope=admin-service
+          cache-to: type=gha,scope=admin-service,mode=max
+          tags: |
+            ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/admin-service:latest
+            ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/admin-service:${{ github.sha }}
+
+      - name: build and push patient service
+        uses: docker/build-push-action@v7
+        if: github.ref == 'refs/heads/main'
+        with:
+          context: backend
+          file: backend/PatientService/Dockerfile
+          push: true
+          cache-from: type=gha,scope=patient-service
+          cache-to: type=gha,scope=patient-service,mode=max
+          tags: |
+            ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/patient-service:latest
+            ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/patient-service:${{ github.sha }}
+
+      - name: build and push payment service
+        uses: docker/build-push-action@v7
+        if: github.ref == 'refs/heads/main'
+        with:
+          context: backend/PaymentService
+          file: backend/PaymentService/Dockerfile
+          push: true
+          cache-from: type=gha,scope=payment-service
+          cache-to: type=gha,scope=payment-service,mode=max
+          tags: |
+            ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/payment-service:latest
+            ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/payment-service:${{ github.sha }}
+
   deploy:
     runs-on: ubuntu-latest
     needs: build
@@ -172,3 +260,22 @@ jobs:
             appointment-service=ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/appointment-service:${{ github.sha }}
           kubectl set image deployment/notification-deployment \
             notification-service=ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/notification-service:${{ github.sha }}
+          kubectl set image deployment/auth-deployment \
+            auth-service=ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/auth-service:${{ github.sha }}
+          kubectl set image deployment/doctor-deployment \
+            doctor-service=ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/doctor-service:${{ github.sha }}
+          kubectl set image deployment/admin-deployment \
+            admin-service=ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/admin-service:${{ github.sha }}
+          kubectl set image deployment/patient-deployment \
+            patient-service=ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/patient-service:${{ github.sha }}
+          kubectl set image deployment/payment-deployment \
+            payment-service=ghcr.io/${{ steps.image_meta.outputs.repository_lower }}/payment-service:${{ github.sha }}
+
+      - name: verify rollout
+        if: steps.kubeconfig.outputs.enabled == 'true'
+        run: |
+          kubectl rollout status deployment/auth-deployment --timeout=120s
+          kubectl rollout status deployment/doctor-deployment --timeout=120s
+          kubectl rollout status deployment/admin-deployment --timeout=120s
+          kubectl rollout status deployment/patient-deployment --timeout=120s
+          kubectl rollout status deployment/payment-deployment --timeout=120s

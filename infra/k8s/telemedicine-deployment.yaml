@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: telemedicine-deployment
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: telemedicine-service
+
+  template:
+    metadata:
+      labels:
+        app: telemedicine-service
+
+    spec:
+      containers:
+      - name: telemedicine-service
+        image: smarthealth-telemedicine-service:latest
+        imagePullPolicy: IfNotPresent
+
+        ports:
+        - containerPort: 8080
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: smarthealth-secrets
+              key: POSTGRES_USER
+
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: smarthealth-secrets
+              key: POSTGRES_PASSWORD
+
+        - name: ConnectionStrings__DefaultConnection
+          value: Host=postgres;Port=5432;Database=telemedicinedb;Username=$(POSTGRES_USER);Password=$(POSTGRES_PASSWORD)
+
+        - name: AppointmentService__BaseUrl
+          value: http://appointment-service/
+
+        - name: Frontend__Origin
+          value: "http://localhost:3000"
+
+        - name: Agora__AppId
+          value: "4c9a353200244beb8122477dc218d436"
+
+        - name: Agora__AppCertificate
+          value: "da72be24cc2f45eeb29c2dd852e0b99f"
+
+        - name: Agora__TokenExpirySeconds
+          value: "3600"
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5

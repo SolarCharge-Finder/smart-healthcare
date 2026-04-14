@@ -21,6 +21,31 @@ spec:
           env:
             - name: ASPNETCORE_ENVIRONMENT
               value: Development
+# internal api key for inter-service communication
+            - name: InternalAuth__ApiKey
+              valueFrom:
+                secretKeyRef:
+                  name: smarthealth-secrets
+                  key: INTERNAL_API_KEY
+                  
+# Email service connection settings
+            - name: SendGrid__ApiKey
+              valueFrom:
+                secretKeyRef:
+                  name: sendgrid-secret
+                  key: SendGrid__ApiKey
+            
+            - name: SendGrid__FromEmail
+              valueFrom:
+                secretKeyRef:
+                  name: sendgrid-secret
+                  key: SendGrid__FromEmail
+
+            - name: SendGrid__FromName
+              valueFrom:
+                secretKeyRef:
+                  name: sendgrid-secret
+                  key: SendGrid__FromName
 
 # Database connection settings
             - name: DB_HOST
@@ -43,9 +68,7 @@ spec:
                 secretKeyRef:
                   name: smarthealth-secrets
                   key: POSTGRES_PASSWORD
-
-            - name: ConnectionStrings__DefaultConnection
-              value: Host=postgres;Port=5432;Database=authdb;Username=postgres;Password=admin
+                  
             - name: Jwt__Key
               value: this-is-a-very-secure-super-long-key-123456789
             - name: Jwt__Issuer

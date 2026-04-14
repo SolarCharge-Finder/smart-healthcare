@@ -1,6 +1,8 @@
-using AuthService.Data;
-using AuthService.Models;
+using Auth.Domain.Entities;
+using Auth.Infrastructure.Data;
+
 using Microsoft.EntityFrameworkCore;
+
 using Xunit;
 
 namespace AuthService.Tests;
@@ -11,8 +13,8 @@ public class DbModelTests
     public void Users_Email_Should_Be_Unique()
     {
         using var db = CreateDbContext();
-        var entity = db.Model.FindEntityType(typeof(User));
 
+        var entity = db.Model.FindEntityType(typeof(User));
         Assert.NotNull(entity);
 
         var index = entity!.GetIndexes()

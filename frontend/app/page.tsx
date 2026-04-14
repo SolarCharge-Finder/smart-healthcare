@@ -1,6 +1,7 @@
 import Hero from "./Home/hero";
 import QuickActions from "./Home/QuickActions";
 import Features from "./Home/Features";
+import HomeSearchSection from "./Home/HomeSearchSection";
 
 export default function HomePage() {
   return (
@@ -8,70 +9,7 @@ export default function HomePage() {
       {/* 1. Hero — full-width gradient banner with CTA + services card */}
       <Hero />
 
-      {/* 2. Doctor search bar — eChannelling-style (static UI, hooks wired externally) */}
-      <section className="bg-blue-700 pb-8">
-        <div className="container mx-auto px-6">
-          <div className="bg-blue-800/60 backdrop-blur rounded-2xl border border-blue-500/40 px-6 py-5 shadow-xl">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
-
-              <div className="lg:col-span-1 flex flex-col gap-1">
-                <label className="text-blue-200 text-xs font-semibold">Doctor Name</label>
-                <input
-                  type="text"
-                  placeholder="Search Doctor Name"
-                  className="w-full rounded-lg border border-blue-400/30 bg-white/10 text-white placeholder-blue-300 text-sm px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-white/30"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-blue-200 text-xs font-semibold">Specialization</label>
-                <select className="w-full rounded-lg border border-blue-400/30 bg-white/10 text-blue-200 text-sm px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-white/30">
-                  <option value="">Select Specialization</option>
-                  <option>Cardiologist</option>
-                  <option>Dermatologist</option>
-                  <option>Neurologist</option>
-                  <option>Pediatrician</option>
-                  <option>General Practitioner</option>
-                </select>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-blue-200 text-xs font-semibold">Hospital</label>
-                <select className="w-full rounded-lg border border-blue-400/30 bg-white/10 text-blue-200 text-sm px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-white/30">
-                  <option value="">Select Hospital</option>
-                  <option>National Hospital</option>
-                  <option>Asiri Hospital</option>
-                  <option>Lanka Hospital</option>
-                  <option>Nawaloka Hospital</option>
-                </select>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-blue-200 text-xs font-semibold">Date</label>
-                <input
-                  type="date"
-                  className="w-full rounded-lg border border-blue-400/30 bg-white/10 text-blue-200 text-sm px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-white/30"
-                />
-              </div>
-
-              <div className="flex items-end">
-                <button className="w-full bg-blue-500 hover:bg-blue-400 text-white font-semibold text-sm px-6 py-2.5 rounded-lg transition-colors duration-150 shadow">
-                  Search
-                </button>
-              </div>
-
-            </div>
-
-            {/* Advance search toggle */}
-            <div className="flex items-center gap-2 mt-4 text-blue-200 text-xs cursor-pointer hover:text-white transition-colors w-fit mx-auto">
-              <span>Advance search</span>
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
-          </div>
-        </div>
-      </section>
+      <HomeSearchSection />
 
       {/* 3. Quick action cards — eChannelling grid style */}
       <QuickActions />

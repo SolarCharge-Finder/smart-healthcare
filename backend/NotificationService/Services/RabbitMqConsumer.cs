@@ -1,78 +1,164 @@
+using System.Text;
+using System.Text.Json;
+
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+using NotificationService.Configuration;
+using NotificationService.Events;
+
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using System.Text;
-using Microsoft.Extensions.Logging;
-using Serilog.Context;
 
 namespace NotificationService.Services;
 
 public class RabbitMqConsumer : BackgroundService
 {
-    private readonly IConfiguration _config;
+    private static readonly string[] Queues =
+    [
+        AppointmentEventNames.Created,
+        AppointmentEventNames.Confirmed,
+        AppointmentEventNames.PaymentConfirmed,
+        AppointmentEventNames.Cancelled,
+        AppointmentEventNames.Declined
+    ];
+
+    private readonly RabbitMqOptions _options;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<RabbitMqConsumer> _logger;
 
     public RabbitMqConsumer(
-        IConfiguration config,
+        IOptions<RabbitMqOptions> options,
+        IServiceScopeFactory scopeFactory,
         ILogger<RabbitMqConsumer> logger)
     {
-        _config = config;
+        _options = options.Value;
+        _scopeFactory = scopeFactory;
         _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var host =
-            Environment.GetEnvironmentVariable("RABBITMQ_HOST") ??
-            _config["RabbitMQ__Host"] ??
-            "rabbitmq";
-        var user = _config["RabbitMQ__User"];
-        var password = _config["RabbitMQ__Password"];
-
         var factory = new ConnectionFactory
         {
-            HostName = host
+            HostName =
+                Environment.GetEnvironmentVariable("RABBITMQ_HOST") ??
+                _options.Host
         };
 
-        if (!string.IsNullOrWhiteSpace(user))
-            factory.UserName = user;
+        if (!string.IsNullOrWhiteSpace(_options.User))
+        {
+            factory.UserName = _options.User;
+        }
 
-        if (!string.IsNullOrWhiteSpace(password))
-            factory.Password = password;
+        if (!string.IsNullOrWhiteSpace(_options.Password))
+        {
+            factory.Password = _options.Password;
+        }
 
         IConnection? connection = null;
 
-        // retry loop until RabbitMQ ready
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
                 connection = await factory.CreateConnectionAsync();
-                using (LogContext.PushProperty(
-                    "correlationId", string.Empty))
-                {
-                    _logger.LogInformation(
-                        "Connected to RabbitMQ");
-                }
+                _logger.LogInformation("Connected to RabbitMQ.");
                 break;
             }
             catch
             {
-                using (LogContext.PushProperty(
-                    "correlationId", string.Empty))
-                {
-                    _logger.LogWarning(
-                        "RabbitMQ not ready, retrying in 5 seconds...");
-                }
+                _logger.LogWarning("RabbitMQ not ready, retrying in 5 seconds...");
                 await Task.Delay(5000, stoppingToken);
             }
         }
 
         var channel = await connection!.CreateChannelAsync();
 
-        var queueName = "appointment.created";
+        foreach (var queueName in Queues)
+        {
+            await SetupQueueWithDlqAsync(channel, queueName);
+
+            var consumer = new AsyncEventingBasicConsumer(channel);
+            consumer.ReceivedAsync += async (_, eventArgs) =>
+            {
+                try
+                {
+                    var body = eventArgs.Body.ToArray();
+                    var message = Encoding.UTF8.GetString(body);
+
+                    var payload = JsonSerializer.Deserialize<AppointmentEventPayload>(
+                        message,
+                        new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        });
+
+                    if (payload is null)
+                    {
+                        throw new InvalidOperationException("Event payload is empty.");
+                    }
+
+                    using var scope = _scopeFactory.CreateScope();
+                    var processor = scope.ServiceProvider.GetRequiredService<IAppointmentNotificationProcessor>();
+
+                    await processor.ProcessAsync(queueName, payload, stoppingToken);
+
+                    await channel.BasicAckAsync(
+                        deliveryTag: eventArgs.DeliveryTag,
+                        multiple: false);
+                }
+                catch (Exception ex)
+                {
+                    NotificationMetrics.IncEventFailures();
+
+                    _logger.LogError(
+                        ex,
+                        "Failed to process notification event from queue {Queue}",
+                        queueName);
+
+                    await channel.BasicNackAsync(
+                        deliveryTag: eventArgs.DeliveryTag,
+                        multiple: false,
+                        requeue: false);
+                }
+            };
+
+            await channel.BasicConsumeAsync(
+                queue: queueName,
+                autoAck: false,
+                consumer: consumer);
+
+            var dlqQueue = $"{queueName}.dlq";
+            var dlqConsumer = new AsyncEventingBasicConsumer(channel);
+            dlqConsumer.ReceivedAsync += async (_, eventArgs) =>
+            {
+                var body = eventArgs.Body.ToArray();
+                var message = Encoding.UTF8.GetString(body);
+
+                _logger.LogWarning(
+                    "Notification event moved to DLQ {Queue}: {Message}",
+                    dlqQueue,
+                    message);
+
+                await channel.BasicAckAsync(
+                    deliveryTag: eventArgs.DeliveryTag,
+                    multiple: false);
+            };
+
+            await channel.BasicConsumeAsync(
+                queue: dlqQueue,
+                autoAck: false,
+                consumer: dlqConsumer);
+        }
+
+        await Task.Delay(Timeout.Infinite, stoppingToken);
+    }
+
+    private static async Task SetupQueueWithDlqAsync(IChannel channel, string queueName)
+    {
         var dlxExchange = $"{queueName}.dlx";
         var dlqQueue = $"{queueName}.dlq";
-        var dlqRoutingKey = dlqQueue;
 
         await channel.ExchangeDeclareAsync(
             exchange: dlxExchange,
@@ -86,20 +172,18 @@ public class RabbitMqConsumer : BackgroundService
             durable: true,
             exclusive: false,
             autoDelete: false,
-            arguments: null
-        );
+            arguments: null);
 
         await channel.QueueBindAsync(
             queue: dlqQueue,
             exchange: dlxExchange,
-            routingKey: dlqRoutingKey,
-            arguments: null
-        );
+            routingKey: dlqQueue,
+            arguments: null);
 
         var queueArgs = new Dictionary<string, object?>
         {
             ["x-dead-letter-exchange"] = dlxExchange,
-            ["x-dead-letter-routing-key"] = dlqRoutingKey
+            ["x-dead-letter-routing-key"] = dlqQueue
         };
 
         await channel.QueueDeclareAsync(
@@ -107,103 +191,6 @@ public class RabbitMqConsumer : BackgroundService
             durable: true,
             exclusive: false,
             autoDelete: false,
-            arguments: queueArgs
-        );
-
-        var consumer = new AsyncEventingBasicConsumer(channel);
-
-        consumer.ReceivedAsync += async (sender, eventArgs) =>
-        {
-            var correlationId = GetCorrelationId(eventArgs);
-            using var _ = LogContext.PushProperty(
-                "correlationId", correlationId);
-
-            try
-            {
-                var body = eventArgs.Body.ToArray();
-                var message = Encoding.UTF8.GetString(body);
-
-                _logger.LogInformation(
-                    "Message consumed {Queue} {Message}",
-                    queueName,
-                    message);
-
-                await channel.BasicAckAsync(
-                    deliveryTag: eventArgs.DeliveryTag,
-                    multiple: false);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(
-                    ex,
-                    "Message processing failed. " +
-                    "Nacking to DLQ {DlqQueue}",
-                    dlqQueue);
-
-                await channel.BasicNackAsync(
-                    deliveryTag: eventArgs.DeliveryTag,
-                    multiple: false,
-                    requeue: false);
-            }
-        };
-
-        await channel.BasicConsumeAsync(
-            queue: queueName,
-            autoAck: false,
-            consumer: consumer
-        );
-
-        var dlqConsumer = new AsyncEventingBasicConsumer(channel);
-
-        dlqConsumer.ReceivedAsync += async (sender, eventArgs) =>
-        {
-            var body = eventArgs.Body.ToArray();
-            var message = Encoding.UTF8.GetString(body);
-
-            var correlationId = GetCorrelationId(eventArgs);
-            using var _ = LogContext.PushProperty(
-                "correlationId", correlationId);
-
-            _logger.LogWarning(
-                "Message moved to dead letter queue {Queue} {Message}",
-                dlqQueue,
-                message);
-
-            await channel.BasicAckAsync(
-                deliveryTag: eventArgs.DeliveryTag,
-                multiple: false);
-        };
-
-        await channel.BasicConsumeAsync(
-            queue: dlqQueue,
-            autoAck: false,
-            consumer: dlqConsumer
-        );
-
-        await Task.Delay(Timeout.Infinite, stoppingToken);
-    }
-
-    private static string GetCorrelationId(
-        BasicDeliverEventArgs eventArgs)
-    {
-        var props = eventArgs.BasicProperties;
-
-        if (!string.IsNullOrWhiteSpace(props?.CorrelationId))
-            return props!.CorrelationId;
-
-        if (props?.Headers is null)
-            return string.Empty;
-
-        if (!props.Headers.TryGetValue(
-            "x-correlation-id",
-            out var headerValue))
-            return string.Empty;
-
-        return headerValue switch
-        {
-            byte[] bytes => Encoding.UTF8.GetString(bytes),
-            string value => value,
-            _ => string.Empty
-        };
+            arguments: queueArgs);
     }
 }

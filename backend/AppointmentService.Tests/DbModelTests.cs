@@ -1,6 +1,8 @@
 using AppointmentService.Data;
 using AppointmentService.Models;
+
 using Microsoft.EntityFrameworkCore;
+
 using Xunit;
 
 namespace AppointmentService.Tests;
