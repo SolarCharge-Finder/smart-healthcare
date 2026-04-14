@@ -90,9 +90,6 @@ public class OpenAIService : IOpenAIService
                 return cachedResponse;
             }
 
-            // Placeholder implementation - will be replaced with actual OpenAI integration in next commit
-            await Task.Delay(100, cancellationToken); // Simulate API call
-
             // Use structured prompt service
             var userPrompt = _promptService.BuildMedicalAnalysisPrompt(validationResult.SanitizedSymptoms);
             var systemPrompt = _promptService.BuildSystemPrompt();
@@ -100,16 +97,58 @@ public class OpenAIService : IOpenAIService
             _logger.LogInformation("Generated structured prompt. CorrelationId: {CorrelationId}, PromptVersion: {Version}",
                 correlationId, _promptService.GetPromptVersion());
 
-            var mockResponse = @"{
-                ""possibleConditions"": [""migraine"", ""flu""],
-                ""confidenceScore"": 0.85,
-                ""recommendedSpecialty"": ""GeneralPractitioner"",
-                ""urgency"": ""Medium"",
-                ""disclaimer"": ""This is not medical advice. Consult a healthcare professional.""
-            }";
+            // Call actual OpenAI API
+            var apiKey = _secretsService.GetOpenAIApiKey();
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+            client.Timeout = TimeSpan.FromSeconds(30);
+
+            var requestPayload = new
+            {
+                model = "gpt-4o",
+                messages = new[]
+                {
+                    new { role = "system", content = systemPrompt },
+                    new { role = "user", content = userPrompt }
+                },
+                temperature = 0.7,
+                max_tokens = 500
+            };
+
+            var jsonContent = new StringContent(
+                JsonSerializer.Serialize(requestPayload),
+                System.Text.Encoding.UTF8,
+                "application/json");
+
+            _logger.LogInformation("Calling OpenAI API. CorrelationId: {CorrelationId}", correlationId);
+
+            var openAiResponse = await client.PostAsync(
+                "https://api.openai.com/v1/chat/completions",
+                jsonContent,
+                cancellationToken);
+
+            if (!openAiResponse.IsSuccessStatusCode)
+            {
+                var errorContent = await openAiResponse.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("OpenAI API error. CorrelationId: {CorrelationId}, Status: {Status}, Error: {Error}",
+                    correlationId, openAiResponse.StatusCode, errorContent);
+
+                // Fall back to local analysis on API failure
+                return _fallbackService.GetFallbackResponse(symptoms, correlationId);
+            }
+
+            var responseContent = await openAiResponse.Content.ReadAsStringAsync(cancellationToken);
+            var apiResponseData = JsonSerializer.Deserialize<JsonElement>(responseContent);
+            var aiResponseText = apiResponseData.GetProperty("choices")[0]
+                .GetProperty("message")
+                .GetProperty("content")
+                .GetString() ?? "";
+
+            _logger.LogInformation("OpenAI API response received. CorrelationId: {CorrelationId}, ResponseLength: {Length}",
+                correlationId, aiResponseText.Length);
 
             // Parse the AI response
-            var parsedResponse = _parsingService.ParseAIResponse(mockResponse, correlationId);
+            var parsedResponse = _parsingService.ParseAIResponse(aiResponseText, correlationId);
 
             if (!parsedResponse.IsValid)
             {
