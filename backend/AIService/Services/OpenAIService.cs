@@ -97,22 +97,30 @@ public class OpenAIService : IOpenAIService
             _logger.LogInformation("Generated structured prompt. CorrelationId: {CorrelationId}, PromptVersion: {Version}",
                 correlationId, _promptService.GetPromptVersion());
 
-            // Call actual OpenAI API
-            var apiKey = _secretsService.GetOpenAIApiKey();
+            // Call Gemini API (free tier)
+            var apiKey = _secretsService.GetOpenAIApiKey(); // Reusing the same variable for Gemini key
             using var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+            client.DefaultRequestHeaders.Add("x-goog-api-key", apiKey);
             client.Timeout = TimeSpan.FromSeconds(30);
 
             var requestPayload = new
             {
-                model = "gpt-4o",
-                messages = new[]
+                contents = new[]
                 {
-                    new { role = "system", content = systemPrompt },
-                    new { role = "user", content = userPrompt }
+                    new
+                    {
+                        role = "user",
+                        parts = new[]
+                        {
+                            new { text = $"{systemPrompt}\n\n{userPrompt}" }
+                        }
+                    }
                 },
-                temperature = 0.7,
-                max_tokens = 500
+                generationConfig = new
+                {
+                    temperature = 0.7,
+                    maxOutputTokens = 500
+                }
             };
 
             var jsonContent = new StringContent(
@@ -120,28 +128,29 @@ public class OpenAIService : IOpenAIService
                 System.Text.Encoding.UTF8,
                 "application/json");
 
-            _logger.LogInformation("Calling OpenAI API. CorrelationId: {CorrelationId}", correlationId);
+            _logger.LogInformation("Calling Gemini API. CorrelationId: {CorrelationId}", correlationId);
 
-            var openAiResponse = await client.PostAsync(
-                "https://api.openai.com/v1/chat/completions",
+            var geminiResponse = await client.PostAsync(
+                $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
                 jsonContent,
                 cancellationToken);
 
-            if (!openAiResponse.IsSuccessStatusCode)
+            if (!geminiResponse.IsSuccessStatusCode)
             {
-                var errorContent = await openAiResponse.Content.ReadAsStringAsync(cancellationToken);
-                _logger.LogError("OpenAI API error. CorrelationId: {CorrelationId}, Status: {Status}, Error: {Error}",
-                    correlationId, openAiResponse.StatusCode, errorContent);
+                var errorContent = await geminiResponse.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("Gemini API error. CorrelationId: {CorrelationId}, Status: {Status}, Error: {Error}",
+                    correlationId, geminiResponse.StatusCode, errorContent);
 
                 // Fall back to local analysis on API failure
                 return _fallbackService.GetFallbackResponse(symptoms, correlationId);
             }
 
-            var responseContent = await openAiResponse.Content.ReadAsStringAsync(cancellationToken);
+            var responseContent = await geminiResponse.Content.ReadAsStringAsync(cancellationToken);
             var apiResponseData = JsonSerializer.Deserialize<JsonElement>(responseContent);
-            var aiResponseText = apiResponseData.GetProperty("choices")[0]
-                .GetProperty("message")
+            var aiResponseText = apiResponseData.GetProperty("candidates")[0]
                 .GetProperty("content")
+                .GetProperty("parts")[0]
+                .GetProperty("text")
                 .GetString() ?? "";
 
             _logger.LogInformation("OpenAI API response received. CorrelationId: {CorrelationId}, ResponseLength: {Length}",
@@ -171,10 +180,10 @@ public class OpenAIService : IOpenAIService
                     ? string.Join(", ", parsedResponse.PossibleConditions)
                     : "No specific conditions identified",
                 TokensUsed = 150,
-                ModelUsed = "gpt-4o",
+                ModelUsed = "gemini-2.0-flash",
                 ResponseTimeMs = (int)(DateTime.UtcNow - startTime).TotalMilliseconds,
                 CorrelationId = correlationId,
-                CostUsd = 0.003m
+                CostUsd = 0.0m  // Gemini free tier - no cost
             };
 
             // Cache successful response
