@@ -148,7 +148,7 @@ kubectl apply -f admin-service.yaml
 Restart:
 
 ```
-kubectl rollout restart deployment admin-deployment
+kubectl rollout restart deployment admin-service
 ```
 
 Check pods:
