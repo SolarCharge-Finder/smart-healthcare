@@ -1,10 +1,22 @@
 import axios from "axios";
 
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080",
+  baseURL: apiBaseUrl ?? "",
   headers: {
     "Content-Type": "application/json"
   }
+});
+
+api.interceptors.request.use((config) => {
+  if (!apiBaseUrl) {
+    return Promise.reject(
+      new Error("NEXT_PUBLIC_API_URL is required for frontend API calls")
+    );
+  }
+
+  return config;
 });
 
 const rawApiKey = process.env.NEXT_PUBLIC_API_KEY;
@@ -18,14 +30,14 @@ if (apiKey) {
 }
 
 export const telemedicineApi = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_TELEMEDICINE_API_URL ?? "http://localhost:5002",
+  baseURL: process.env.NEXT_PUBLIC_TELEMEDICINE_API_URL ?? "http://localhost:5005",
   headers: {
     "Content-Type": "application/json"
   }
 });
 
 export const paymentApi = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_PAYMENT_API_URL || "http://localhost:8081",
+  baseURL: process.env.NEXT_PUBLIC_PAYMENT_API_URL || "http://localhost:8083",
   headers: {
     "Content-Type": "application/json"
   }

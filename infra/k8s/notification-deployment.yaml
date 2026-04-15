@@ -57,6 +57,21 @@ spec:
               name: smarthealth-secrets
               key: RABBITMQ_DEFAULT_PASS
 
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: smarthealth-secrets
+              key: POSTGRES_USER
+
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: smarthealth-secrets
+              key: POSTGRES_PASSWORD
+
+        - name: ConnectionStrings__DefaultConnection
+          value: Host=postgres;Port=5432;Database=notificationdb;Username=$(POSTGRES_USER);Password=$(POSTGRES_PASSWORD)
+
         resources:
 
           requests:

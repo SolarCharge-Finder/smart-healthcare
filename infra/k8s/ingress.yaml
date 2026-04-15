@@ -1,18 +1,26 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: healthcare-ingress
+  name: smarthealth-ingress
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/enable-cors: "true"
     nginx.ingress.kubernetes.io/cors-allow-origin: "http://localhost:3000"
     nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
     nginx.ingress.kubernetes.io/cors-allow-headers: "*"
+    nginx.ingress.kubernetes.io/proxy-body-size: 10m
 
 spec:
   ingressClassName: nginx
+
+  tls:
+    - hosts:
+        - smarthealth.local
+      secretName: smarthealth-tls
+
   rules:
-    - http:
+    - host: smarthealth.local
+      http:
         paths:
           - path: /doctors(/|$)(.*)
             pathType: ImplementationSpecific
@@ -51,5 +59,13 @@ spec:
             backend:
               service:
                 name: appointment-service
+                port:
+                  number: 80
+
+          - path: /api/ai
+            pathType: Prefix
+            backend:
+              service:
+                name: ai-service
                 port:
                   number: 80
