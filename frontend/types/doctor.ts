@@ -6,7 +6,7 @@ export type FilterHospital = {
 export type DoctorFilterOptions = {
   doctorNames: string[];
   specializations: string[];
-  hospitals: FilterHospital[];
+  hospitals: string[];
 };
 
 export type PricingBreakdown = {

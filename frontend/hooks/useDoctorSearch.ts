@@ -8,7 +8,7 @@ import {
 type DoctorSearchParams = {
   doctorName?: string;
   specialization?: string;
-  hospitalId?: string;
+  hospital?: string;
   date?: string;
   lookAheadDays?: number;
 };
@@ -54,9 +54,9 @@ export function useDoctorSearch(params: DoctorSearchParams) {
 
         return api.get<DoctorSearchResult[]>("/doctors/search", {
           params: {
-            doctorName: params.doctorName || undefined,
+            name: params.doctorName || undefined,
             specialization: params.specialization || undefined,
-            hospitalId: params.hospitalId || undefined,
+            hospital: params.hospital || undefined,
             date: targetDate,
           },
         });

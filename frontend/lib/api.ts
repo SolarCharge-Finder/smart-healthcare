@@ -50,6 +50,13 @@ export const notificationApi = axios.create({
   }
 });
 
+export const doctorApi = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_DOCTOR_API_URL || "http://localhost:8083",
+  headers: {
+    "Content-Type": "application/json"
+  }
+});
+
 if (apiKey) {
   paymentApi.defaults.headers.common["X-API-KEY"] = apiKey;
   telemedicineApi.defaults.headers.common["X-API-KEY"] = apiKey;

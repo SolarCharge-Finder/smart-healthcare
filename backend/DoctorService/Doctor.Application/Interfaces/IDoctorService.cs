@@ -12,6 +12,10 @@ public interface IDoctorService
 
     Task<List<DoctorResponse>> GetApproved();
 
+    Task<List<DoctorResponse>> SearchDoctors(SearchDoctorsRequest request);
+
+    Task<FilterOptionsResponse> GetFilterOptionsAsync();
+
     Task<List<DoctorResponse>> GetPending();
 
     Task<DoctorResponse?> GetById(Guid id);

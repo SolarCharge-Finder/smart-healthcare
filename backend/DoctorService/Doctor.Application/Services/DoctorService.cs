@@ -84,6 +84,32 @@ public class DoctorService : IDoctorService
         return doctors.Select(Map).ToList();
     }
 
+    public async Task<List<DoctorResponse>> SearchDoctors(SearchDoctorsRequest request)
+    {
+        var doctors = await _repo.SearchAsync(
+            request.Name,
+            request.Specialization,
+            request.Hospital,
+            request.Date
+        );
+
+        return doctors.Select(Map).ToList();
+    }
+
+    public async Task<FilterOptionsResponse> GetFilterOptionsAsync()
+    {
+        var doctors = await _repo.GetApprovedAsync();
+
+        var response = new FilterOptionsResponse
+        {
+            DoctorNames = doctors.Select(d => d.FullName).Distinct().ToList(),
+            Specializations = doctors.Select(d => d.Specialization).Distinct().ToList(),
+            Hospitals = doctors.Select(d => d.Hospital).Distinct().ToList()
+        };
+
+        return response;
+    }
+
     public async Task<List<DoctorResponse>> GetPending()
     {
         var doctors = await _repo.GetPendingAsync();
