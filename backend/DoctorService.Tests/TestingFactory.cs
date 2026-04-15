@@ -73,4 +73,13 @@ public class TestingFactory : WebApplicationFactory<Program>
             });
         });
     }
+
+    protected override void ConfigureClient(HttpClient client)
+    {
+        base.ConfigureClient(client);
+
+        // default user for all tests 
+        client.DefaultRequestHeaders.Add("x-user-id", Guid.NewGuid().ToString());
+        client.DefaultRequestHeaders.Add("x-user-role", "Admin");
+    }
 }
