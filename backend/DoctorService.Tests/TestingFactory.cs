@@ -82,4 +82,13 @@ public class TestingFactory : WebApplicationFactory<Program>
         client.DefaultRequestHeaders.Add("x-user-id", Guid.NewGuid().ToString());
         client.DefaultRequestHeaders.Add("x-user-role", "Admin");
     }
+
+    public async Task ResetDatabaseAsync()
+    {
+        using var scope = Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<DoctorDbContext>();
+
+        context.Doctors.RemoveRange(context.Doctors);
+        await context.SaveChangesAsync();
+    }
 }

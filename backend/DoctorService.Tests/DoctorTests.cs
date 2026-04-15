@@ -16,6 +16,7 @@ public class DoctorTests : IClassFixture<TestingFactory>
     public DoctorTests(TestingFactory factory)
     {
         _client = factory.CreateClient();
+        factory.ResetDatabaseAsync().GetAwaiter().GetResult();
     }
 
     // helper to set consistent user identity for DoctorOwner policy
