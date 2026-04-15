@@ -25,14 +25,15 @@ public class DoctorController : ControllerBase
     {
         try
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            // use "sub" as the single source of truth for user identity
+            var userIdClaim = User.FindFirst("sub")?.Value;
 
-            if (userId == null)
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim, out var userId))
             {
                 return Unauthorized();
             }
 
-            await _service.CreateDoctor(request, Guid.Parse(userId));
+            await _service.CreateDoctor(request, userId);
             return Ok();
         }
         catch (Exception ex)
@@ -54,6 +55,13 @@ public class DoctorController : ControllerBase
     {
         var doctors = await _service.GetApproved();
         return Ok(doctors);
+    }
+
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchDoctors([FromQuery] SearchDoctorsRequest request)
+    {
+        var result = await _service.SearchDoctors(request);
+        return Ok(result);
     }
 
     [Authorize(Roles = "Admin")]

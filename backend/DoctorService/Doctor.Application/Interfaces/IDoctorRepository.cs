@@ -12,6 +12,8 @@ public interface IDoctorRepository
 
     Task<List<Doctor>> GetApprovedAsync();
 
+    Task<List<Doctor>> SearchAsync(string? name, string? specialization, string? hospital, DateTime? date);
+
     Task<List<Doctor>> GetAllAsync();
 
     Task<List<Doctor>> GetPendingAsync();
