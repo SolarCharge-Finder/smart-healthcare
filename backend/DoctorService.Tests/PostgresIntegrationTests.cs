@@ -374,7 +374,7 @@ public class PostgresIntegrationTests : IAsyncLifetime
     public async Task GetFilterOptions_Should_Work_In_Postgres()
     {
         // create doctors
-        SetUser(Guid.NewGuid().ToString(), "Doctor"); 
+        SetUser(Guid.NewGuid().ToString(), "Doctor");
         await _client.PostAsJsonAsync("/doctors", new CreateDoctorRequest
         {
             FullName = "Dr PG A",

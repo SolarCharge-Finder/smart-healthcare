@@ -347,7 +347,7 @@ public class DoctorTests : IClassFixture<TestingFactory>
         result.Should().NotBeNull();
         result!.Should().Contain(d => d.Id == doctor.Id);
     }
-    
+
     //filter option test
     [Fact]
     public async Task GetFilterOptions_Should_Return_Distinct_Values()
