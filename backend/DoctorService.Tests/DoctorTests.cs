@@ -347,5 +347,71 @@ public class DoctorTests : IClassFixture<TestingFactory>
         result.Should().NotBeNull();
         result!.Should().Contain(d => d.Id == doctor.Id);
     }
+    
+    //filter option test
+    [Fact]
+    public async Task GetFilterOptions_Should_Return_Distinct_Values()
+    {
+        // create multiple doctors with overlapping data
+        SetUser(Guid.NewGuid().ToString(), "Doctor");
+        await _client.PostAsJsonAsync("/doctors", new CreateDoctorRequest
+        {
+            FullName = "Dr A",
+            Specialization = "Cardiology",
+            Hospital = "Hospital X"
+        });
 
+        SetUser(Guid.NewGuid().ToString(), "Doctor");
+        await _client.PostAsJsonAsync("/doctors", new CreateDoctorRequest
+        {
+            FullName = "Dr B",
+            Specialization = "Cardiology",
+            Hospital = "Hospital X"
+        });
+
+        SetUser(Guid.NewGuid().ToString(), "Doctor");
+        await _client.PostAsJsonAsync("/doctors", new CreateDoctorRequest
+        {
+            FullName = "Dr C",
+            Specialization = "Neurology",
+            Hospital = "Hospital Y"
+        });
+
+        SetUser(Guid.NewGuid().ToString(), "Admin");
+
+        // approve all doctors (since your service uses approved list)
+        var doctors = await _client.GetFromJsonAsync<List<DoctorResponse>>("/doctors");
+
+        var createdDoctors = doctors!
+            .Where(d => d.FullName == "Dr A" || d.FullName == "Dr B" || d.FullName == "Dr C")
+            .ToList();
+
+        foreach (var doctor in createdDoctors)
+        {
+            await _client.PutAsync($"/doctors/{doctor.Id}/approve", null);
+        }
+
+        // act
+        var response = await _client.GetAsync("/doctors/filter-options");
+
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<FilterOptionsResponse>();
+
+        // assert
+        result.Should().NotBeNull();
+
+        // doctor names should be distinct
+        result!.DoctorNames.Should().Contain(new[] { "Dr A", "Dr B", "Dr C" });
+
+        // specialization should not duplicate
+        result.Specializations.Should().Contain("Cardiology");
+        result.Specializations.Should().Contain("Neurology");
+        result.Specializations.Count.Should().Be(2);
+
+        // hospitals should not duplicate
+        result.Hospitals.Should().Contain("Hospital X");
+        result.Hospitals.Should().Contain("Hospital Y");
+        result.Hospitals.Count.Should().Be(2);
+    }
 }

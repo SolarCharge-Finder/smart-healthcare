@@ -368,4 +368,55 @@ public class PostgresIntegrationTests : IAsyncLifetime
         // assert doctor is returned only when ALL filters match
         result.Should().Contain(d => d.Id == doctor.Id);
     }
+
+    // filter option test
+    [Fact]
+    public async Task GetFilterOptions_Should_Work_In_Postgres()
+    {
+        // create doctors
+        SetUser(Guid.NewGuid().ToString(), "Doctor"); 
+        await _client.PostAsJsonAsync("/doctors", new CreateDoctorRequest
+        {
+            FullName = "Dr PG A",
+            Specialization = "Cardiology",
+            Hospital = "Hospital PG"
+        });
+
+        SetUser(Guid.NewGuid().ToString(), "Doctor");
+        await _client.PostAsJsonAsync("/doctors", new CreateDoctorRequest
+        {
+            FullName = "Dr PG B",
+            Specialization = "Dermatology",
+            Hospital = "Hospital PG"
+        });
+
+        SetUser(Guid.NewGuid().ToString(), "Admin");
+
+        // approve doctors
+        var doctors = await _client.GetFromJsonAsync<List<DoctorResponse>>("/doctors");
+
+        foreach (var doctor in doctors!)
+        {
+            await _client.PutAsync($"/doctors/{doctor.Id}/approve", null);
+        }
+
+        // act
+        var response = await _client.GetAsync("/doctors/filter-options");
+
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<FilterOptionsResponse>();
+
+        // assert
+        result.Should().NotBeNull();
+
+        result!.DoctorNames.Should().Contain(new[] { "Dr PG A", "Dr PG B" });
+
+        result.Specializations.Should().Contain("Cardiology");
+        result.Specializations.Should().Contain("Dermatology");
+
+        // hospital should appear only once
+        result.Hospitals.Should().Contain("Hospital PG");
+        result.Hospitals.Count.Should().Be(1);
+    }
 }
