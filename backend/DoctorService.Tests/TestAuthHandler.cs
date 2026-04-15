@@ -29,7 +29,7 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
         {
             throw new Exception("x-user-id header is required in tests");
         }
-        
+
         // read role from header (default to Admin to keep existing tests working)
         var role = Request.Headers[RoleHeader].FirstOrDefault()
                    ?? "Admin";

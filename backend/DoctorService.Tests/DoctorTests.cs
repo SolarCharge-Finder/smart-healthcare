@@ -247,7 +247,7 @@ public class DoctorTests : IClassFixture<TestingFactory>
         await _client.PutAsync($"/doctors/{doctor.Id}/approve", null);
 
         SetUser(userId, "Doctor"); // switch back to doctor user to set availability
-        
+
         // add availability for specific date
         var targetDate = DateTime.UtcNow.Date.AddDays(1);
         var startTime = DateTime.SpecifyKind(targetDate.AddHours(9), DateTimeKind.Utc);
