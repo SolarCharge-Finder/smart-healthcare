@@ -8,7 +8,7 @@ import { useDoctorFilterOptions } from "../../hooks/useDoctorSearch";
 type SearchValues = {
   doctorName: string;
   specialization: string;
-  hospitalId: string;
+  hospital: string;
   date: string;
 };
 
@@ -29,16 +29,11 @@ export default function SearchFilter({ initialValues, onSearch }: Props) {
   const [values, setValues] = useState<SearchValues>({
     doctorName: initialValues?.doctorName ?? "",
     specialization: initialValues?.specialization ?? "",
-    hospitalId: initialValues?.hospitalId ?? "",
+    hospital: initialValues?.hospital ?? "",
     date: initialValues?.date ?? todayIso(),
   });
 
   const filters = useDoctorFilterOptions();
-
-  const hospitalOptions = useMemo(
-    () => filters.data?.hospitals ?? [],
-    [filters.data]
-  );
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -84,13 +79,13 @@ export default function SearchFilter({ initialValues, onSearch }: Props) {
           <span className="text-xs font-semibold text-blue-100">Hospital</span>
           <select
             className="w-full rounded-lg border border-blue-400/30 bg-blue-600 px-3 py-2.5 text-sm text-white outline-none focus:ring-2 focus:ring-white/40"
-            value={values.hospitalId}
-            onChange={(e) => setValues((prev) => ({ ...prev, hospitalId: e.target.value }))}
+            value={values.hospital}
+            onChange={(e) => setValues((prev) => ({ ...prev, hospital: e.target.value }))}
           >
             <option value="">All Hospitals</option>
-            {hospitalOptions.map((hospital) => (
-              <option key={hospital.id} value={hospital.id}>
-                {hospital.name}
+            {(filters.data?.hospitals ?? []).map((hospital) => (
+              <option key={hospital} value={hospital}>
+                {hospital}
               </option>
             ))}
           </select>

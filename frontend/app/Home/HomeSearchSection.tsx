@@ -12,12 +12,22 @@ export default function HomeSearchSection() {
         <SearchFilter
           onSearch={(values) => {
             const params = new URLSearchParams();
-            if (values.doctorName) params.set("doctorName", values.doctorName);
-            if (!values.doctorName && values.specialization) {
+
+            if (values.doctorName) {
+              params.set("name", values.doctorName);
+            }
+
+            if (values.specialization) {
               params.set("specialization", values.specialization);
             }
-            if (values.hospitalId) params.set("hospitalId", values.hospitalId);
-            params.set("date", values.date);
+
+            if (values.hospital) {
+              params.set("hospital", values.hospital); // or hospital name depending on backend
+            }
+
+            if (values.date) {
+              params.set("date", values.date);
+            }
 
             router.push(`/doctors/results?${params.toString()}`);
           }}

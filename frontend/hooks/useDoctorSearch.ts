@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import api from "../lib/api";
+import { doctorApi } from "../lib/api";
 import {
   DoctorFilterOptions,
   DoctorSearchResult,
@@ -8,7 +8,7 @@ import {
 type DoctorSearchParams = {
   doctorName?: string;
   specialization?: string;
-  hospitalId?: string;
+  hospital?: string;
   date?: string;
   lookAheadDays?: number;
 };
@@ -30,7 +30,7 @@ export function useDoctorFilterOptions() {
   return useQuery<DoctorFilterOptions>({
     queryKey: ["doctor-filter-options"],
     queryFn: async () => {
-      const { data } = await api.get<DoctorFilterOptions>("/doctors/filter-options");
+      const { data } = await doctorApi.get<DoctorFilterOptions>("/doctors/filter-options");
       return data;
     },
   });
@@ -52,11 +52,11 @@ export function useDoctorSearch(params: DoctorSearchParams) {
       const requests = Array.from({ length: lookAheadDays + 1 }, (_, offset) => {
         const targetDate = formatIsoDate(addDays(selectedDate, offset));
 
-        return api.get<DoctorSearchResult[]>("/doctors/search", {
+        return doctorApi.get<DoctorSearchResult[]>("/doctors/search", {
           params: {
-            doctorName: params.doctorName || undefined,
+            name: params.doctorName || undefined,
             specialization: params.specialization || undefined,
-            hospitalId: params.hospitalId || undefined,
+            hospital: params.hospital || undefined,
             date: targetDate,
           },
         });
@@ -82,7 +82,7 @@ export function useDoctorAvailability(doctorId?: string, date?: string) {
     queryKey: ["doctor-availability", doctorId, date],
     enabled: Boolean(doctorId && date),
     queryFn: async () => {
-      const { data } = await api.get<{ availableSlots: string[] }>(
+      const { data } = await doctorApi.get<{ availableSlots: string[] }>(
         "/doctors/availability",
         {
           params: {

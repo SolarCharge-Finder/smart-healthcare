@@ -12,17 +12,16 @@ function DoctorSearchResultsContent() {
   const router = useRouter();
   const params = useSearchParams();
 
-  const doctorName = params.get("doctorName") ?? "";
-  const specializationParam = params.get("specialization") ?? "";
-  const specialization = doctorName ? "" : specializationParam;
-  const hospitalId = params.get("hospitalId") ?? "";
+  const doctorName = params.get("name") ?? "";
+  const specialization = params.get("specialization") ?? "";
+  const hospital = params.get("hospital") ?? "";
   const date = params.get("date") ?? "";
   const isTelemedicineView = params.get("telemedicine") === "1";
 
   const search = useDoctorSearch({
     doctorName,
     specialization,
-    hospitalId,
+    hospital,
     date,
     lookAheadDays: 7,
   });
@@ -38,15 +37,15 @@ function DoctorSearchResultsContent() {
       />
 
       <SearchFilter
-        initialValues={{ doctorName, specialization, hospitalId, date }}
+        initialValues={{ doctorName, specialization, hospital, date }}
         onSearch={(values) => {
           const next = new URLSearchParams();
           if (isTelemedicineView) next.set("telemedicine", "1");
-          if (values.doctorName) next.set("doctorName", values.doctorName);
-          if (!values.doctorName && values.specialization) {
-            next.set("specialization", values.specialization);
-          }
-          if (values.hospitalId) next.set("hospitalId", values.hospitalId);
+
+          if (values.doctorName) next.set("name", values.doctorName);
+          if (values.specialization) next.set("specialization", values.specialization);
+          if (values.hospital) next.set("hospital", values.hospital);
+
           next.set("date", values.date);
           router.push(`/doctors/results?${next.toString()}`);
         }}
