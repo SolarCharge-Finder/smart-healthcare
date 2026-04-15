@@ -64,6 +64,13 @@ public class DoctorController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("filter-options")]
+    public async Task<IActionResult> GetFilterOptions()
+    {
+        var result = await _service.GetFilterOptionsAsync();
+        return Ok(result);
+    }
+
     [Authorize(Roles = "Admin")]
     [HttpGet("pending")]
     public async Task<IActionResult> GetPending()
