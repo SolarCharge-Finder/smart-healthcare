@@ -3,9 +3,9 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "dev": "sh -c 'lsof -ti tcp:3000 | xargs kill -9 2>/dev/null || true; next dev -p 3000'",
+    "dev": "next dev -p 3000",
     "dev:raw": "next dev",
-    "dev:clean": "sh -c 'pkill -f \"/frontend/node_modules/.bin/next dev\" || true; next dev -p 3000'",
+    "dev:clean": "next dev -p 3000",
     "dev:payment": "next dev -p 3001",
     "build": "next build",
     "start": "next start",
