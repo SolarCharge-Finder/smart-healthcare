@@ -1,0 +1,55 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: healthcare-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "http://localhost:3000"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "*"
+
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /doctors(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: doctor-service
+                port:
+                  number: 80
+
+          - path: /auth(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 80
+
+          - path: /patient(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: patient-service
+                port:
+                  number: 80
+
+          - path: /admin(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: admin-service
+                port:
+                  number: 80
+
+          - path: /appointments(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: appointment-service
+                port:
+                  number: 80
