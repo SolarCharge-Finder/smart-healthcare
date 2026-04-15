@@ -16,6 +16,11 @@ public interface IMetricsService
     void RecordApiRequest(string endpoint, string method, int statusCode, double durationMs);
 
     /// <summary>
+    /// Record fallback usage with a reason label.
+    /// </summary>
+    void RecordFallbackUsage(string reason);
+
+    /// <summary>
     /// Record circuit breaker state change
     /// </summary>
     void RecordCircuitBreakerStateChange(string state);

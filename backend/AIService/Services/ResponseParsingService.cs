@@ -50,8 +50,29 @@ public class ResponseParsingService : IResponseParsingService
                 foreach (var element in conditionsElement.EnumerateArray())
                 {
                     if (element.ValueKind == JsonValueKind.String)
-                        conditions.Add(element.GetString() ?? string.Empty);
+                    {
+                        var condition = NormalizeText(element.GetString());
+                        if (!string.IsNullOrWhiteSpace(condition))
+                        {
+                            conditions.Add(condition);
+                        }
+                    }
                 }
+            }
+
+            conditions = conditions
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(5)
+                .ToList();
+
+            if (conditions.Count == 0)
+            {
+                return new ParsedAIResponse
+                {
+                    IsValid = false,
+                    ErrorMessage = "possibleConditions must contain at least one condition",
+                    CorrelationId = correlationId
+                };
             }
 
             if (!jsonDoc.RootElement.TryGetProperty("confidenceScore", out var confidenceElement) ||
@@ -99,7 +120,7 @@ public class ResponseParsingService : IResponseParsingService
             }
 
             // Validate urgency level
-            var urgency = urgencyElement.GetString() ?? string.Empty;
+            var urgency = NormalizeUrgency(urgencyElement.GetString());
             var validUrgencyLevels = new[] { "Low", "Medium", "High", "Emergency" };
             if (!validUrgencyLevels.Contains(urgency))
             {
@@ -112,7 +133,7 @@ public class ResponseParsingService : IResponseParsingService
             }
 
             // Validate specialty
-            var specialty = specialtyElement.GetString() ?? string.Empty;
+            var specialty = NormalizeSpecialty(specialtyElement.GetString());
             if (string.IsNullOrWhiteSpace(specialty))
             {
                 return new ParsedAIResponse
@@ -129,8 +150,11 @@ public class ResponseParsingService : IResponseParsingService
                 PossibleConditions = conditions,
                 ConfidenceScore = confidenceScore,
                 RecommendedSpecialty = specialty,
-                UrgencyLevel = urgency,
-                Disclaimer = "This is not medical advice. Please consult a healthcare professional.",
+                Urgency = urgency,
+                Disclaimer = jsonDoc.RootElement.TryGetProperty("disclaimer", out var disclaimerElement) &&
+                             disclaimerElement.ValueKind == JsonValueKind.String
+                    ? NormalizeDisclaimer(disclaimerElement.GetString())
+                    : "This is not medical advice. Please consult a healthcare professional.",
                 CorrelationId = correlationId
             };
         }
@@ -158,6 +182,44 @@ public class ResponseParsingService : IResponseParsingService
             };
         }
     }
+
+    private static string NormalizeText(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return string.Empty;
+
+        return string.Join(" ", input.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries));
+    }
+
+    private static string NormalizeSpecialty(string? specialty)
+    {
+        var normalized = NormalizeText(specialty);
+        if (string.IsNullOrWhiteSpace(normalized))
+            return string.Empty;
+
+        return normalized;
+    }
+
+    private static string NormalizeDisclaimer(string? disclaimer)
+    {
+        var normalized = NormalizeText(disclaimer);
+        return string.IsNullOrWhiteSpace(normalized)
+            ? "This is not medical advice. Please consult a healthcare professional."
+            : normalized;
+    }
+
+    private static string NormalizeUrgency(string? urgency)
+    {
+        var normalized = NormalizeText(urgency);
+        return normalized.ToLowerInvariant() switch
+        {
+            "low" => "Low",
+            "medium" => "Medium",
+            "high" => "High",
+            "emergency" => "Emergency",
+            _ => normalized
+        };
+    }
 }
 
 public class ParsedAIResponse
@@ -167,7 +229,7 @@ public class ParsedAIResponse
     public List<string> PossibleConditions { get; set; } = new();
     public double ConfidenceScore { get; set; }
     public string RecommendedSpecialty { get; set; } = string.Empty;
-    public string UrgencyLevel { get; set; } = string.Empty;
+    public string Urgency { get; set; } = string.Empty;
     public string Disclaimer { get; set; } = string.Empty;
     public string CorrelationId { get; set; } = string.Empty;
 }

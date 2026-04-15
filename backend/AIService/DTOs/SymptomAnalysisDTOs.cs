@@ -33,7 +33,7 @@ public class SymptomAnalysisResponse
     public List<string>? PossibleConditions { get; set; }
     public double ConfidenceScore { get; set; }
     public string RecommendedSpecialty { get; set; } = string.Empty;
-    public string UrgencyLevel { get; set; } = string.Empty;
+    public string Urgency { get; set; } = string.Empty;
     public string Disclaimer { get; set; } = string.Empty;
     public int TokensUsed { get; set; }
     public decimal CostUsd { get; set; }
@@ -48,9 +48,14 @@ public class SymptomAnalysisResponse
         {
             Success = true,
             Analysis = aiResponse.Content,
+            PossibleConditions = aiResponse.PossibleConditions,
+            ConfidenceScore = aiResponse.ConfidenceScore,
+            RecommendedSpecialty = aiResponse.RecommendedSpecialty,
+            Urgency = aiResponse.Urgency,
+            Disclaimer = aiResponse.Disclaimer,
             TokensUsed = aiResponse.TokensUsed,
             CostUsd = aiResponse.CostUsd,
-            ModelUsed = aiResponse.ModelUsed,
+            ModelUsed = aiResponse.ModelUsed ?? string.Empty,
             ResponseTimeMs = aiResponse.ResponseTimeMs,
             CorrelationId = correlationId
         };
@@ -63,6 +68,7 @@ public class SymptomAnalysisResponse
             Success = false,
             Error = error,
             CorrelationId = correlationId,
+            Urgency = "Unknown",
             Disclaimer = "Analysis failed due to system error"
         };
     }

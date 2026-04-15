@@ -28,6 +28,11 @@ public class FallbackService : IFallbackService
         {
             IsSuccess = true,
             Content = fallbackContent,
+            PossibleConditions = conditions,
+            RecommendedSpecialty = specialty,
+            Urgency = NormalizeUrgency(urgency),
+            ConfidenceScore = 0.35,
+            Disclaimer = "This is a basic local analysis and does not replace professional medical advice.",
             TokensUsed = 0,
             CostUsd = 0,
             ModelUsed = "fallback-local-analysis",
@@ -134,5 +139,16 @@ Please consult a healthcare professional for accurate diagnosis and treatment.
 - Schedule an appointment with a {specialty} specialist
 - Monitor your symptoms
 - Seek emergency care if symptoms worsen significantly";
+    }
+
+    private static string NormalizeUrgency(string urgency)
+    {
+        return urgency.ToLowerInvariant() switch
+        {
+            "low" => "Low",
+            "medium" => "Medium",
+            "high" => "High",
+            _ => "Medium"
+        };
     }
 }

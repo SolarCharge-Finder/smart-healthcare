@@ -77,7 +77,7 @@ public class JsonResponseValidator : IJsonResponseValidator
                 }
 
                 _logger.LogInformation("JSON Validation Successful. Confidence: {Score}, Urgency: {Urgency}",
-                    response.ConfidenceScore, response.UrgencyLevel);
+                    response.ConfidenceScore, response.Urgency);
 
                 return (true, response, null);
             }
@@ -127,7 +127,7 @@ public class JsonResponseValidator : IJsonResponseValidator
     /// </summary>
     private string? ValidateRequiredFields(JsonElement root)
     {
-        string[] requiredFields = { "possibleConditions", "recommendedSpecialty", "urgencyLevel", "confidenceScore" };
+        string[] requiredFields = { "possibleConditions", "recommendedSpecialty", "urgency", "confidenceScore" };
 
         foreach (var field in requiredFields)
         {
@@ -155,15 +155,15 @@ public class JsonResponseValidator : IJsonResponseValidator
                 return "confidenceScore must be between 0 and 1";
         }
 
-        // Validate urgencyLevel (enum: Low, Medium, High, Emergency)
-        if (root.TryGetProperty("urgencyLevel", out var urgencyElement))
+        // Validate urgency (enum: Low, Medium, High, Emergency)
+        if (root.TryGetProperty("urgency", out var urgencyElement))
         {
             if (urgencyElement.ValueKind != JsonValueKind.String)
-                return "urgencyLevel must be a string";
+                return "urgency must be a string";
 
             var urgency = urgencyElement.GetString();
             if (!new[] { "Low", "Medium", "High", "Emergency" }.Contains(urgency))
-                return $"urgencyLevel '{urgency}' is not valid. Must be: Low, Medium, High, Emergency";
+                return $"urgency '{urgency}' is not valid. Must be: Low, Medium, High, Emergency";
         }
 
         // Validate possibleConditions is array
@@ -172,13 +172,16 @@ public class JsonResponseValidator : IJsonResponseValidator
             if (conditionsElement.ValueKind != JsonValueKind.Array)
                 return "possibleConditions must be an array";
 
-            // Validate each condition has required fields
+            // Validate each condition is either a plain string or object with name.
             foreach (var condition in conditionsElement.EnumerateArray())
             {
-                if (!condition.TryGetProperty("name", out _))
-                    return "Each condition must have 'name' field";
-                if (!condition.TryGetProperty("confidenceScore", out _))
-                    return "Each condition must have 'confidenceScore' field";
+                if (condition.ValueKind == JsonValueKind.String)
+                    continue;
+
+                if (condition.ValueKind == JsonValueKind.Object && condition.TryGetProperty("name", out _))
+                    continue;
+
+                return "Each condition must be a string or an object with a 'name' field";
             }
         }
 
@@ -210,7 +213,7 @@ public class JsonResponseValidator : IJsonResponseValidator
             Disclaimer = "⚠️ Unable to complete analysis. Please consult a healthcare professional.",
             ConfidenceScore = 0,
             RecommendedSpecialty = "General Practice",
-            UrgencyLevel = "Medium",
+            Urgency = "Medium",
             PossibleConditions = new List<string> { "Unable to determine - Please see a doctor" },
             CorrelationId = correlationId,
             Analysis = "Service temporarily unavailable. Please try again or contact support."

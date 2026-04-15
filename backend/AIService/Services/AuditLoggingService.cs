@@ -59,6 +59,8 @@ public class AuditLoggingService : IAuditLoggingService
         {
             try
             {
+                var normalizedUrgency = response.Urgency;
+
                 var auditLog = new AuditLog
                 {
                     Id = Guid.NewGuid(),
@@ -68,7 +70,7 @@ public class AuditLoggingService : IAuditLoggingService
                     ResultData = System.Text.Json.JsonSerializer.Serialize(new
                     {
                         response.Success,
-                        response.UrgencyLevel,
+                        Urgency = normalizedUrgency,
                         response.ConfidenceScore,
                         response.RecommendedSpecialty,
                         response.PossibleConditions,
@@ -92,7 +94,7 @@ public class AuditLoggingService : IAuditLoggingService
                     "Cost=${Cost}, " +
                     "ResponseTime={ResponseTime}ms, " +
                     "CorrelationId={CorrelationId}",
-                    patientId, response.UrgencyLevel, response.ConfidenceScore,
+                    patientId, normalizedUrgency, response.ConfidenceScore,
                     response.CostUsd, responseTimeMs, correlationId);
             }
             catch (Exception ex)

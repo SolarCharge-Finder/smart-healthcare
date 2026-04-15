@@ -189,7 +189,7 @@ services:
       Stripe__PublishableKey: ${STRIPE_PUBLISHABLE_KEY}
       Stripe__WebhookSecret: ${STRIPE_WEBHOOK_SECRET}
     ports:
-      - "8081:8080"
+      - "8083:8080"
 
 
   prometheus:

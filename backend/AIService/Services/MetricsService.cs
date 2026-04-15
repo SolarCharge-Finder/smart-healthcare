@@ -16,6 +16,7 @@ public class MetricsService : IMetricsService
     private readonly ConcurrentDictionary<string, long> _analysisCounters = new();
     private readonly ConcurrentDictionary<string, List<double>> _responseTimes = new();
     private readonly ConcurrentDictionary<string, long> _apiRequestCounters = new();
+    private readonly ConcurrentDictionary<string, long> _fallbackCounters = new();
     private readonly object _lockObj = new object();
 
     public MetricsService()
@@ -52,6 +53,15 @@ public class MetricsService : IMetricsService
         {
             var key = $"{endpoint}_{method}_{statusCode}";
             _apiRequestCounters.AddOrUpdate(key, 1, (k, v) => v + 1);
+        }
+    }
+
+    public void RecordFallbackUsage(string reason)
+    {
+        lock (_lockObj)
+        {
+            var key = string.IsNullOrWhiteSpace(reason) ? "unknown" : reason.Trim().ToLowerInvariant();
+            _fallbackCounters.AddOrUpdate(key, 1, (_, v) => v + 1);
         }
     }
 
@@ -124,6 +134,14 @@ public class MetricsService : IMetricsService
                 var status = parts[2];
                 sb.AppendLine($"api_requests_total{{endpoint=\"{endpoint}\",method=\"{method}\",status=\"{status}\"}} {kvp.Value}");
             }
+        }
+
+        sb.AppendLine("\n# HELP ai_fallback_total Total number of fallback responses by reason");
+        sb.AppendLine("# TYPE ai_fallback_total counter");
+
+        foreach (var kvp in _fallbackCounters)
+        {
+            sb.AppendLine($"ai_fallback_total{{reason=\"{kvp.Key}\"}} {kvp.Value}");
         }
 
         return sb.ToString();

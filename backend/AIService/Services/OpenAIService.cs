@@ -21,6 +21,8 @@ public class OpenAIService : IOpenAIService
     private readonly ICachingService _cachingService;
     private readonly IFallbackService _fallbackService;
     private readonly IEventPublisher _eventPublisher;
+    private readonly IResilienceService _resilienceService;
+    private readonly IMetricsService _metricsService;
 
     public OpenAIService(
         IConfiguration config,
@@ -31,7 +33,9 @@ public class OpenAIService : IOpenAIService
         ISecretsService secretsService,
         ICachingService cachingService,
         IFallbackService fallbackService,
-        IEventPublisher eventPublisher)
+        IEventPublisher eventPublisher,
+        IResilienceService resilienceService,
+        IMetricsService metricsService)
     {
         _config = config;
         _logger = logger;
@@ -42,6 +46,8 @@ public class OpenAIService : IOpenAIService
         _cachingService = cachingService;
         _fallbackService = fallbackService;
         _eventPublisher = eventPublisher;
+        _resilienceService = resilienceService;
+        _metricsService = metricsService;
 
         _logger.LogInformation("OpenAI Service initialized with secure secrets management, caching, fallback support, and event publishing");
     }
@@ -99,6 +105,7 @@ public class OpenAIService : IOpenAIService
 
             // Call Gemini API (free tier)
             var apiKey = _secretsService.GetOpenAIApiKey(); // Reusing the same variable for Gemini key
+            var model = _secretsService.GetOpenAIModel();
             using var client = new HttpClient();
             client.DefaultRequestHeaders.Add("x-goog-api-key", apiKey);
             client.Timeout = TimeSpan.FromSeconds(30);
@@ -118,91 +125,157 @@ public class OpenAIService : IOpenAIService
                 },
                 generationConfig = new
                 {
-                    temperature = 0.7,
-                    maxOutputTokens = 500
+                    temperature = 0.2,
+                    maxOutputTokens = 800,
+                    responseMimeType = "application/json",
+                    responseSchema = new
+                    {
+                        type = "OBJECT",
+                        required = new[]
+                        {
+                            "possibleConditions",
+                            "confidenceScore",
+                            "recommendedSpecialty",
+                            "urgency",
+                            "disclaimer"
+                        },
+                        properties = new
+                        {
+                            possibleConditions = new
+                            {
+                                type = "ARRAY",
+                                items = new
+                                {
+                                    type = "STRING"
+                                }
+                            },
+                            confidenceScore = new
+                            {
+                                type = "NUMBER"
+                            },
+                            recommendedSpecialty = new
+                            {
+                                type = "STRING"
+                            },
+                            urgency = new
+                            {
+                                type = "STRING",
+                                @enum = new[] { "Low", "Medium", "High", "Emergency" }
+                            },
+                            disclaimer = new
+                            {
+                                type = "STRING"
+                            }
+                        }
+                    }
                 }
             };
 
-            var jsonContent = new StringContent(
-                JsonSerializer.Serialize(requestPayload),
-                System.Text.Encoding.UTF8,
-                "application/json");
-
-            _logger.LogInformation("Calling Gemini API. CorrelationId: {CorrelationId}", correlationId);
-
-            var geminiResponse = await client.PostAsync(
-                $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
-                jsonContent,
-                cancellationToken);
-
-            if (!geminiResponse.IsSuccessStatusCode)
+            for (var attempt = 1; attempt <= 2; attempt++)
             {
-                var errorContent = await geminiResponse.Content.ReadAsStringAsync(cancellationToken);
-                _logger.LogError("Gemini API error. CorrelationId: {CorrelationId}, Status: {Status}, Error: {Error}",
-                    correlationId, geminiResponse.StatusCode, errorContent);
+                var jsonContent = new StringContent(
+                    JsonSerializer.Serialize(requestPayload),
+                    System.Text.Encoding.UTF8,
+                    "application/json");
 
-                // Fall back to local analysis on API failure
-                return _fallbackService.GetFallbackResponse(symptoms, correlationId);
-            }
+                _logger.LogInformation("Calling Gemini API. CorrelationId: {CorrelationId}, Attempt: {Attempt}", correlationId, attempt);
 
-            var responseContent = await geminiResponse.Content.ReadAsStringAsync(cancellationToken);
-            var apiResponseData = JsonSerializer.Deserialize<JsonElement>(responseContent);
-            var aiResponseText = apiResponseData.GetProperty("candidates")[0]
-                .GetProperty("content")
-                .GetProperty("parts")[0]
-                .GetProperty("text")
-                .GetString() ?? "";
-
-            _logger.LogInformation("OpenAI API response received. CorrelationId: {CorrelationId}, ResponseLength: {Length}",
-                correlationId, aiResponseText.Length);
-
-            // Parse the AI response
-            var parsedResponse = _parsingService.ParseAIResponse(aiResponseText, correlationId);
-
-            if (!parsedResponse.IsValid)
-            {
-                _logger.LogError("AI response parsing failed. CorrelationId: {CorrelationId}, Error: {Error}",
-                    correlationId, parsedResponse.ErrorMessage);
-
-                return new OpenAIResponse
+                var geminiResponse = await _resilienceService.ExecuteAsync(async () =>
                 {
-                    IsSuccess = false,
-                    ErrorMessage = parsedResponse.ErrorMessage,
-                    CorrelationId = correlationId,
-                    ResponseTimeMs = (int)(DateTime.UtcNow - startTime).TotalMilliseconds
-                };
+                    return await client.PostAsync(
+                        $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                        jsonContent,
+                        cancellationToken);
+                });
+
+                if (!geminiResponse.IsSuccessStatusCode)
+                {
+                    var errorContent = await geminiResponse.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogError("Gemini API error. CorrelationId: {CorrelationId}, Status: {Status}, Error: {Error}",
+                        correlationId, geminiResponse.StatusCode, errorContent);
+                    _metricsService.RecordFallbackUsage($"provider-{(int)geminiResponse.StatusCode}");
+
+                    // Fall back to local analysis on API failure
+                    return _fallbackService.GetFallbackResponse(symptoms, correlationId);
+                }
+
+                var responseContent = await geminiResponse.Content.ReadAsStringAsync(cancellationToken);
+                var apiResponseData = JsonSerializer.Deserialize<JsonElement>(responseContent);
+                var aiResponseText = string.Empty;
+
+                if (apiResponseData.TryGetProperty("candidates", out var candidates) &&
+                    candidates.ValueKind == JsonValueKind.Array &&
+                    candidates.GetArrayLength() > 0 &&
+                    candidates[0].TryGetProperty("content", out var content) &&
+                    content.TryGetProperty("parts", out var parts) &&
+                    parts.ValueKind == JsonValueKind.Array &&
+                    parts.GetArrayLength() > 0)
+                {
+                    var textBuilder = new System.Text.StringBuilder();
+                    foreach (var part in parts.EnumerateArray())
+                    {
+                        if (part.TryGetProperty("text", out var textElement))
+                        {
+                            textBuilder.Append(textElement.GetString() ?? string.Empty);
+                        }
+                    }
+                    aiResponseText = textBuilder.ToString();
+                }
+
+                _logger.LogInformation("Gemini API response received. CorrelationId: {CorrelationId}, Attempt: {Attempt}, ResponseLength: {Length}",
+                    correlationId, attempt, aiResponseText.Length);
+
+                // Parse the AI response
+                var parsedResponse = _parsingService.ParseAIResponse(aiResponseText, correlationId);
+
+                if (parsedResponse.IsValid)
+                {
+                    var response = new OpenAIResponse
+                    {
+                        IsSuccess = true,
+                        Content = parsedResponse.PossibleConditions.Any()
+                            ? string.Join(", ", parsedResponse.PossibleConditions)
+                            : "No specific conditions identified",
+                        PossibleConditions = parsedResponse.PossibleConditions,
+                        ConfidenceScore = parsedResponse.ConfidenceScore,
+                        RecommendedSpecialty = parsedResponse.RecommendedSpecialty,
+                        Urgency = parsedResponse.Urgency,
+                        Disclaimer = parsedResponse.Disclaimer,
+                        TokensUsed = 150,
+                        ModelUsed = model,
+                        ResponseTimeMs = (int)(DateTime.UtcNow - startTime).TotalMilliseconds,
+                        CorrelationId = correlationId,
+                        CostUsd = 0.0m  // Gemini free tier - no cost
+                    };
+
+                    // Cache successful response
+                    await _cachingService.SetAsync(cacheKey, response, TimeSpan.FromHours(24));
+
+                    // Publish analysis completed event
+                    await _eventPublisher.PublishAnalysisCompletedAsync(new()
+                    {
+                        CorrelationId = correlationId,
+                        Symptoms = symptoms,
+                        Analysis = response.Content ?? "",
+                        RecommendedSpecialty = response.RecommendedSpecialty,
+                        Urgency = response.Urgency,
+                        TokensUsed = response.TokensUsed,
+                        CostUsd = response.CostUsd,
+                        ModelUsed = response.ModelUsed,
+                        ResponseTimeMs = response.ResponseTimeMs,
+                        Success = true
+                    });
+
+                    return response;
+                }
+
+                _logger.LogWarning("AI response parsing failed. CorrelationId: {CorrelationId}, Attempt: {Attempt}, Error: {Error}",
+                    correlationId, attempt, parsedResponse.ErrorMessage);
             }
 
-            var response = new OpenAIResponse
-            {
-                IsSuccess = true,
-                Content = parsedResponse.PossibleConditions.Any()
-                    ? string.Join(", ", parsedResponse.PossibleConditions)
-                    : "No specific conditions identified",
-                TokensUsed = 150,
-                ModelUsed = "gemini-2.0-flash",
-                ResponseTimeMs = (int)(DateTime.UtcNow - startTime).TotalMilliseconds,
-                CorrelationId = correlationId,
-                CostUsd = 0.0m  // Gemini free tier - no cost
-            };
-
-            // Cache successful response
-            await _cachingService.SetAsync(cacheKey, response, TimeSpan.FromHours(24));
-
-            // Publish analysis completed event
-            await _eventPublisher.PublishAnalysisCompletedAsync(new()
-            {
-                CorrelationId = correlationId,
-                Symptoms = symptoms,
-                Analysis = response.Content ?? "",
-                TokensUsed = response.TokensUsed,
-                CostUsd = response.CostUsd,
-                ModelUsed = response.ModelUsed,
-                ResponseTimeMs = response.ResponseTimeMs,
-                Success = true
-            });
-
-            return response;
+            // If model output remains malformed after retries, use deterministic fallback.
+            _metricsService.RecordFallbackUsage("parse-invalid-json");
+            return _fallbackService.GetFallbackResponse(symptoms, correlationId);
         }
         catch (Exception ex)
         {
@@ -212,6 +285,7 @@ public class OpenAIService : IOpenAIService
             if (_fallbackService.ShouldUseFallback(ex))
             {
                 _logger.LogInformation("AI service failed, using fallback response. CorrelationId: {CorrelationId}", correlationId);
+                _metricsService.RecordFallbackUsage("service-exception");
                 var fallbackResponse = _fallbackService.GetFallbackResponse(symptoms, correlationId);
 
                 // Publish fallback event
@@ -250,6 +324,11 @@ public class OpenAIResponse
 {
     public bool IsSuccess { get; set; }
     public string? Content { get; set; }
+    public List<string>? PossibleConditions { get; set; }
+    public double ConfidenceScore { get; set; }
+    public string RecommendedSpecialty { get; set; } = string.Empty;
+    public string Urgency { get; set; } = string.Empty;
+    public string Disclaimer { get; set; } = string.Empty;
     public string? ErrorMessage { get; set; }
     public int TokensUsed { get; set; }
     public string? ModelUsed { get; set; }

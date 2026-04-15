@@ -24,6 +24,7 @@ public class AiServiceIntegrationTests : IAsyncLifetime
         _factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
+                builder.UseEnvironment("Testing");
                 builder.ConfigureServices(services =>
                 {
                     // Replace the real OpenAIService with a mock
@@ -242,5 +243,76 @@ public class AiServiceIntegrationTests : IAsyncLifetime
         var analysisResult = await result.Content.ReadFromJsonAsync<SymptomAnalysisResponse>();
         analysisResult!.Success.Should().BeTrue();
         analysisResult.CostUsd.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public async Task AnalyzeEndpoint_ShouldReturn429_WhenRateLimitExceeded()
+    {
+        // Arrange
+        var analysis = new OpenAIResponse
+        {
+            IsSuccess = true,
+            Content = "Test analysis",
+            TokensUsed = 20,
+            CostUsd = 0.001m,
+            ModelUsed = "gemini-flash-latest",
+            ResponseTimeMs = 200,
+            CorrelationId = Guid.NewGuid().ToString()
+        };
+
+        _mockOpenAIService!
+            .Setup(s => s.AnalyzeSymptomsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(analysis);
+
+        // Act: Limit is 5/hour in middleware; 6th request should be blocked.
+        HttpResponseMessage? lastResponse = null;
+        for (var i = 0; i < 6; i++)
+        {
+            lastResponse = await _httpClient!.PostAsJsonAsync("/api/ai/analyze",
+                new SymptomAnalysisRequest { Symptoms = $"Rate limit test symptom payload {i} with enough length" });
+        }
+
+        // Assert
+        lastResponse.Should().NotBeNull();
+        lastResponse!.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+    }
+
+    [Fact]
+    public async Task AnalyzeEndpoint_ResponseSchema_ShouldContainRequiredFields_AndNoUrgencyLevel()
+    {
+        // Arrange
+        var aiResponse = new OpenAIResponse
+        {
+            IsSuccess = true,
+            Content = "Migraine, Tension Headache",
+            PossibleConditions = new List<string> { "Migraine", "Tension Headache" },
+            ConfidenceScore = 0.84,
+            RecommendedSpecialty = "Neurology",
+            Urgency = "Medium",
+            Disclaimer = "This is not medical advice. Consult a healthcare professional.",
+            TokensUsed = 123,
+            CostUsd = 0.001m,
+            ModelUsed = "gemini-flash-latest",
+            ResponseTimeMs = 450,
+            CorrelationId = Guid.NewGuid().ToString()
+        };
+
+        _mockOpenAIService!
+            .Setup(s => s.AnalyzeSymptomsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(aiResponse);
+
+        // Act
+        var response = await _httpClient!.PostAsJsonAsync("/api/ai/analyze",
+            new SymptomAnalysisRequest { Symptoms = "Persistent headache with nausea and mild photophobia" });
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var json = await response.Content.ReadAsStringAsync();
+        json.Should().Contain("\"possibleConditions\"");
+        json.Should().Contain("\"confidenceScore\"");
+        json.Should().Contain("\"recommendedSpecialty\"");
+        json.Should().Contain("\"urgency\"");
+        json.Should().Contain("\"disclaimer\"");
+        json.Should().NotContain("\"urgencyLevel\"");
     }
 }

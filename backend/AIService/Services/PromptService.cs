@@ -24,8 +24,8 @@ Symptoms: {symptoms}
 Requirements:
 1. Respond ONLY with valid JSON using this exact format:
 {{
-    ""possibleConditions"": [""condition1"", ""condition2"", ""condition3""],
-    ""confidenceScore"": 0.00-1.00,
+    ""possibleConditions"": [""Condition1"", ""Condition2"", ""Condition3""],
+    ""confidenceScore"": 0.72,
     ""recommendedSpecialty"": ""SpecialtyName"",
     ""urgency"": ""Low|Medium|High|Emergency"",
     ""disclaimer"": ""This is not medical advice. Consult a healthcare professional.""
@@ -38,6 +38,8 @@ Requirements:
 6. Always include the disclaimer
 7. Do not provide free text medical advice
 8. Be conservative and prioritize safety
+9. Do not output markdown, code fences, or partial JSON
+10. Ensure the JSON object is complete and properly closed
 
 Common symptom patterns:
 - Headache + fever + nausea: Possible migraine, flu

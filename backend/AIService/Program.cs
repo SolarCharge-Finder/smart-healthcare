@@ -3,6 +3,7 @@ using AIService.Events;
 using AIService.Middleware;
 using AIService.Services;
 using Microsoft.EntityFrameworkCore;
+using RabbitMQ.Client;
 using Serilog;
 using StackExchange.Redis;
 
@@ -70,13 +71,26 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Database
+var useInMemoryDb = builder.Environment.IsEnvironment("Testing") ||
+                    builder.Configuration.GetValue<bool>("Database:UseInMemory");
+
 builder.Services.AddDbContext<AiDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-    ));
+{
+    if (useInMemoryDb)
+    {
+        options.UseInMemoryDatabase("AiServiceTestDb");
+    }
+    else
+    {
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+    }
+});
 
 // Secrets Management Service (must be before OpenAI Service)
 builder.Services.AddSingleton<ISecretsService, SecretsService>();
+
+var infrastructureStatus = new InfrastructureStatusService();
+builder.Services.AddSingleton<IInfrastructureStatusService>(infrastructureStatus);
 
 // Redis Connection for Caching
 var redisConnection = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
@@ -85,13 +99,38 @@ try
     var redis = ConnectionMultiplexer.Connect(redisConnection);
     builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
     builder.Services.AddSingleton<ICachingService, CachingService>();
+    infrastructureStatus.SetRedisStatus(true);
     Console.WriteLine($"✓ Redis cache connected: {redisConnection.Split(':')[0]}:6379");
 }
 catch (Exception ex)
 {
     Console.WriteLine($"⚠️  Redis connection failed ({redisConnection}): {ex.Message}");
     Console.WriteLine("   Caching will be disabled but service will continue");
+    infrastructureStatus.SetRedisStatus(false);
     builder.Services.AddSingleton<ICachingService>(new NoOpCachingService());
+}
+
+// RabbitMQ startup connectivity status
+try
+{
+    var rabbitPort = int.TryParse(builder.Configuration["RabbitMQ:Port"], out var parsedPort) ? parsedPort : 5672;
+    var rabbitFactory = new ConnectionFactory
+    {
+        HostName = builder.Configuration["RabbitMQ:Host"] ?? "localhost",
+        UserName = builder.Configuration["RabbitMQ:User"] ?? "guest",
+        Password = builder.Configuration["RabbitMQ:Password"] ?? "guest",
+        Port = rabbitPort
+    };
+
+    await using var rabbitConnection = await rabbitFactory.CreateConnectionAsync();
+    infrastructureStatus.SetRabbitMqStatus(true);
+    Console.WriteLine($"✓ RabbitMQ connected: {rabbitFactory.HostName}:{rabbitFactory.Port}");
+}
+catch (Exception ex)
+{
+    infrastructureStatus.SetRabbitMqStatus(false);
+    Console.WriteLine($"⚠️  RabbitMQ connection failed: {ex.Message}");
+    Console.WriteLine("   Event publishing will use retry + dead-letter fallback");
 }
 
 // Fallback Service
@@ -137,16 +176,21 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("frontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:3001")
+        var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+            ?? new[] { "http://localhost:3000", "http://localhost:3001", "http://localhost:8081" };
+
+        policy.WithOrigins(origins)
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
+var swaggerEnabled = app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("Swagger:Enabled");
+if (swaggerEnabled)
 {
     app.UseSwagger();
     app.UseSwaggerUI();
@@ -156,7 +200,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AiDbContext>();
 
-    if (app.Environment.IsEnvironment("Testing"))
+    if (useInMemoryDb)
     {
         db.Database.EnsureCreated();
         await AiDbContextSeed.SeedAsync(db);
@@ -191,6 +235,11 @@ app.MapGet("/health/ready", async (AiDbContext db) =>
     return canConnect ? Results.Ok("ready") : Results.StatusCode(503);
 });
 
+app.MapGet("/health/dependencies", (IInfrastructureStatusService statusService) =>
+{
+    return Results.Ok(statusService.GetSummary());
+});
+
 // Prometheus metrics endpoint
 app.MapGet("/metrics", (IMetricsService metricsService) =>
 {
@@ -210,3 +259,5 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+public partial class Program { }

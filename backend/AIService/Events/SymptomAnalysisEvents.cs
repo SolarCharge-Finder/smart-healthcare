@@ -10,7 +10,7 @@ public class SymptomAnalysisCompletedEvent
     public string Symptoms { get; set; } = string.Empty;
     public string Analysis { get; set; } = string.Empty;
     public string RecommendedSpecialty { get; set; } = string.Empty;
-    public string UrgencyLevel { get; set; } = string.Empty;
+    public string Urgency { get; set; } = string.Empty;
     public decimal CostUsd { get; set; }
     public int TokensUsed { get; set; }
     public int ResponseTimeMs { get; set; }

@@ -38,7 +38,8 @@ public class SecretsService : ISecretsService
     public string GetOpenAIApiKey()
     {
         // Try environment variable first (highest priority for production)
-        var envKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+        var envKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY")
+            ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY");
         if (!string.IsNullOrEmpty(envKey))
         {
             _logger.LogInformation("Using OpenAI API key from environment variable");
@@ -72,11 +73,12 @@ public class SecretsService : ISecretsService
         var errors = new List<string>();
 
         // Check OpenAI API key
-        var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY")
+        var apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY")
+            ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY")
             ?? _configuration["OpenAI:ApiKey"];
         if (string.IsNullOrEmpty(apiKey))
         {
-            errors.Add("OpenAI API key is not configured. Set OPENAI_API_KEY environment variable.");
+            errors.Add("AI API key is not configured. Set GEMINI_API_KEY (preferred) or OPENAI_API_KEY environment variable.");
         }
         else if (apiKey.Length < 20)
         {
