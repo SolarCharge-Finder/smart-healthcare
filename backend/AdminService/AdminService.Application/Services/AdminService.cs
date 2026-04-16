@@ -46,24 +46,26 @@ public class AdminServiceImplementation : IAdminService
     {
         var admins = await _repo.GetAllAsync();
 
-        return admins.Select(a => new AdminResponse
+        return admins.Select(Map).ToList();
+    }
+
+    public async Task<AdminResponse?> GetById(Guid id)
+    {
+        var admin = await _repo.GetByIdAsync(id);
+
+        if (admin == null)
         {
-            Id = a.Id,
-            FullName = a.FullName,
-            IsApproved = a.IsApproved
-        }).ToList();
+            return null;
+        }
+
+        return Map(admin);
     }
 
     public async Task<List<AdminResponse>> GetPending()
     {
         var admins = await _repo.GetPendingAsync();
 
-        return admins.Select(a => new AdminResponse
-        {
-            Id = a.Id,
-            FullName = a.FullName,
-            IsApproved = a.IsApproved
-        }).ToList();
+        return admins.Select(Map).ToList();
     }
 
     public async Task ApproveAdmin(Guid id)
@@ -116,5 +118,14 @@ public class AdminServiceImplementation : IAdminService
     public async Task ApproveDoctor(Guid id)
     {
         await _doctorClient.ApproveDoctor(id);
+    }
+    private static AdminResponse Map(Admin admin)
+    {
+        return new AdminResponse
+        {
+            Id = admin.Id,
+            FullName = admin.FullName,
+            IsApproved = admin.IsApproved
+        };
     }
 }

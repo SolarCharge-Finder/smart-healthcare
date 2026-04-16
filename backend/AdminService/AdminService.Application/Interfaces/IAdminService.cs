@@ -6,6 +6,7 @@ public interface IAdminService
 {
     Task CreateAdmin(Guid userId, CreateAdminRequest request);
     Task<List<AdminResponse>> GetAll();
+    Task<AdminResponse?> GetById(Guid id);
     Task<List<AdminResponse>> GetPending();
     Task ApproveAdmin(Guid id);
     Task RejectAdmin(Guid id);
