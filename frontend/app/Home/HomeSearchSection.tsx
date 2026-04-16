@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import SearchFilter from "../../components/search/SearchFilter";
+import { useRouter } from 'next/navigation';
+import SearchFilter from '../../components/search/SearchFilter';
 
 export default function HomeSearchSection() {
   const router = useRouter();
@@ -14,19 +14,19 @@ export default function HomeSearchSection() {
             const params = new URLSearchParams();
 
             if (values.doctorName) {
-              params.set("name", values.doctorName);
+              params.set('name', values.doctorName);
             }
 
             if (values.specialization) {
-              params.set("specialization", values.specialization);
+              params.set('specialization', values.specialization);
             }
 
             if (values.hospital) {
-              params.set("hospital", values.hospital); // or hospital name depending on backend
+              params.set('hospital', values.hospital); // or hospital name depending on backend
             }
 
             if (values.date) {
-              params.set("date", values.date);
+              params.set('date', values.date);
             }
 
             router.push(`/doctors/results?${params.toString()}`);

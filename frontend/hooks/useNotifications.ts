@@ -1,9 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
 
-import { notificationApi } from "../lib/api";
-import { authStorage } from "../modules/auth/authStorage";
-import { NotificationItem, UnreadCountResponse } from "../types/notification";
+import { notificationApi } from '../lib/api';
+import { authStorage } from '../modules/auth/authStorage';
+import { NotificationItem, UnreadCountResponse } from '../types/notification';
 
 function authHeaders() {
   const token = authStorage.getToken();
@@ -23,19 +23,19 @@ function hasAuthToken() {
 
 export function useNotifications(enabled: boolean) {
   return useQuery<NotificationItem[]>({
-    queryKey: ["notifications"],
+    queryKey: ['notifications'],
     enabled: enabled && hasAuthToken(),
     refetchInterval: 30000,
     queryFn: async () => {
       try {
-        const { data } = await notificationApi.get<NotificationItem[]>("/notifications", {
+        const { data } = await notificationApi.get<NotificationItem[]>('/notifications', {
           headers: authHeaders(),
         });
         return data;
       } catch (error) {
         if (axios.isAxiosError(error) && error.response?.status === 401) {
           authStorage.clear();
-          throw new Error("Session expired. Please log in again to view notifications.");
+          throw new Error('Session expired. Please log in again to view notifications.');
         }
 
         throw error;
@@ -47,19 +47,22 @@ export function useNotifications(enabled: boolean) {
 
 export function useUnreadNotificationCount(enabled: boolean) {
   return useQuery<number>({
-    queryKey: ["notifications", "unread-count"],
+    queryKey: ['notifications', 'unread-count'],
     enabled: enabled && hasAuthToken(),
     refetchInterval: 30000,
     queryFn: async () => {
       try {
-        const { data } = await notificationApi.get<UnreadCountResponse>("/notifications/unread-count", {
-          headers: authHeaders(),
-        });
+        const { data } = await notificationApi.get<UnreadCountResponse>(
+          '/notifications/unread-count',
+          {
+            headers: authHeaders(),
+          },
+        );
         return data.unreadCount;
       } catch (error) {
         if (axios.isAxiosError(error) && error.response?.status === 401) {
           authStorage.clear();
-          throw new Error("Session expired. Please log in again to view notifications.");
+          throw new Error('Session expired. Please log in again to view notifications.');
         }
 
         throw error;
@@ -79,8 +82,8 @@ export function useMarkNotificationRead() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
     },
   });
 }
@@ -90,13 +93,13 @@ export function useMarkAllNotificationsRead() {
 
   return useMutation({
     mutationFn: async () => {
-      await notificationApi.put("/notifications/mark-all-as-read", undefined, {
+      await notificationApi.put('/notifications/mark-all-as-read', undefined, {
         headers: authHeaders(),
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
     },
   });
 }

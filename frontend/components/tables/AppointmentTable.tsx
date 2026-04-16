@@ -1,30 +1,30 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { AxiosError } from "axios";
-import { useAppointments } from "../../hooks/useAppointments";
-import { useCancelAppointment } from "../../hooks/useCancelAppointment";
-import { getPaymentByAppointmentId } from "../../hooks/usePayment";
-import { useAuthContext } from "../../modules/auth/AuthContext";
-import { generateRecipePdf } from "../../lib/recipePdf";
-import Card from "../ui/Card";
-import Button from "../ui/Button";
-import Alert from "../ui/Alert";
-import Spinner from "../ui/Spinner";
+import { useState } from 'react';
+import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
+import { AxiosError } from 'axios';
+import { useAppointments } from '../../hooks/useAppointments';
+import { useCancelAppointment } from '../../hooks/useCancelAppointment';
+import { getPaymentByAppointmentId } from '../../hooks/usePayment';
+import { useAuthContext } from '../../modules/auth/AuthContext';
+import { generateRecipePdf } from '../../lib/recipePdf';
+import Card from '../ui/Card';
+import Button from '../ui/Button';
+import Alert from '../ui/Alert';
+import Spinner from '../ui/Spinner';
 
 function isVideoConsultationPayment(appointmentId: string, hospitalFee: number) {
   if (hospitalFee === 0) return true;
 
-  if (typeof window === "undefined") return false;
+  if (typeof window === 'undefined') return false;
 
   try {
-    const raw = window.localStorage.getItem("video-consultation-payments");
+    const raw = window.localStorage.getItem('video-consultation-payments');
     if (!raw) return false;
 
     const parsed = JSON.parse(raw);
-    return Boolean(parsed && typeof parsed === "object" && parsed[appointmentId]);
+    return Boolean(parsed && typeof parsed === 'object' && parsed[appointmentId]);
   } catch {
     return false;
   }
@@ -41,11 +41,11 @@ export default function AppointmentTable() {
   const visibleAppointments =
     appointments.data?.filter((appointment) => {
       const status = appointment.status.toUpperCase();
-      return status !== "CANCELLED";
+      return status !== 'CANCELLED';
     }) ?? [];
 
   const selectedAppointment = visibleAppointments.find(
-    (appointment) => appointment.id === selectedAppointmentId
+    (appointment) => appointment.id === selectedAppointmentId,
   );
 
   const selectedIsVideoConsultation = selectedAppointment
@@ -55,7 +55,7 @@ export default function AppointmentTable() {
   const selectedAppointmentNumber = selectedAppointment?.appointmentNumber ?? null;
 
   const paymentDetails = useQuery({
-    queryKey: ["payment-by-appointment", selectedAppointmentId],
+    queryKey: ['payment-by-appointment', selectedAppointmentId],
     enabled: Boolean(selectedAppointmentId),
     queryFn: async () => getPaymentByAppointmentId(selectedAppointmentId as string),
   });
@@ -66,20 +66,18 @@ export default function AppointmentTable() {
 
     try {
       await cancelAppointment.mutateAsync(id);
-      setMessage("Appointment cancelled successfully.");
+      setMessage('Appointment cancelled successfully.');
     } catch (err) {
       const axiosError = err as AxiosError;
       const responseMessage =
-        typeof axiosError.response?.data === "string"
-          ? axiosError.response.data
-          : null;
+        typeof axiosError.response?.data === 'string' ? axiosError.response.data : null;
 
       if (responseMessage) {
         setError(responseMessage);
       } else if (axiosError.response?.status === 500) {
-        setError("Server error. Please try again later.");
+        setError('Server error. Please try again later.');
       } else {
-        setError("Unable to cancel appointment.");
+        setError('Unable to cancel appointment.');
       }
     }
   };
@@ -87,12 +85,12 @@ export default function AppointmentTable() {
   const getDisplayStatus = (status: string) => {
     const normalized = status.toUpperCase();
 
-    if (normalized === "PENDING_PAYMENT") {
-      return "Pending";
+    if (normalized === 'PENDING_PAYMENT') {
+      return 'Pending';
     }
 
-    if (normalized === "CONFIRMED" || normalized === "PAID" || normalized === "SUCCEEDED") {
-      return "Confirmed";
+    if (normalized === 'CONFIRMED' || normalized === 'PAID' || normalized === 'SUCCEEDED') {
+      return 'Confirmed';
     }
 
     return status;
@@ -100,7 +98,7 @@ export default function AppointmentTable() {
 
   const isConfirmedStatus = (status: string) => {
     const normalized = status.toUpperCase();
-    return normalized === "CONFIRMED" || normalized === "PAID" || normalized === "SUCCEEDED";
+    return normalized === 'CONFIRMED' || normalized === 'PAID' || normalized === 'SUCCEEDED';
   };
 
   const formatPaymentAmount = (amount: number, currency: string) => {
@@ -113,26 +111,26 @@ export default function AppointmentTable() {
     const paidAt = new Date(paymentDetails.data.updatedAt).toLocaleString();
 
     const userRows: Array<[string, string]> = [
-      ["User name", selectedAppointment.guestUser?.fullName ?? user?.name ?? "-"],
-      ["Email", selectedAppointment.guestUser?.email ?? user?.email ?? "-"],
-      ["Patient ID", selectedAppointment.patientId],
-      ["User ID", selectedAppointment.userId ?? selectedAppointment.guestUserId ?? "-"],
+      ['User name', selectedAppointment.guestUser?.fullName ?? user?.name ?? '-'],
+      ['Email', selectedAppointment.guestUser?.email ?? user?.email ?? '-'],
+      ['Patient ID', selectedAppointment.patientId],
+      ['User ID', selectedAppointment.userId ?? selectedAppointment.guestUserId ?? '-'],
     ];
 
     const doctorRows: Array<[string, string]> = [
-      ["Doctor", selectedAppointment.doctorName],
-      ["Specialization", selectedAppointment.specialization],
-      ["Hospital", selectedAppointment.hospitalName],
-      ["Date and time", new Date(selectedAppointment.slotTime).toLocaleString()],
-      ["Booking Reference", selectedAppointment.bookingReferenceId],
+      ['Doctor', selectedAppointment.doctorName],
+      ['Specialization', selectedAppointment.specialization],
+      ['Hospital', selectedAppointment.hospitalName],
+      ['Date and time', new Date(selectedAppointment.slotTime).toLocaleString()],
+      ['Booking Reference', selectedAppointment.bookingReferenceId],
     ];
 
     const paymentRows: Array<[string, string]> = [
-      ["My Appointment Number", selectedAppointmentNumber ? `#${selectedAppointmentNumber}` : "-"],
-      ["Payment ID", paymentDetails.data.id],
-      ["Status", paymentDetails.data.status.toUpperCase()],
-      ["Amount", formatPaymentAmount(paymentDetails.data.amount, paymentDetails.data.currency)],
-      ["Paid at", paidAt],
+      ['My Appointment Number', selectedAppointmentNumber ? `#${selectedAppointmentNumber}` : '-'],
+      ['Payment ID', paymentDetails.data.id],
+      ['Status', paymentDetails.data.status.toUpperCase()],
+      ['Amount', formatPaymentAmount(paymentDetails.data.amount, paymentDetails.data.currency)],
+      ['Paid at', paidAt],
     ];
 
     await generateRecipePdf({
@@ -153,9 +151,7 @@ export default function AppointmentTable() {
           </div>
         ) : null}
 
-        {appointments.isError ? (
-          <Alert type="error">Failed to load appointments.</Alert>
-        ) : null}
+        {appointments.isError ? <Alert type="error">Failed to load appointments.</Alert> : null}
 
         {message ? <Alert type="success">{message}</Alert> : null}
         {error ? <Alert type="error">{error}</Alert> : null}
@@ -177,25 +173,14 @@ export default function AppointmentTable() {
               </thead>
               <tbody>
                 {visibleAppointments.map((appointment) => (
-                  <tr
-                    key={appointment.id}
-                    className="border-t border-gray-100 hover:bg-gray-50"
-                  >
+                  <tr key={appointment.id} className="border-t border-gray-100 hover:bg-gray-50">
                     <td className="px-4 py-3 font-semibold text-blue-700">
                       #{appointment.appointmentNumber}
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs">
-                      {appointment.id}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs">
-                      {appointment.doctorId}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs">
-                      {appointment.patientId}
-                    </td>
-                    <td className="px-4 py-3">
-                      {new Date(appointment.slotTime).toLocaleString()}
-                    </td>
+                    <td className="px-4 py-3 font-mono text-xs">{appointment.id}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{appointment.doctorId}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{appointment.patientId}</td>
+                    <td className="px-4 py-3">{new Date(appointment.slotTime).toLocaleString()}</td>
                     <td className="px-4 py-3">
                       <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700">
                         {getDisplayStatus(appointment.status)}
@@ -206,7 +191,7 @@ export default function AppointmentTable() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
-                        {appointment.status.toUpperCase() === "PENDING_PAYMENT" ? (
+                        {appointment.status.toUpperCase() === 'PENDING_PAYMENT' ? (
                           <Link
                             href={`/payment?appointmentId=${appointment.id}`}
                             className="inline-block"
@@ -232,7 +217,7 @@ export default function AppointmentTable() {
                             onClick={() => handleCancel(appointment.id)}
                             disabled={cancelAppointment.isPending}
                           >
-                            {cancelAppointment.isPending ? "Cancelling..." : "Cancel"}
+                            {cancelAppointment.isPending ? 'Cancelling...' : 'Cancel'}
                           </Button>
                         )}
                       </div>
@@ -257,20 +242,38 @@ export default function AppointmentTable() {
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
             onClick={() => setSelectedAppointmentId(null)}
           >
-            <div
-              className="w-full max-w-3xl"
-              onClick={(event) => event.stopPropagation()}
-            >
+            <div className="w-full max-w-3xl" onClick={(event) => event.stopPropagation()}>
               <Card title="Payment Summary">
                 <div className="space-y-3 text-sm text-gray-700">
                   <div className="grid gap-2 md:grid-cols-2">
-                    <p><span className="font-semibold">My Appointment Number:</span> {selectedAppointmentNumber ? `#${selectedAppointmentNumber}` : "-"}</p>
-                    <p><span className="font-semibold">User name:</span> {selectedAppointment.guestUser?.fullName ?? user?.name ?? "-"}</p>
-                    <p><span className="font-semibold">Email:</span> {selectedAppointment.guestUser?.email ?? user?.email ?? "-"}</p>
-                    <p><span className="font-semibold">Doctor name:</span> {selectedAppointment.doctorName}</p>
-                    <p><span className="font-semibold">Specialization:</span> {selectedAppointment.specialization}</p>
-                    <p><span className="font-semibold">Hospital:</span> {selectedAppointment.hospitalName}</p>
-                    <p><span className="font-semibold">Date and time:</span> {new Date(selectedAppointment.slotTime).toLocaleString()}</p>
+                    <p>
+                      <span className="font-semibold">My Appointment Number:</span>{' '}
+                      {selectedAppointmentNumber ? `#${selectedAppointmentNumber}` : '-'}
+                    </p>
+                    <p>
+                      <span className="font-semibold">User name:</span>{' '}
+                      {selectedAppointment.guestUser?.fullName ?? user?.name ?? '-'}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Email:</span>{' '}
+                      {selectedAppointment.guestUser?.email ?? user?.email ?? '-'}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Doctor name:</span>{' '}
+                      {selectedAppointment.doctorName}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Specialization:</span>{' '}
+                      {selectedAppointment.specialization}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Hospital:</span>{' '}
+                      {selectedAppointment.hospitalName}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Date and time:</span>{' '}
+                      {new Date(selectedAppointment.slotTime).toLocaleString()}
+                    </p>
                   </div>
 
                   <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
@@ -284,15 +287,32 @@ export default function AppointmentTable() {
                     ) : null}
 
                     {paymentDetails.isError ? (
-                      <Alert type="error">Unable to load payment details for this appointment.</Alert>
+                      <Alert type="error">
+                        Unable to load payment details for this appointment.
+                      </Alert>
                     ) : null}
 
                     {paymentDetails.isSuccess ? (
                       <div className="grid gap-2 md:grid-cols-2">
-                        <p><span className="font-semibold">Payment ID:</span> {paymentDetails.data.id}</p>
-                        <p><span className="font-semibold">Status:</span> {paymentDetails.data.status}</p>
-                        <p><span className="font-semibold">Amount:</span> {formatPaymentAmount(paymentDetails.data.amount, paymentDetails.data.currency)}</p>
-                        <p><span className="font-semibold">Paid at:</span> {new Date(paymentDetails.data.updatedAt).toLocaleString()}</p>
+                        <p>
+                          <span className="font-semibold">Payment ID:</span>{' '}
+                          {paymentDetails.data.id}
+                        </p>
+                        <p>
+                          <span className="font-semibold">Status:</span>{' '}
+                          {paymentDetails.data.status}
+                        </p>
+                        <p>
+                          <span className="font-semibold">Amount:</span>{' '}
+                          {formatPaymentAmount(
+                            paymentDetails.data.amount,
+                            paymentDetails.data.currency,
+                          )}
+                        </p>
+                        <p>
+                          <span className="font-semibold">Paid at:</span>{' '}
+                          {new Date(paymentDetails.data.updatedAt).toLocaleString()}
+                        </p>
                       </div>
                     ) : null}
                   </div>

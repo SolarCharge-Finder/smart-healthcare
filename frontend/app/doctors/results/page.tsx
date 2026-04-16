@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import { Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Alert from "../../../components/ui/Alert";
-import PageHeader from "../../../components/ui/PageHeader";
-import SearchFilter from "../../../components/search/SearchFilter";
-import DoctorCard from "../../../components/cards/DoctorCard";
-import { useDoctorSearch } from "../../../hooks/useDoctorSearch";
+import { Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Alert from '../../../components/ui/Alert';
+import PageHeader from '../../../components/ui/PageHeader';
+import SearchFilter from '../../../components/search/SearchFilter';
+import DoctorCard from '../../../components/cards/DoctorCard';
+import { useDoctorSearch } from '../../../hooks/useDoctorSearch';
 
 function DoctorSearchResultsContent() {
   const router = useRouter();
   const params = useSearchParams();
 
-  const doctorName = params.get("name") ?? "";
-  const specialization = params.get("specialization") ?? "";
-  const hospital = params.get("hospital") ?? "";
-  const date = params.get("date") ?? "";
-  const isTelemedicineView = params.get("telemedicine") === "1";
+  const doctorName = params.get('name') ?? '';
+  const specialization = params.get('specialization') ?? '';
+  const hospital = params.get('hospital') ?? '';
+  const date = params.get('date') ?? '';
+  const isTelemedicineView = params.get('telemedicine') === '1';
 
   const search = useDoctorSearch({
     doctorName,
@@ -40,20 +40,18 @@ function DoctorSearchResultsContent() {
         initialValues={{ doctorName, specialization, hospital, date }}
         onSearch={(values) => {
           const next = new URLSearchParams();
-          if (isTelemedicineView) next.set("telemedicine", "1");
+          if (isTelemedicineView) next.set('telemedicine', '1');
 
-          if (values.doctorName) next.set("name", values.doctorName);
-          if (values.specialization) next.set("specialization", values.specialization);
-          if (values.hospital) next.set("hospital", values.hospital);
+          if (values.doctorName) next.set('name', values.doctorName);
+          if (values.specialization) next.set('specialization', values.specialization);
+          if (values.hospital) next.set('hospital', values.hospital);
 
-          next.set("date", values.date);
+          next.set('date', values.date);
           router.push(`/doctors/results?${next.toString()}`);
         }}
       />
 
-      {search.isError ? (
-        <Alert type="error">Unable to load search results.</Alert>
-      ) : null}
+      {search.isError ? <Alert type="error">Unable to load search results.</Alert> : null}
 
       {search.isSuccess && search.data.length === 0 ? (
         <Alert type="info">
@@ -61,7 +59,10 @@ function DoctorSearchResultsContent() {
         </Alert>
       ) : null}
 
-      {search.isSuccess && date && selectedDateResults.length === 0 && nextDateResults.length > 0 ? (
+      {search.isSuccess &&
+      date &&
+      selectedDateResults.length === 0 &&
+      nextDateResults.length > 0 ? (
         <Alert type="info">
           No doctors are available on {date}. Showing the next available dates.
         </Alert>
@@ -94,7 +95,7 @@ function DoctorSearchResultsContent() {
               });
 
               if (isTelemedicineView) {
-                next.set("telemedicine", "1");
+                next.set('telemedicine', '1');
               }
 
               router.push(`/appointments/place?${next.toString()}`);
@@ -108,7 +109,9 @@ function DoctorSearchResultsContent() {
 
 export default function DoctorSearchResultsPage() {
   return (
-    <Suspense fallback={<main className="mx-auto min-h-screen max-w-6xl px-6 py-10">Loading...</main>}>
+    <Suspense
+      fallback={<main className="mx-auto min-h-screen max-w-6xl px-6 py-10">Loading...</main>}
+    >
       <DoctorSearchResultsContent />
     </Suspense>
   );

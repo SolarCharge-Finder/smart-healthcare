@@ -1,9 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
-import api from "../lib/api";
-import {
-  DoctorFilterOptions,
-  DoctorSearchResult,
-} from "../types/doctor";
+import { useQuery } from '@tanstack/react-query';
+import api from '../lib/api';
+import { DoctorFilterOptions, DoctorSearchResult } from '../types/doctor';
 
 type DoctorSearchParams = {
   doctorName?: string;
@@ -15,8 +12,8 @@ type DoctorSearchParams = {
 
 function formatIsoDate(date: Date) {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
@@ -28,9 +25,9 @@ function addDays(baseDate: Date, days: number) {
 
 export function useDoctorFilterOptions() {
   return useQuery<DoctorFilterOptions>({
-    queryKey: ["doctor-filter-options"],
+    queryKey: ['doctor-filter-options'],
     queryFn: async () => {
-      const { data } = await api.get<DoctorFilterOptions>("/doctors/filter-options");
+      const { data } = await api.get<DoctorFilterOptions>('/doctors/filter-options');
       return data;
     },
   });
@@ -40,7 +37,7 @@ export function useDoctorSearch(params: DoctorSearchParams) {
   const lookAheadDays = params.lookAheadDays ?? 7;
 
   return useQuery<DoctorSearchResult[]>({
-    queryKey: ["doctor-search", params, lookAheadDays],
+    queryKey: ['doctor-search', params, lookAheadDays],
     enabled: Boolean(params.date),
     queryFn: async () => {
       const selectedDate = params.date ? new Date(`${params.date}T00:00:00`) : null;
@@ -52,7 +49,7 @@ export function useDoctorSearch(params: DoctorSearchParams) {
       const requests = Array.from({ length: lookAheadDays + 1 }, (_, offset) => {
         const targetDate = formatIsoDate(addDays(selectedDate, offset));
 
-        return api.get<DoctorSearchResult[]>("/doctors/search", {
+        return api.get<DoctorSearchResult[]>('/doctors/search', {
           params: {
             name: params.doctorName || undefined,
             specialization: params.specialization || undefined,
@@ -79,18 +76,15 @@ export function useDoctorSearch(params: DoctorSearchParams) {
 
 export function useDoctorAvailability(doctorId?: string, date?: string) {
   return useQuery<{ availableSlots: string[] }>({
-    queryKey: ["doctor-availability", doctorId, date],
+    queryKey: ['doctor-availability', doctorId, date],
     enabled: Boolean(doctorId && date),
     queryFn: async () => {
-      const { data } = await api.get<{ availableSlots: string[] }>(
-        "/doctors/availability",
-        {
-          params: {
-            doctorId,
-            date,
-          },
-        }
-      );
+      const { data } = await api.get<{ availableSlots: string[] }>('/doctors/availability', {
+        params: {
+          doctorId,
+          date,
+        },
+      });
       return data;
     },
   });

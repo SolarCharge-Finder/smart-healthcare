@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { FormEvent, useState } from "react";
-import Card from "../ui/Card";
-import Input from "../ui/Input";
-import Button from "../ui/Button";
-import Alert from "../ui/Alert";
+import { FormEvent, useState } from 'react';
+import Card from '../ui/Card';
+import Input from '../ui/Input';
+import Button from '../ui/Button';
+import Alert from '../ui/Alert';
 
-import { registerApi } from "../../modules/auth/authApi";
+import { registerApi } from '../../modules/auth/authApi';
 
 export default function RegisterForm() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -32,12 +32,12 @@ export default function RegisterForm() {
       setSuccess(true);
 
       // clear form
-      setName("");
-      setEmail("");
-      setPassword("");
+      setName('');
+      setEmail('');
+      setPassword('');
     } catch (err: any) {
       console.error(err);
-      setError("Registration failed. Try again.");
+      setError('Registration failed. Try again.');
     } finally {
       setLoading(false);
     }
@@ -46,12 +46,7 @@ export default function RegisterForm() {
   return (
     <Card title="New here? Create an account">
       <form className="space-y-4" onSubmit={onSubmit}>
-        <Input
-          label="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
+        <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} required />
         <Input
           label="Email"
           type="email"
@@ -68,15 +63,13 @@ export default function RegisterForm() {
         />
 
         {success && (
-          <Alert type="success">
-            Account created. Please check your email to verify. 
-          </Alert>
+          <Alert type="success">Account created. Please check your email to verify.</Alert>
         )}
 
         {error && <Alert type="error">{error}</Alert>}
 
         <Button type="submit" disabled={loading}>
-          {loading ? "Registering..." : "Register"}
+          {loading ? 'Registering...' : 'Register'}
         </Button>
       </form>
     </Card>

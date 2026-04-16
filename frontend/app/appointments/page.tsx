@@ -1,27 +1,27 @@
-import Link from "next/link";
-import Card from "../../components/ui/Card";
-import Button from "../../components/ui/Button";
-import PageHeader from "../../components/ui/PageHeader";
+import Link from 'next/link';
+import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import PageHeader from '../../components/ui/PageHeader';
 
 const items = [
   {
-    title: "Book Appointment",
-    description: "Reserve a slot with your preferred doctor.",
-    href: "/",
-    cta: "Book Now"
+    title: 'Book Appointment',
+    description: 'Reserve a slot with your preferred doctor.',
+    href: '/',
+    cta: 'Book Now',
   },
   {
-    title: "Check Availability",
-    description: "Find available time slots by date range.",
-    href: "/appointments/availability",
-    cta: "Check Slots"
+    title: 'Check Availability',
+    description: 'Find available time slots by date range.',
+    href: '/appointments/availability',
+    cta: 'Check Slots',
   },
   {
-    title: "Appointment History",
-    description: "Review and cancel upcoming appointments.",
-    href: "/appointments/history",
-    cta: "View History"
-  }
+    title: 'Appointment History',
+    description: 'Review and cancel upcoming appointments.',
+    href: '/appointments/history',
+    cta: 'View History',
+  },
 ];
 
 export default function AppointmentsLandingPage() {

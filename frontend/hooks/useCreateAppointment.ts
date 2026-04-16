@@ -1,6 +1,6 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import api from "../lib/api";
-import { Appointment } from "../types/appointment";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '../lib/api';
+import { Appointment } from '../types/appointment';
 
 export type CreateAppointmentPayload = {
   patientId?: string;
@@ -25,14 +25,11 @@ export function useCreateAppointment() {
 
   return useMutation<Appointment, unknown, CreateAppointmentPayload>({
     mutationFn: async (payload) => {
-      const { data } = await api.post<Appointment>(
-        "/appointments",
-        payload
-      );
+      const { data } = await api.post<Appointment>('/appointments', payload);
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
-    }
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    },
   });
 }

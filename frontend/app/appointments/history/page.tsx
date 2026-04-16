@@ -1,5 +1,5 @@
-import AppointmentTable from "../../../components/tables/AppointmentTable";
-import PageHeader from "../../../components/ui/PageHeader";
+import AppointmentTable from '../../../components/tables/AppointmentTable';
+import PageHeader from '../../../components/ui/PageHeader';
 
 export default function AppointmentHistoryPage() {
   return (

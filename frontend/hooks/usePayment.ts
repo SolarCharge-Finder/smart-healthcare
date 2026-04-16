@@ -1,11 +1,7 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
-import { paymentApi } from "../lib/api";
-import {
-  Payment,
-  CreatePaymentIntentResponse,
-  ConfirmPaymentRequest,
-} from "../types/payment";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
+import { paymentApi } from '../lib/api';
+import { Payment, CreatePaymentIntentResponse, ConfirmPaymentRequest } from '../types/payment';
 
 export interface CreatePaymentIntentPayload {
   appointmentId: string;
@@ -16,10 +12,10 @@ function extractApiError(error: unknown, fallbackMessage: string): Error {
     const detail = error.response?.data?.detail;
     const title = error.response?.data?.title;
     const message =
-      (typeof detail === "string" && detail.trim()) ||
-      (typeof title === "string" && title.trim()) ||
-      (typeof error.response?.data === "string" && error.response.data.trim()) ||
-      (typeof error.message === "string" && error.message.trim()) ||
+      (typeof detail === 'string' && detail.trim()) ||
+      (typeof title === 'string' && title.trim()) ||
+      (typeof error.response?.data === 'string' && error.response.data.trim()) ||
+      (typeof error.message === 'string' && error.message.trim()) ||
       fallbackMessage;
 
     return new Error(message);
@@ -37,12 +33,12 @@ export function useCreatePaymentIntent() {
     mutationFn: async (payload) => {
       try {
         const { data } = await paymentApi.post<CreatePaymentIntentResponse>(
-          "/payments/intents",
-          payload
+          '/payments/intents',
+          payload,
         );
         return data;
       } catch (error) {
-        throw extractApiError(error, "Failed to create payment intent.");
+        throw extractApiError(error, 'Failed to create payment intent.');
       }
     },
   });
@@ -57,12 +53,12 @@ export function useConfirmPayment() {
         const { data } = await paymentApi.post<Payment>(`/payments/${paymentId}/confirm`, payload);
         return data;
       } catch (error) {
-        throw extractApiError(error, "Failed to confirm payment.");
+        throw extractApiError(error, 'Failed to confirm payment.');
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payments"] });
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
     },
   });
 }

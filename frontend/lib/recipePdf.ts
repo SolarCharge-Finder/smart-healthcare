@@ -8,8 +8,8 @@ type RecipePdfPayload = {
 };
 
 export async function generateRecipePdf(payload: RecipePdfPayload): Promise<void> {
-  const { jsPDF } = await import("jspdf");
-  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const { jsPDF } = await import('jspdf');
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -18,20 +18,20 @@ export async function generateRecipePdf(payload: RecipePdfPayload): Promise<void
   const contentBottomY = pageHeight - 70;
 
   const termsParagraphs = [
-    "PLEASE NOTE THAT IN ORDER TO REFUND THE TOTAL APPOINTMENT CHARGES WITHOUT OUR NSR FEE OF LKR 275 HAVE TO CONTACT ECL CALL CENTER OR APPLY VIA WEB OR APP BEFORE SESSION RESUMES. T and C Apply",
-    "Your channeling is completed. You will receive confirmation SMS message and email.",
-    "You can show the SMS message, the email or printed receipt at the hospital counter.",
-    "The hospital requires the reference number to enable the service for you at the hospital.",
-    "Please be at the hospital 15 minutes before the given time.",
-    "The appointment time shown is only an approximate time. It may be subject to change depending on Doctor`s arrival time and the time spend with patient ahead of you.",
+    'PLEASE NOTE THAT IN ORDER TO REFUND THE TOTAL APPOINTMENT CHARGES WITHOUT OUR NSR FEE OF LKR 275 HAVE TO CONTACT ECL CALL CENTER OR APPLY VIA WEB OR APP BEFORE SESSION RESUMES. T and C Apply',
+    'Your channeling is completed. You will receive confirmation SMS message and email.',
+    'You can show the SMS message, the email or printed receipt at the hospital counter.',
+    'The hospital requires the reference number to enable the service for you at the hospital.',
+    'Please be at the hospital 15 minutes before the given time.',
+    'The appointment time shown is only an approximate time. It may be subject to change depending on Doctor`s arrival time and the time spend with patient ahead of you.',
     "Unless you have opted for the 'No Show Refund', no refund would be made by E-Channelling PLC under any circumstances.",
-    "In the event the doctor or the hospital cancelled the appointment, the patient may reschedule the appointment with the hospital or you can obtain refund on doctor and/or hospital fee based on the policy of the hospital.",
-    "E-Channelling PLC is not liable for any loss or damages incurred due to a doctor cancelling or rescheduling the appointment.",
+    'In the event the doctor or the hospital cancelled the appointment, the patient may reschedule the appointment with the hospital or you can obtain refund on doctor and/or hospital fee based on the policy of the hospital.',
+    'E-Channelling PLC is not liable for any loss or damages incurred due to a doctor cancelling or rescheduling the appointment.',
   ];
 
   const drawPageShell = () => {
     doc.setFillColor(245, 248, 252);
-    doc.rect(0, 0, pageWidth, pageHeight, "F");
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
 
     doc.setDrawColor(210, 219, 234);
     doc.setLineWidth(1);
@@ -39,28 +39,28 @@ export async function generateRecipePdf(payload: RecipePdfPayload): Promise<void
   };
 
   const drawMainHeader = () => {
-    doc.setFont("helvetica", "bold");
+    doc.setFont('helvetica', 'bold');
     doc.setTextColor(15, 23, 42);
     doc.setFontSize(18);
-    doc.text("Smart Healthcare System", marginX + 16, 56);
+    doc.text('Smart Healthcare System', marginX + 16, 56);
 
-    doc.setFont("helvetica", "normal");
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(11);
     doc.setTextColor(71, 85, 105);
-    doc.text("Medical Recipe & Payment Receipt", marginX + 16, 74);
+    doc.text('Medical Recipe & Payment Receipt', marginX + 16, 74);
 
     doc.setDrawColor(203, 213, 225);
     doc.line(marginX + 16, 84, pageWidth - marginX - 16, 84);
 
     doc.setFillColor(220, 38, 38);
-    doc.circle(pageWidth - marginX - 38, 58, 20, "F");
+    doc.circle(pageWidth - marginX - 38, 58, 20, 'F');
     doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
-    doc.text("PAID", pageWidth - marginX - 38, 62, { align: "center" });
+    doc.text('PAID', pageWidth - marginX - 38, 62, { align: 'center' });
 
     doc.setTextColor(51, 65, 85);
-    doc.setFont("helvetica", "normal");
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.text(`Document ID: ${payload.fileId}`, marginX + 16, 102);
   };
@@ -68,11 +68,13 @@ export async function generateRecipePdf(payload: RecipePdfPayload): Promise<void
   const drawFooter = () => {
     doc.setDrawColor(226, 232, 240);
     doc.line(marginX + 16, pageHeight - 52, pageWidth - marginX - 16, pageHeight - 52);
-    doc.setFont("helvetica", "normal");
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(100, 116, 139);
-    doc.text("Generated by Smart Healthcare System", marginX + 16, pageHeight - 39);
-    doc.text(new Date().toLocaleString(), pageWidth - marginX - 16, pageHeight - 39, { align: "right" });
+    doc.text('Generated by Smart Healthcare System', marginX + 16, pageHeight - 39);
+    doc.text(new Date().toLocaleString(), pageWidth - marginX - 16, pageHeight - 39, {
+      align: 'right',
+    });
   };
 
   drawPageShell();
@@ -87,22 +89,28 @@ export async function generateRecipePdf(payload: RecipePdfPayload): Promise<void
     const sectionPaddingBottom = 8;
 
     const bodyHeight = rows.reduce((acc, [, value]) => {
-      const wrapped = doc.splitTextToSize(value || "-", 280) as string[];
+      const wrapped = doc.splitTextToSize(value || '-', 280) as string[];
       return acc + Math.max(1, wrapped.length) * rowGap;
     }, 0);
 
-    const sectionHeight = sectionTitleHeight + sectionPaddingTop + bodyHeight + sectionPaddingBottom;
+    const sectionHeight =
+      sectionTitleHeight + sectionPaddingTop + bodyHeight + sectionPaddingBottom;
 
     doc.setFillColor(255, 255, 255);
     doc.setDrawColor(203, 213, 225);
-    doc.roundedRect(marginX + 16, y, contentWidth - 32, sectionHeight, 6, 6, "FD");
+    doc.roundedRect(marginX + 16, y, contentWidth - 32, sectionHeight, 6, 6, 'FD');
 
     doc.setFillColor(239, 246, 255);
-    doc.roundedRect(marginX + 16, y, contentWidth - 32, sectionTitleHeight, 6, 6, "F");
+    doc.roundedRect(marginX + 16, y, contentWidth - 32, sectionTitleHeight, 6, 6, 'F');
     doc.setDrawColor(191, 219, 254);
-    doc.line(marginX + 16, y + sectionTitleHeight, pageWidth - marginX - 16, y + sectionTitleHeight);
+    doc.line(
+      marginX + 16,
+      y + sectionTitleHeight,
+      pageWidth - marginX - 16,
+      y + sectionTitleHeight,
+    );
 
-    doc.setFont("helvetica", "bold");
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
     doc.setTextColor(30, 64, 175);
     doc.text(title, marginX + 28, y + 15);
@@ -112,15 +120,15 @@ export async function generateRecipePdf(payload: RecipePdfPayload): Promise<void
     let rowY = y + sectionTitleHeight + sectionPaddingTop;
 
     rows.forEach(([label, value], index) => {
-      const wrappedValue = doc.splitTextToSize(value || "-", 315) as string[];
+      const wrappedValue = doc.splitTextToSize(value || '-', 315) as string[];
       const rowHeight = Math.max(1, wrappedValue.length) * rowGap;
 
-      doc.setFont("helvetica", "bold");
+      doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
       doc.setTextColor(30, 41, 59);
       doc.text(label, labelX, rowY);
 
-      doc.setFont("helvetica", "normal");
+      doc.setFont('helvetica', 'normal');
       doc.setTextColor(51, 65, 85);
       doc.text(wrappedValue, valueX, rowY);
 
@@ -136,21 +144,21 @@ export async function generateRecipePdf(payload: RecipePdfPayload): Promise<void
     y += sectionHeight + 8;
   };
 
-  drawSection("User Details", payload.userDetails);
-  drawSection("Doctor Details", payload.doctorDetails);
-  drawSection("Payment Summary", payload.paymentSummary);
+  drawSection('User Details', payload.userDetails);
+  drawSection('Doctor Details', payload.doctorDetails);
+  drawSection('Payment Summary', payload.paymentSummary);
 
   doc.setFillColor(255, 255, 255);
   doc.setDrawColor(203, 213, 225);
-  doc.roundedRect(marginX + 16, y, contentWidth - 32, 34, 6, 6, "FD");
+  doc.roundedRect(marginX + 16, y, contentWidth - 32, 34, 6, 6, 'FD');
   doc.setFillColor(255, 245, 245);
-  doc.roundedRect(marginX + 16, y, contentWidth - 32, 18, 6, 6, "F");
+  doc.roundedRect(marginX + 16, y, contentWidth - 32, 18, 6, 6, 'F');
   doc.setDrawColor(254, 202, 202);
   doc.line(marginX + 16, y + 18, pageWidth - marginX - 16, y + 18);
-  doc.setFont("helvetica", "bold");
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(8);
   doc.setTextColor(153, 27, 27);
-  doc.text("Terms and Conditions", marginX + 28, y + 12);
+  doc.text('Terms and Conditions', marginX + 28, y + 12);
   y += 26;
 
   const textX = marginX + 28;
@@ -162,16 +170,16 @@ export async function generateRecipePdf(payload: RecipePdfPayload): Promise<void
   let chosenLines: string[][] = [];
 
   const tryFit = (fontSize: number, lineHeight: number, paragraphGap: number) => {
-    doc.setFont("helvetica", "normal");
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(fontSize);
 
     const paragraphLines = termsParagraphs.map(
-      (paragraph) => doc.splitTextToSize(paragraph, textWidth) as string[]
+      (paragraph) => doc.splitTextToSize(paragraph, textWidth) as string[],
     );
 
     const requiredHeight = paragraphLines.reduce(
       (total, lines) => total + lines.length * lineHeight + paragraphGap,
-      0
+      0,
     );
 
     return { paragraphLines, requiredHeight };
@@ -192,7 +200,7 @@ export async function generateRecipePdf(payload: RecipePdfPayload): Promise<void
     chosenLines = paragraphLines;
   }
 
-  doc.setFont("helvetica", "normal");
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(chosenFontSize);
   doc.setTextColor(51, 65, 85);
 

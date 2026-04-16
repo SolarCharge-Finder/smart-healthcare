@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useMemo, useState } from "react";
+import { useMemo, useState } from 'react';
 
 import {
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
   useNotifications,
   useUnreadNotificationCount,
-} from "../../hooks/useNotifications";
-import { NotificationItem } from "../../types/notification";
+} from '../../hooks/useNotifications';
+import { NotificationItem } from '../../types/notification';
 
 function formatTime(value: string) {
   return new Date(value).toLocaleString();
@@ -31,10 +31,7 @@ export default function NotificationBell() {
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
 
-  const items = useMemo(
-    () => sortUnreadFirst(notifications.data ?? []),
-    [notifications.data]
-  );
+  const items = useMemo(() => sortUnreadFirst(notifications.data ?? []), [notifications.data]);
 
   return (
     <div className="relative">
@@ -58,7 +55,7 @@ export default function NotificationBell() {
           <>
             <span className="absolute -right-0.5 -top-0.5 inline-flex h-3 w-3 rounded-full bg-red-500" />
             <span className="absolute -right-2 -top-2 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold text-white">
-              {(unreadCount.data ?? 0) > 99 ? "99+" : unreadCount.data}
+              {(unreadCount.data ?? 0) > 99 ? '99+' : unreadCount.data}
             </span>
           </>
         ) : null}
@@ -87,7 +84,7 @@ export default function NotificationBell() {
               <p className="px-4 py-3 text-sm text-red-600">
                 {notifications.error instanceof Error
                   ? notifications.error.message
-                  : "Failed to load notifications."}
+                  : 'Failed to load notifications.'}
               </p>
             ) : null}
 
@@ -100,7 +97,7 @@ export default function NotificationBell() {
                 key={item.id}
                 type="button"
                 className={`w-full border-b border-gray-100 px-4 py-3 text-left transition hover:bg-gray-50 ${
-                  item.isRead ? "bg-white" : "bg-blue-50/70"
+                  item.isRead ? 'bg-white' : 'bg-blue-50/70'
                 }`}
                 onClick={() => markRead.mutate(item.id)}
               >

@@ -1,4 +1,4 @@
-import apiClient from "../../shared/apiClient";
+import apiClient from '../../shared/apiClient';
 
 export type UserResponse = {
   id: string;
@@ -7,11 +7,8 @@ export type UserResponse = {
   role: string;
 };
 
-export const createPatient = async (payload: {
-  fullName: string;
-  email: string;
-}) => {
-  const { data } = await apiClient.post<UserResponse>("/patient", payload);
+export const createPatient = async (payload: { fullName: string; email: string }) => {
+  const { data } = await apiClient.post<UserResponse>('/patient', payload);
   return data;
 };
 
@@ -20,13 +17,11 @@ export const createDoctor = async (payload: {
   specialization: string;
   hospital: string;
 }) => {
-  const { data } = await apiClient.post<UserResponse>("/doctors", payload);
+  const { data } = await apiClient.post<UserResponse>('/doctors', payload);
   return data;
 };
 
-export const createAdmin = async (payload: {
-  fullName: string;
-}) => {
-  const { data } = await apiClient.post<UserResponse>("/admin", payload);
+export const createAdmin = async (payload: { fullName: string }) => {
+  const { data } = await apiClient.post<UserResponse>('/admin', payload);
   return data;
 };

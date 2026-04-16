@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { loginApi, registerApi, verifyApi } from "./authApi";
-import { authStorage } from "./authStorage";
+import { loginApi, registerApi, verifyApi } from './authApi';
+import { authStorage } from './authStorage';
 
 export const useAuth = () => {
   const login = async (email: string, password: string) => {
@@ -22,7 +22,7 @@ export const useAuth = () => {
   const verify = async (token: string) => {
     const data = await verifyApi(token);
     return data;
-  }
+  };
 
   const logout = () => {
     authStorage.clear();

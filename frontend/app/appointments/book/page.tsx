@@ -1,5 +1,5 @@
-import Link from "next/link";
-import PageHeader from "../../../components/ui/PageHeader";
+import Link from 'next/link';
+import PageHeader from '../../../components/ui/PageHeader';
 
 export default function BookAppointmentPage() {
   return (

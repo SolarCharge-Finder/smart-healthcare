@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { Suspense, useEffect, useRef, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import PageHeader from "../../components/ui/PageHeader";
-import Card from "../../components/ui/Card";
-import Button from "../../components/ui/Button";
-import Alert from "../../components/ui/Alert";
-import { useCreateTelemedicineSession } from "../../hooks/useTelemedicine";
-import { TelemedicineSessionResponse } from "../../types/telemedicine";
-import { Appointment } from "../../types/appointment";
-import api from "../../lib/api";
-import PaymentSummary from "../../components/booking/PaymentSummary";
-import { authStorage } from "../../modules/auth/authStorage";
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
+import PageHeader from '../../components/ui/PageHeader';
+import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import Alert from '../../components/ui/Alert';
+import { useCreateTelemedicineSession } from '../../hooks/useTelemedicine';
+import { TelemedicineSessionResponse } from '../../types/telemedicine';
+import { Appointment } from '../../types/appointment';
+import api from '../../lib/api';
+import PaymentSummary from '../../components/booking/PaymentSummary';
+import { authStorage } from '../../modules/auth/authStorage';
 
 type JwtPayload = {
   [key: string]: unknown;
@@ -23,23 +23,17 @@ function parseUserIdFromToken(token: string | null): string | null {
   if (!token) return null;
 
   try {
-    const payload = token.split(".")[1];
+    const payload = token.split('.')[1];
     if (!payload) return null;
 
-    const normalized = payload
-      .replace(/-/g, "+")
-      .replace(/_/g, "/");
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
 
-    const padded = normalized.padEnd(
-      Math.ceil(normalized.length / 4) * 4,
-      "="
-    );
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
 
     const decoded = JSON.parse(atob(padded)) as JwtPayload;
-    const claim =
-      decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+    const claim = decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
 
-    return typeof claim === "string" ? claim : null;
+    return typeof claim === 'string' ? claim : null;
   } catch {
     return null;
   }
@@ -67,28 +61,28 @@ type VideoConsultationDoctor = {
 };
 
 function formatConsultationDate(iso: string) {
-  if (!iso) return "-";
+  if (!iso) return '-';
 
   const value = new Date(iso);
-  if (Number.isNaN(value.getTime())) return "-";
+  if (Number.isNaN(value.getTime())) return '-';
 
   return value.toLocaleDateString();
 }
 
 function formatConsultationTime(iso: string) {
-  if (!iso) return "-";
+  if (!iso) return '-';
 
   const value = new Date(iso);
-  if (Number.isNaN(value.getTime())) return "-";
+  if (Number.isNaN(value.getTime())) return '-';
 
-  return value.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
+  return value.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
 function getTodayLocalDateString() {
   const now = new Date();
   const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
@@ -104,10 +98,7 @@ function VideoRoom({ session }: VideoRoomProps) {
   const router = useRouter();
 
   const expiresAt = new Date(session.expiresAt);
-  const timeUntilExpiry = Math.max(
-    0,
-    Math.floor((expiresAt.getTime() - Date.now()) / 1000 / 60)
-  );
+  const timeUntilExpiry = Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000 / 60));
 
   const joinRoom = async () => {
     setIsJoining(true);
@@ -115,28 +106,28 @@ function VideoRoom({ session }: VideoRoomProps) {
     setMediaWarning(null);
     try {
       // Dynamically import Agora SDK (client-side only)
-      const AgoraRTC = (await import("agora-rtc-sdk-ng")).default;
+      const AgoraRTC = (await import('agora-rtc-sdk-ng')).default;
 
-      const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+      const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
       clientRef.current = client;
 
       // Handle remote user published (they joined)
-      client.on("user-published", async (user: any, mediaType: any) => {
+      client.on('user-published', async (user: any, mediaType: any) => {
         await client.subscribe(user, mediaType);
-        if (mediaType === "video") {
+        if (mediaType === 'video') {
           const remoteVideoTrack = user.videoTrack;
-          remoteVideoTrack?.play("remote-video-container");
+          remoteVideoTrack?.play('remote-video-container');
         }
-        if (mediaType === "audio") {
+        if (mediaType === 'audio') {
           user.audioTrack?.play();
         }
       });
 
       // Join the Agora channel with the patient token
-      const resolvedAppId = session.agoraAppId || process.env.NEXT_PUBLIC_AGORA_APP_ID || "";
+      const resolvedAppId = session.agoraAppId || process.env.NEXT_PUBLIC_AGORA_APP_ID || '';
 
       if (!resolvedAppId) {
-        throw new Error("Agora App ID is missing. Please restart the frontend and retry.");
+        throw new Error('Agora App ID is missing. Please restart the frontend and retry.');
       }
 
       await client.join(resolvedAppId, session.channelName, session.patientToken, null);
@@ -150,28 +141,30 @@ function VideoRoom({ session }: VideoRoomProps) {
         const [micTrack, cameraTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
         localTracksRef.current = [micTrack, cameraTrack];
 
-        cameraTrack.play("local-video-container");
+        cameraTrack.play('local-video-container');
         await client.publish([micTrack, cameraTrack]);
       } catch (mediaErr: any) {
-        console.error("Media device access error:", mediaErr);
+        console.error('Media device access error:', mediaErr);
 
         const deniedAccess =
-          mediaErr?.name === "NotAllowedError" ||
-          mediaErr?.code === "PERMISSION_DENIED" ||
-          String(mediaErr?.message || "").toLowerCase().includes("permission denied");
+          mediaErr?.name === 'NotAllowedError' ||
+          mediaErr?.code === 'PERMISSION_DENIED' ||
+          String(mediaErr?.message || '')
+            .toLowerCase()
+            .includes('permission denied');
 
         setMediaWarning(
           deniedAccess
-            ? "Camera or microphone access is blocked on this Mac. The call is joined, but local video/audio cannot start until you allow Chrome access in macOS System Settings > Privacy & Security > Camera/Microphone."
-            : mediaErr?.message || "Joined the room, but local media could not start."
+            ? 'Camera or microphone access is blocked on this Mac. The call is joined, but local video/audio cannot start until you allow Chrome access in macOS System Settings > Privacy & Security > Camera/Microphone.'
+            : mediaErr?.message || 'Joined the room, but local media could not start.',
         );
       }
     } catch (err: any) {
-      console.error("Agora join error:", err);
+      console.error('Agora join error:', err);
       setCallError(
-        err?.message?.includes("INVALID_VENDOR_KEY") || err?.code === "INVALID_VENDOR_KEY"
-          ? "Invalid Agora App ID — check TelemedicineService configuration."
-          : err?.message || "Failed to join video session"
+        err?.message?.includes('INVALID_VENDOR_KEY') || err?.code === 'INVALID_VENDOR_KEY'
+          ? 'Invalid Agora App ID — check TelemedicineService configuration.'
+          : err?.message || 'Failed to join video session',
       );
     } finally {
       setIsJoining(false);
@@ -194,13 +187,13 @@ function VideoRoom({ session }: VideoRoomProps) {
 
       setIsConnected(false);
     } catch (err) {
-      console.error("Error ending call:", err);
+      console.error('Error ending call:', err);
     }
-    router.push("/appointments");
+    router.push('/appointments');
   };
 
   const toggleMute = async () => {
-    const micTrack = localTracksRef.current.find((t: any) => t.trackMediaType === "audio");
+    const micTrack = localTracksRef.current.find((t: any) => t.trackMediaType === 'audio');
     if (micTrack) {
       await micTrack.setEnabled(isMuted);
       setIsMuted(!isMuted);
@@ -208,7 +201,7 @@ function VideoRoom({ session }: VideoRoomProps) {
   };
 
   const toggleVideo = async () => {
-    const cameraTrack = localTracksRef.current.find((t: any) => t.trackMediaType === "video");
+    const cameraTrack = localTracksRef.current.find((t: any) => t.trackMediaType === 'video');
     if (cameraTrack) {
       await cameraTrack.setEnabled(isVideoOff);
       setIsVideoOff(!isVideoOff);
@@ -231,28 +224,32 @@ function VideoRoom({ session }: VideoRoomProps) {
       {/* Session Info */}
       <div className="flex flex-wrap gap-4 p-4 text-sm border border-blue-100 rounded-lg bg-blue-50">
         <div>
-          <span className="font-medium text-gray-600">Channel:</span>{" "}
+          <span className="font-medium text-gray-600">Channel:</span>{' '}
           <code className="px-1 text-blue-700 bg-blue-100 rounded">{session.channelName}</code>
         </div>
         <div>
-          <span className="font-medium text-gray-600">Appointment ID:</span>{" "}
-          <code className="px-1 text-xs text-blue-700 bg-blue-100 rounded">{session.appointmentId}</code>
+          <span className="font-medium text-gray-600">Appointment ID:</span>{' '}
+          <code className="px-1 text-xs text-blue-700 bg-blue-100 rounded">
+            {session.appointmentId}
+          </code>
         </div>
         <div>
-          <span className="font-medium text-gray-600">Session expires in:</span>{" "}
-          <span className={timeUntilExpiry < 10 ? "text-red-600 font-bold" : "text-green-600 font-medium"}>
+          <span className="font-medium text-gray-600">Session expires in:</span>{' '}
+          <span
+            className={
+              timeUntilExpiry < 10 ? 'text-red-600 font-bold' : 'text-green-600 font-medium'
+            }
+          >
             {timeUntilExpiry} min
           </span>
         </div>
         <div className="flex items-center gap-2">
           <span
             className={`inline-block w-2 h-2 rounded-full ${
-              isConnected ? "bg-green-500" : "bg-gray-400"
+              isConnected ? 'bg-green-500' : 'bg-gray-400'
             }`}
           />
-          <span className="text-gray-600">
-            {isConnected ? "Live" : "Not connected"}
-          </span>
+          <span className="text-gray-600">{isConnected ? 'Live' : 'Not connected'}</span>
         </div>
       </div>
 
@@ -263,10 +260,7 @@ function VideoRoom({ session }: VideoRoomProps) {
       <div className="grid gap-4 md:grid-cols-2">
         {/* Local — Patient */}
         <div className="rounded-xl border border-gray-200 bg-gray-900 overflow-hidden relative min-h-[220px]">
-          <div
-            id="local-video-container"
-            className="w-full h-full min-h-[220px]"
-          />
+          <div id="local-video-container" className="w-full h-full min-h-[220px]" />
           <span className="absolute px-2 py-1 text-xs text-white rounded bottom-2 left-2 bg-black/60">
             You (Patient)
           </span>
@@ -278,9 +272,7 @@ function VideoRoom({ session }: VideoRoomProps) {
             id="remote-video-container"
             className="w-full h-full min-h-[220px] flex items-center justify-center"
           >
-            {!isConnected && (
-              <p className="text-sm text-gray-400">Waiting for doctor to join...</p>
-            )}
+            {!isConnected && <p className="text-sm text-gray-400">Waiting for doctor to join...</p>}
           </div>
           <span className="absolute px-2 py-1 text-xs text-white rounded bottom-2 left-2 bg-black/60">
             Doctor
@@ -291,20 +283,16 @@ function VideoRoom({ session }: VideoRoomProps) {
       {/* Controls */}
       <div className="flex flex-wrap gap-3 mt-4">
         {!isConnected ? (
-          <Button
-            type="button"
-            onClick={joinRoom}
-            disabled={isJoining}
-          >
-            {isJoining ? "Joining..." : "🎥 Join Video Call"}
+          <Button type="button" onClick={joinRoom} disabled={isJoining}>
+            {isJoining ? 'Joining...' : '🎥 Join Video Call'}
           </Button>
         ) : (
           <>
             <Button variant="secondary" type="button" onClick={toggleMute}>
-              {isMuted ? "🔇 Unmute" : "🔊 Mute"}
+              {isMuted ? '🔇 Unmute' : '🔊 Mute'}
             </Button>
             <Button variant="secondary" type="button" onClick={toggleVideo}>
-              {isVideoOff ? "📷 Enable Video" : "🚫 Disable Video"}
+              {isVideoOff ? '📷 Enable Video' : '🚫 Disable Video'}
             </Button>
             <Button variant="danger" type="button" onClick={endCall}>
               📵 End Call
@@ -321,7 +309,7 @@ function VideoRoom({ session }: VideoRoomProps) {
 function ConsultationPageContent() {
   const searchParams = useSearchParams();
   const todayDate = getTodayLocalDateString();
-  const [appointmentId, setAppointmentId] = useState("");
+  const [appointmentId, setAppointmentId] = useState('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [session, setSession] = useState<TelemedicineSessionResponse | null>(null);
@@ -332,16 +320,16 @@ function ConsultationPageContent() {
   const createSession = useCreateTelemedicineSession();
 
   const consultationDoctors = useQuery<VideoConsultationDoctor[]>({
-    queryKey: ["video-consultation-doctors"],
+    queryKey: ['video-consultation-doctors'],
     enabled: !appointmentId,
     queryFn: async () => {
-      const { data } = await api.get<VideoConsultationDoctor[]>("/doctors");
+      const { data } = await api.get<VideoConsultationDoctor[]>('/doctors');
       return data.filter((doctor) => doctor.isVideoConsultation);
     },
   });
 
   const appointment = useQuery<Appointment>({
-    queryKey: ["appointment", appointmentId],
+    queryKey: ['appointment', appointmentId],
     enabled: Boolean(appointmentId),
     queryFn: async () => {
       const { data } = await api.get<Appointment>(`/appointments/${appointmentId}`);
@@ -349,8 +337,8 @@ function ConsultationPageContent() {
     },
   });
 
-  const appointmentStatus = appointment.data?.status?.toUpperCase() ?? "";
-  const isPaymentSuccessful = appointmentStatus === "PAID";
+  const appointmentStatus = appointment.data?.status?.toUpperCase() ?? '';
+  const isPaymentSuccessful = appointmentStatus === 'PAID';
 
   useEffect(() => {
     const token = authStorage.getToken();
@@ -359,9 +347,9 @@ function ConsultationPageContent() {
   }, []);
 
   useEffect(() => {
-    const apt = searchParams.get("appointmentId");
+    const apt = searchParams.get('appointmentId');
     if (!apt) {
-      setAppointmentId("");
+      setAppointmentId('');
       return;
     }
     setAppointmentId(apt);
@@ -371,11 +359,11 @@ function ConsultationPageContent() {
     if (!appointmentId || !isAuthReady) return null;
 
     if (!currentUserId) {
-      return "Please log in to join your consultation.";
+      return 'Please log in to join your consultation.';
     }
 
     if (appointment.isError) {
-      return "Unable to load appointment details for this consultation.";
+      return 'Unable to load appointment details for this consultation.';
     }
 
     if (!appointment.data) {
@@ -384,16 +372,16 @@ function ConsultationPageContent() {
 
     const ownerId = appointment.data.userId;
     if (!ownerId || ownerId.toLowerCase() !== currentUserId.toLowerCase()) {
-      return "You are not authorized to join this consultation.";
+      return 'You are not authorized to join this consultation.';
     }
 
-    if ((appointment.data.status ?? "").toUpperCase() !== "PAID") {
-      return "Your appointment payment is not confirmed yet. Please complete payment before joining.";
+    if ((appointment.data.status ?? '').toUpperCase() !== 'PAID') {
+      return 'Your appointment payment is not confirmed yet. Please complete payment before joining.';
     }
 
     const slotTime = new Date(appointment.data.slotTime);
     if (Number.isNaN(slotTime.getTime())) {
-      return "Consultation time is invalid. Please contact support.";
+      return 'Consultation time is invalid. Please contact support.';
     }
 
     const now = new Date();
@@ -429,17 +417,18 @@ function ConsultationPageContent() {
           setSessionError(null);
         },
         onError: (error) => {
-          const message = error instanceof Error ? error.message : "Failed to create telemedicine session.";
+          const message =
+            error instanceof Error ? error.message : 'Failed to create telemedicine session.';
           const lowerMessage = message.toLowerCase();
           const shouldRetry =
-            lowerMessage.includes("not found") ||
-            lowerMessage.includes("temporarily unavailable") ||
-            lowerMessage.includes("html") ||
-            lowerMessage.includes("resource") ||
-            lowerMessage.includes("telemedicine service");
+            lowerMessage.includes('not found') ||
+            lowerMessage.includes('temporarily unavailable') ||
+            lowerMessage.includes('html') ||
+            lowerMessage.includes('resource') ||
+            lowerMessage.includes('telemedicine service');
 
           if (shouldRetry && retryCount < 5) {
-            setSessionError("Your consultation is being prepared. Retrying in a moment...");
+            setSessionError('Your consultation is being prepared. Retrying in a moment...');
             window.setTimeout(() => {
               setHasRequested(false);
               setRetryCount((current) => current + 1);
@@ -449,7 +438,7 @@ function ConsultationPageContent() {
 
           setSessionError(message);
         },
-      }
+      },
     );
   }, [
     appointmentId,
@@ -524,19 +513,24 @@ function ConsultationPageContent() {
                       <span className="font-semibold">Specialization:</span> {doctor.specialization}
                     </p>
                     <p>
-                      <span className="font-semibold">Date:</span> {formatConsultationDate(doctor.nextAvailableSlot)}
+                      <span className="font-semibold">Date:</span>{' '}
+                      {formatConsultationDate(doctor.nextAvailableSlot)}
                     </p>
                     <p>
-                      <span className="font-semibold">Time:</span> {formatConsultationTime(doctor.nextAvailableSlot)}
+                      <span className="font-semibold">Time:</span>{' '}
+                      {formatConsultationTime(doctor.nextAvailableSlot)}
                     </p>
                     <p>
-                      <span className="font-semibold">Doctor Fee:</span> Rs. {doctor.doctorFee.toFixed(2)}
+                      <span className="font-semibold">Doctor Fee:</span> Rs.{' '}
+                      {doctor.doctorFee.toFixed(2)}
                     </p>
                     <p>
-                      <span className="font-semibold">eChannelling Fee:</span> Rs. {doctor.eChannellingFee.toFixed(2)}
+                      <span className="font-semibold">eChannelling Fee:</span> Rs.{' '}
+                      {doctor.eChannellingFee.toFixed(2)}
                     </p>
                     <p>
-                      <span className="font-semibold">Total Fee:</span> Rs. {doctor.totalFee.toFixed(2)}
+                      <span className="font-semibold">Total Fee:</span> Rs.{' '}
+                      {doctor.totalFee.toFixed(2)}
                     </p>
                     <p className="pt-1 font-medium text-blue-600">View Available Date and Time</p>
                   </div>
@@ -586,7 +580,7 @@ function ConsultationPageContent() {
   }
 
   if (sessionError) {
-    const isNotPaid = sessionError.toLowerCase().includes("paid");
+    const isNotPaid = sessionError.toLowerCase().includes('paid');
     return (
       <main className="flex flex-col max-w-6xl min-h-screen gap-6 px-6 py-10 mx-auto">
         <PageHeader
@@ -612,7 +606,7 @@ function ConsultationPageContent() {
 
         <Alert type="error">
           {isNotPaid
-            ? "⚠️ Your appointment payment is not confirmed yet. Please complete payment before joining."
+            ? '⚠️ Your appointment payment is not confirmed yet. Please complete payment before joining.'
             : sessionError}
         </Alert>
       </main>

@@ -1,7 +1,7 @@
-import { LoginResponse } from "./authTypes";
+import { LoginResponse } from './authTypes';
 
-const TOKEN_KEY = "token";
-const USER_KEY = "user";
+const TOKEN_KEY = 'token';
+const USER_KEY = 'user';
 
 export const authStorage = {
   setAuth(data: LoginResponse) {

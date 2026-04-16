@@ -1,5 +1,5 @@
-import { Suspense } from "react";
-import VerifyClient from "./VerifyClient";
+import { Suspense } from 'react';
+import VerifyClient from './VerifyClient';
 
 //split into server component for suspense and client component for hooks and api calls
 

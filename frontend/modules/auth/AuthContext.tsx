@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { createContext, useContext, useEffect, useState } from "react";
-import { LoginResponse } from "./authTypes";
-import { authStorage } from "./authStorage";
+import { createContext, useContext, useEffect, useState } from 'react';
+import { LoginResponse } from './authTypes';
+import { authStorage } from './authStorage';
 
 type AuthContextType = {
   user: LoginResponse | null;
@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (!prev) return prev;
 
       const updated = {
-        ...prev,          // keep token + existing fields
+        ...prev, // keep token + existing fields
         ...updatedFields, // overwrite changed fields
       };
 
@@ -47,14 +47,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, setUser }}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={{ user, login, logout, setUser }}>{children}</AuthContext.Provider>
   );
 };
 
 export const useAuthContext = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error("AuthContext not found");
+  if (!context) throw new Error('AuthContext not found');
   return context;
 };

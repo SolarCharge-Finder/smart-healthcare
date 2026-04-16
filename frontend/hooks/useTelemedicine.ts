@@ -1,26 +1,26 @@
-import { useMutation } from "@tanstack/react-query";
-import axios from "axios";
-import { telemedicineApi } from "../lib/api";
-import { TelemedicineSessionResponse, CreateSessionRequest } from "../types/telemedicine";
-import { authStorage } from "../modules/auth/authStorage";
+import { useMutation } from '@tanstack/react-query';
+import axios from 'axios';
+import { telemedicineApi } from '../lib/api';
+import { TelemedicineSessionResponse, CreateSessionRequest } from '../types/telemedicine';
+import { authStorage } from '../modules/auth/authStorage';
 
 function extractTelemedicineError(error: unknown, fallback: string): Error {
   if (axios.isAxiosError(error)) {
     const responseData = error.response?.data;
     const detail = error.response?.data?.error;
     const message =
-      (typeof detail === "string" && detail.trim()) ||
-      (typeof responseData === "string" &&
+      (typeof detail === 'string' && detail.trim()) ||
+      (typeof responseData === 'string' &&
         responseData.trim() &&
-        !responseData.includes("<!DOCTYPE html") &&
-        !responseData.includes("<html") &&
+        !responseData.includes('<!DOCTYPE html') &&
+        !responseData.includes('<html') &&
         responseData.trim()) ||
       (error.response?.status === 404
-        ? "Telemedicine service could not find the requested resource. Please retry in a few seconds."
+        ? 'Telemedicine service could not find the requested resource. Please retry in a few seconds.'
         : error.response?.status === 503
-          ? "Telemedicine service is temporarily unavailable. Please retry shortly."
+          ? 'Telemedicine service is temporarily unavailable. Please retry shortly.'
           : undefined) ||
-      (typeof error.message === "string" && error.message.trim()) ||
+      (typeof error.message === 'string' && error.message.trim()) ||
       fallback;
     return new Error(message);
   }
@@ -38,21 +38,21 @@ export function useCreateTelemedicineSession() {
       try {
         const token = authStorage.getToken();
         const rawApiKey = process.env.NEXT_PUBLIC_API_KEY;
-        const apiKey = rawApiKey && rawApiKey !== "change-me" ? rawApiKey : "dev-key";
+        const apiKey = rawApiKey && rawApiKey !== 'change-me' ? rawApiKey : 'dev-key';
 
         const { data } = await telemedicineApi.post<TelemedicineSessionResponse>(
-          "/telemedicine/session",
+          '/telemedicine/session',
           payload,
           {
             headers: {
               ...(token ? { Authorization: `Bearer ${token}` } : {}),
-              ...(apiKey ? { "X-API-KEY": apiKey } : {}),
+              ...(apiKey ? { 'X-API-KEY': apiKey } : {}),
             },
-          }
+          },
         );
         return data;
       } catch (error) {
-        throw extractTelemedicineError(error, "Failed to create telemedicine session.");
+        throw extractTelemedicineError(error, 'Failed to create telemedicine session.');
       }
     },
   });

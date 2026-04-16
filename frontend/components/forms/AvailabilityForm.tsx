@@ -1,32 +1,29 @@
-"use client";
+'use client';
 
-import { useMemo, useState } from "react";
-import { AxiosError } from "axios";
-import { useAvailability } from "../../hooks/useAvailability";
-import Card from "../ui/Card";
-import Input from "../ui/Input";
-import Button from "../ui/Button";
-import Alert from "../ui/Alert";
-import Spinner from "../ui/Spinner";
+import { useMemo, useState } from 'react';
+import { AxiosError } from 'axios';
+import { useAvailability } from '../../hooks/useAvailability';
+import Card from '../ui/Card';
+import Input from '../ui/Input';
+import Button from '../ui/Button';
+import Alert from '../ui/Alert';
+import Spinner from '../ui/Spinner';
 
 export default function AvailabilityForm() {
-  const [doctorId, setDoctorId] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [doctorId, setDoctorId] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const availability = useAvailability(doctorId, fromDate, toDate);
-  const rangeInvalid =
-    Boolean(fromDate && toDate) && new Date(fromDate) > new Date(toDate);
+  const rangeInvalid = Boolean(fromDate && toDate) && new Date(fromDate) > new Date(toDate);
   const errorMessage = (() => {
     const err = availability.error as AxiosError | null | undefined;
     const data = err?.response?.data;
-    return typeof data === "string" ? data : null;
+    return typeof data === 'string' ? data : null;
   })();
 
   const slots = useMemo(() => {
     if (!availability.data) return [];
-    return availability.data.map((slot) =>
-      new Date(slot).toLocaleString()
-    );
+    return availability.data.map((slot) => new Date(slot).toLocaleString());
   }, [availability.data]);
 
   return (
@@ -57,13 +54,7 @@ export default function AvailabilityForm() {
           type="button"
           variant="secondary"
           onClick={() => availability.refetch()}
-          disabled={
-            !doctorId ||
-            !fromDate ||
-            !toDate ||
-            rangeInvalid ||
-            availability.isFetching
-          }
+          disabled={!doctorId || !fromDate || !toDate || rangeInvalid || availability.isFetching}
         >
           {availability.isFetching ? (
             <span className="flex items-center gap-2">
@@ -71,20 +62,17 @@ export default function AvailabilityForm() {
               Loading...
             </span>
           ) : (
-            "Check Slots"
+            'Check Slots'
           )}
         </Button>
 
         {availability.isError ? (
           <Alert type="error">
-            {errorMessage ??
-              "Unable to fetch availability. Please try again."}
+            {errorMessage ?? 'Unable to fetch availability. Please try again.'}
           </Alert>
         ) : null}
 
-        {rangeInvalid ? (
-          <Alert type="error">End date must be after start date.</Alert>
-        ) : null}
+        {rangeInvalid ? <Alert type="error">End date must be after start date.</Alert> : null}
 
         {availability.isSuccess && slots.length === 0 ? (
           <Alert type="info">No available slots in this range.</Alert>
