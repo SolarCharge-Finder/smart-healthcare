@@ -171,7 +171,7 @@ jobs:
         uses: docker/build-push-action@v7
         if: github.ref == 'refs/heads/main'
         with:
-          context: backend/AdminService
+          context: backend
           file: backend/AdminService/Dockerfile
           push: true
           cache-from: type=gha,scope=admin-service
