@@ -39,7 +39,7 @@ public class DbModelTests
 
         Assert.NotNull(index);
     }
-    
+
     [Fact]
     public void Users_Email_Should_Be_Required()
     {

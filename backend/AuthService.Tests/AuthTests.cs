@@ -2,18 +2,19 @@ using System.Net;
 using System.Net.Http.Json;
 
 using Auth.Application.DTOs;
-using Auth.Infrastructure.Data;
-using Auth.Domain.Entities;
 using Auth.Application.Interfaces;
+using Auth.Domain.Entities;
+using Auth.Infrastructure.Data;
+
+using AuthService.Tests.Fakes;
 
 using FluentAssertions;
 
 using Microsoft.Extensions.DependencyInjection;
 
-using Xunit;
 using Shared.Contracts.Enums;
 
-using AuthService.Tests.Fakes;
+using Xunit;
 
 namespace AuthService.Tests;
 

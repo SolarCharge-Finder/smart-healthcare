@@ -3,8 +3,8 @@ using System.Net.Http.Json;
 
 using Auth.Application.DTOs;
 using Auth.Application.Interfaces;
-using Auth.Infrastructure.Data;
 using Auth.Domain.Entities;
+using Auth.Infrastructure.Data;
 
 using AuthService.Tests.Fakes;
 
