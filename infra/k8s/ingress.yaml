@@ -7,19 +7,14 @@ metadata:
     nginx.ingress.kubernetes.io/enable-cors: "true"
     nginx.ingress.kubernetes.io/cors-allow-origin: "http://localhost:3000"
     nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
-    nginx.ingress.kubernetes.io/cors-allow-headers: "*"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Authorization, Content-Type, x-api-key"
     nginx.ingress.kubernetes.io/proxy-body-size: 10m
 
 spec:
   ingressClassName: nginx
 
-  tls:
-    - hosts:
-        - smarthealth.local
-      secretName: smarthealth-tls
-
   rules:
-    - host: smarthealth.local
+    - host: localhost
       http:
         paths:
           - path: /doctors(/|$)(.*)
@@ -31,6 +26,14 @@ spec:
                   number: 80
 
           - path: /auth(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 80
+
+          - path: /users(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
               service:
