@@ -1,5 +1,5 @@
-import SymptomCheckerForm from "../../components/forms/SymptomCheckerForm";
-import PageHeader from "../../components/ui/PageHeader";
+import SymptomCheckerForm from '../../components/forms/SymptomCheckerForm';
+import PageHeader from '../../components/ui/PageHeader';
 
 export default function AiCheckerPage() {
   return (

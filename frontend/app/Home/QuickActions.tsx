@@ -1,43 +1,43 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
+import { useRouter } from 'next/navigation';
 
 const actions = [
   {
-    emoji: "👨‍⚕️",
-    iconBg: "bg-blue-50",
-    iconColor: "text-blue-600",
-    title: "Find Doctors",
-    description: "Browse specialists and GPs by specialty, hospital, or location.",
-    href: "/doctors",
+    emoji: '👨‍⚕️',
+    iconBg: 'bg-blue-50',
+    iconColor: 'text-blue-600',
+    title: 'Find Doctors',
+    description: 'Browse specialists and GPs by specialty, hospital, or location.',
+    href: '/doctors',
     tag: null,
   },
   {
-    emoji: "📅",
-    iconBg: "bg-indigo-50",
-    iconColor: "text-indigo-600",
-    title: "Book Appointment",
-    description: "Schedule an in-clinic or online appointment in seconds.",
-    href: "/appointments/book",
+    emoji: '📅',
+    iconBg: 'bg-indigo-50',
+    iconColor: 'text-indigo-600',
+    title: 'Book Appointment',
+    description: 'Schedule an in-clinic or online appointment in seconds.',
+    href: '/appointments/book',
     tag: null,
   },
   {
-    emoji: "🗂️",
-    iconBg: "bg-sky-50",
-    iconColor: "text-sky-600",
-    title: "My Appointments",
-    description: "View, manage, and track your past and upcoming visits.",
-    href: "/appointments/history",
+    emoji: '🗂️',
+    iconBg: 'bg-sky-50',
+    iconColor: 'text-sky-600',
+    title: 'My Appointments',
+    description: 'View, manage, and track your past and upcoming visits.',
+    href: '/appointments/history',
     tag: null,
   },
   {
-    emoji: "🧠",
-    iconBg: "bg-emerald-50",
-    iconColor: "text-emerald-600",
-    title: "AI Symptom Checker",
-    description: "Describe symptoms and get instant AI‑powered health guidance.",
-    href: "/ai-checker",
-    tag: "AI",
+    emoji: '🧠',
+    iconBg: 'bg-emerald-50',
+    iconColor: 'text-emerald-600',
+    title: 'AI Symptom Checker',
+    description: 'Describe symptoms and get instant AI‑powered health guidance.',
+    href: '/ai-checker',
+    tag: 'AI',
   },
 ];
 
@@ -47,7 +47,6 @@ export default function QuickActions() {
   return (
     <section className="bg-gray-50 py-12">
       <div className="container mx-auto px-6">
-
         {/* Section header */}
         <div className="mb-8">
           <h2 className="text-lg font-bold text-gray-800">Quick Access</h2>
@@ -86,9 +85,7 @@ export default function QuickActions() {
                 <h3 className="font-semibold text-gray-800 text-sm group-hover:text-blue-600 transition-colors">
                   {action.title}
                 </h3>
-                <p className="text-gray-400 text-xs mt-1 leading-relaxed">
-                  {action.description}
-                </p>
+                <p className="text-gray-400 text-xs mt-1 leading-relaxed">{action.description}</p>
               </div>
             </button>
           ))}

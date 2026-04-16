@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import Link from "next/link";
+import Link from 'next/link';
 
 const services = [
-  { label: "Auth Service",         icon: "🔐" },
-  { label: "Doctor Service",       icon: "👨‍⚕️" },
-  { label: "Appointment Service",  icon: "📅" },
-  { label: "AI Symptom Service",   icon: "🧠" },
-  { label: "Payment Service",      icon: "💳" },
-  { label: "Notification Service", icon: "🔔" },
-  { label: "Telemedicine Service", icon: "📹" },
+  { label: 'Auth Service', icon: '🔐' },
+  { label: 'Doctor Service', icon: '👨‍⚕️' },
+  { label: 'Appointment Service', icon: '📅' },
+  { label: 'AI Symptom Service', icon: '🧠' },
+  { label: 'Payment Service', icon: '💳' },
+  { label: 'Notification Service', icon: '🔔' },
+  { label: 'Telemedicine Service', icon: '📹' },
 ];
 
 export default function Hero() {
@@ -21,7 +21,6 @@ export default function Hero() {
 
       <div className="relative container mx-auto px-6 py-16 md:py-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-
           {/* ── LEFT ── */}
           <div className="space-y-7">
             <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/25 rounded-full px-4 py-1.5 text-xs font-semibold text-white tracking-wide">
@@ -30,14 +29,12 @@ export default function Hero() {
             </div>
 
             <h1 className="text-4xl md:text-5xl font-extrabold text-white leading-tight tracking-tight">
-              SmartHealth{" "}
-              <span className="text-blue-200">Digital Healthcare</span>{" "}
-              Platform
+              SmartHealth <span className="text-blue-200">Digital Healthcare</span> Platform
             </h1>
 
             <p className="text-blue-100 text-base md:text-lg leading-relaxed max-w-lg">
-              Book appointments, consult doctors online, and get AI‑powered
-              health guidance — all from one secure platform.
+              Book appointments, consult doctors online, and get AI‑powered health guidance — all
+              from one secure platform.
             </p>
 
             <div className="flex flex-wrap gap-3 pt-1">
@@ -63,9 +60,9 @@ export default function Hero() {
 
             <div className="flex gap-8 pt-4 border-t border-white/20">
               {[
-                { value: "50K+",  label: "Patients"     },
-                { value: "2,000+",label: "Doctors"      },
-                { value: "98%",   label: "Satisfaction" },
+                { value: '50K+', label: 'Patients' },
+                { value: '2,000+', label: 'Doctors' },
+                { value: '98%', label: 'Satisfaction' },
               ].map((s) => (
                 <div key={s.label}>
                   <p className="text-white font-bold text-xl">{s.value}</p>
@@ -102,7 +99,6 @@ export default function Hero() {
               ))}
             </div>
           </div>
-
         </div>
       </div>
     </section>

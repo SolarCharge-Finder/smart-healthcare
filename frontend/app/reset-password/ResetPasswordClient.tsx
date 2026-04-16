@@ -1,20 +1,19 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
-import apiClient from "../../shared/apiClient";
+import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import apiClient from '../../shared/apiClient';
 
-import Card from "../../components/ui/Card";
-import Input from "../../components/ui/Input";
-import Button from "../../components/ui/Button";
-import Alert from "../../components/ui/Alert";
-
+import Card from '../../components/ui/Card';
+import Input from '../../components/ui/Input';
+import Button from '../../components/ui/Button';
+import Alert from '../../components/ui/Alert';
 
 export default function ResetPasswordClient() {
   const searchParams = useSearchParams();
-  const token = searchParams.get("token");
+  const token = searchParams.get('token');
 
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,29 +24,26 @@ export default function ResetPasswordClient() {
     setError(null);
 
     if (!token) {
-      setError("Invalid or missing reset token.");
+      setError('Invalid or missing reset token.');
       return;
     }
 
     try {
-      await apiClient.post("/auth/reset-password", {
+      await apiClient.post('/auth/reset-password', {
         token,
         newPassword: password,
       });
 
-      setMessage("Password reset successful!");
+      setMessage('Password reset successful!');
     } catch (err: any) {
       console.error(err);
 
       const msg = err?.response?.data?.message;
 
-      if (
-        msg?.includes("Invalid token") ||
-        msg?.includes("expired")
-      ) {
-        setError("Reset link is invalid or expired.");
+      if (msg?.includes('Invalid token') || msg?.includes('expired')) {
+        setError('Reset link is invalid or expired.');
       } else {
-        setError("Password reset failed.");
+        setError('Password reset failed.');
       }
     }
   };

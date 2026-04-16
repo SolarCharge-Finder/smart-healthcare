@@ -1,5 +1,5 @@
-import { useMutation } from "@tanstack/react-query";
-import { createAdmin, createDoctor, createPatient } from "./profileApi";
+import { useMutation } from '@tanstack/react-query';
+import { createAdmin, createDoctor, createPatient } from './profileApi';
 
 export function useCompleteAsPatient() {
   return useMutation({

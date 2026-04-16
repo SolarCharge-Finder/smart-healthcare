@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import Card from "../../components/ui/Card";
-import PageHeader from "../../components/ui/PageHeader";
-import Alert from "../../components/ui/Alert";
-import api from "../../lib/api";
+import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
+import Card from '../../components/ui/Card';
+import PageHeader from '../../components/ui/PageHeader';
+import Alert from '../../components/ui/Alert';
+import api from '../../lib/api';
 
 type DoctorListItem = {
   doctorId: string;
@@ -19,8 +19,8 @@ type DoctorListItem = {
 function getTodayLocalDateString() {
   const now = new Date();
   const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
@@ -28,25 +28,20 @@ export default function DoctorsPage() {
   const defaultDate = getTodayLocalDateString();
 
   const doctors = useQuery<DoctorListItem[]>({
-    queryKey: ["doctor-list"],
+    queryKey: ['doctor-list'],
     queryFn: async () => {
-      const { data } = await api.get<DoctorListItem[]>("/doctors");
+      const { data } = await api.get<DoctorListItem[]>('/doctors');
       return data;
     },
   });
 
   return (
     <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-6 py-10">
-      <PageHeader
-        title="Find Doctors"
-        subtitle="All doctors from the database."
-      />
+      <PageHeader title="Find Doctors" subtitle="All doctors from the database." />
 
       {doctors.isLoading ? <Alert type="info">Loading doctors...</Alert> : null}
 
-      {doctors.isError ? (
-        <Alert type="error">Unable to load doctors from database.</Alert>
-      ) : null}
+      {doctors.isError ? <Alert type="error">Unable to load doctors from database.</Alert> : null}
 
       {doctors.isSuccess && doctors.data.length === 0 ? (
         <Alert type="info">No doctors found in database.</Alert>
@@ -69,9 +64,10 @@ export default function DoctorsPage() {
                 <p>Hospital: {doctor.hospitalName}</p>
                 <p>Doctor ID: {doctor.doctorId}</p>
                 <p>
-                  Next Slot: {doctor.nextAvailableSlot
+                  Next Slot:{' '}
+                  {doctor.nextAvailableSlot
                     ? new Date(doctor.nextAvailableSlot).toLocaleString()
-                    : "-"}
+                    : '-'}
                 </p>
                 <p className="mt-3 font-medium text-blue-600">View Available Times</p>
               </div>

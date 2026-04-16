@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { FormEvent, useMemo, useState } from "react";
-import Alert from "../ui/Alert";
-import Button from "../ui/Button";
-import { useDoctorFilterOptions } from "../../hooks/useDoctorSearch";
+import { FormEvent, useMemo, useState } from 'react';
+import Alert from '../ui/Alert';
+import Button from '../ui/Button';
+import { useDoctorFilterOptions } from '../../hooks/useDoctorSearch';
 
 type SearchValues = {
   doctorName: string;
@@ -20,16 +20,16 @@ type Props = {
 function todayIso() {
   const now = new Date();
   const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
 export default function SearchFilter({ initialValues, onSearch }: Props) {
   const [values, setValues] = useState<SearchValues>({
-    doctorName: initialValues?.doctorName ?? "",
-    specialization: initialValues?.specialization ?? "",
-    hospital: initialValues?.hospital ?? "",
+    doctorName: initialValues?.doctorName ?? '',
+    specialization: initialValues?.specialization ?? '',
+    hospital: initialValues?.hospital ?? '',
     date: initialValues?.date ?? todayIso(),
   });
 
@@ -42,7 +42,10 @@ export default function SearchFilter({ initialValues, onSearch }: Props) {
 
   return (
     <section className="rounded-2xl border border-blue-500/40 bg-blue-700 p-4 shadow-xl">
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <form
+        onSubmit={handleSubmit}
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5"
+      >
         <label className="flex flex-col gap-1">
           <span className="text-xs font-semibold text-blue-100">Doctor Name</span>
           <select

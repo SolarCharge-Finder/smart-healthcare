@@ -1,45 +1,42 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useRef } from "react"; 
-import { useSearchParams } from "next/navigation";
-import apiClient from "../../shared/apiClient";
+import { useEffect, useState, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
+import apiClient from '../../shared/apiClient';
 
 export default function VerifyClient() {
   const searchParams = useSearchParams();
-  const token = searchParams.get("token");
+  const token = searchParams.get('token');
 
-  const [status, setStatus] = useState("Verifying...");
-  const hasRun = useRef(false); 
+  const [status, setStatus] = useState('Verifying...');
+  const hasRun = useRef(false);
 
   useEffect(() => {
-    if (!token || hasRun.current) return; 
+    if (!token || hasRun.current) return;
 
-    hasRun.current = true; 
+    hasRun.current = true;
 
     const verify = async () => {
       try {
-        await apiClient.post("/auth/verify", { token });
+        await apiClient.post('/auth/verify', { token });
 
-        setStatus("Email verified successfully!");
+        setStatus('Email verified successfully!');
       } catch (err: any) {
         console.error(err);
 
         const message = err?.response?.data?.message;
 
         // handle common cases: already verified or expired token
-        if (
-          message?.includes("Invalid token") ||
-          message?.includes("expired")
-        ) {
-          setStatus("Already verified or link expired.");
+        if (message?.includes('Invalid token') || message?.includes('expired')) {
+          setStatus('Already verified or link expired.');
         } else {
-          setStatus("Verification failed.");
+          setStatus('Verification failed.');
         }
       }
     };
 
     verify();
-  }, [token]); 
+  }, [token]);
 
   return (
     <div className="flex min-h-screen items-center justify-center">

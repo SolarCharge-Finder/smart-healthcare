@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import { FormEvent, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { AxiosError } from "axios";
-import { useCreateAppointment } from "../../hooks/useCreateAppointment";
-import Card from "../ui/Card";
-import Input from "../ui/Input";
-import Button from "../ui/Button";
-import Alert from "../ui/Alert";
-import Spinner from "../ui/Spinner";
+import { FormEvent, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { AxiosError } from 'axios';
+import { useCreateAppointment } from '../../hooks/useCreateAppointment';
+import Card from '../ui/Card';
+import Input from '../ui/Input';
+import Button from '../ui/Button';
+import Alert from '../ui/Alert';
+import Spinner from '../ui/Spinner';
 
 const buildSlots = () => {
   const slots: string[] = [];
   for (let hour = 0; hour < 24; hour += 1) {
     for (let min = 0; min < 60; min += 30) {
-      const h = hour.toString().padStart(2, "0");
-      const m = min.toString().padStart(2, "0");
+      const h = hour.toString().padStart(2, '0');
+      const m = min.toString().padStart(2, '0');
       slots.push(`${h}:${m}`);
     }
   }
@@ -27,10 +27,10 @@ export default function BookingForm() {
   const createAppointment = useCreateAppointment();
   const router = useRouter();
 
-  const [patientId, setPatientId] = useState("");
-  const [doctorId, setDoctorId] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
+  const [patientId, setPatientId] = useState('');
+  const [doctorId, setDoctorId] = useState('');
+  const [date, setDate] = useState('');
+  const [time, setTime] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -40,7 +40,7 @@ export default function BookingForm() {
     setSuccess(false);
 
     if (!date || !time) {
-      setError("Please select a date and time slot.");
+      setError('Please select a date and time slot.');
       return;
     }
 
@@ -50,28 +50,23 @@ export default function BookingForm() {
       const appointment = await createAppointment.mutateAsync({
         patientId,
         doctorId,
-        slotTime
+        slotTime,
       });
       setSuccess(true);
-      setTimeout(
-        () => router.push(`/payment?appointmentId=${appointment.id}`),
-        800
-      );
+      setTimeout(() => router.push(`/payment?appointmentId=${appointment.id}`), 800);
     } catch (err) {
       const axiosError = err as AxiosError;
       const responseMessage =
-        typeof axiosError.response?.data === "string"
-          ? axiosError.response.data
-          : null;
+        typeof axiosError.response?.data === 'string' ? axiosError.response.data : null;
 
       if (responseMessage) {
         setError(responseMessage);
       } else if (axiosError.response?.status === 409) {
-        setError("Slot already booked. Please choose another time.");
+        setError('Slot already booked. Please choose another time.');
       } else if (axiosError.response?.status === 500) {
-        setError("Server error. Please try again later.");
+        setError('Server error. Please try again later.');
       } else {
-        setError("Network error. Please check your connection.");
+        setError('Network error. Please check your connection.');
       }
     }
   };
@@ -118,9 +113,7 @@ export default function BookingForm() {
         </label>
 
         {error ? <Alert type="error">{error}</Alert> : null}
-        {success ? (
-          <Alert type="success">Appointment booked successfully.</Alert>
-        ) : null}
+        {success ? <Alert type="success">Appointment booked successfully.</Alert> : null}
 
         <Button type="submit" disabled={createAppointment.isPending}>
           {createAppointment.isPending ? (
@@ -129,7 +122,7 @@ export default function BookingForm() {
               Booking...
             </span>
           ) : (
-            "Book Appointment"
+            'Book Appointment'
           )}
         </Button>
       </form>

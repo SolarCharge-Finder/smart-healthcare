@@ -1,26 +1,31 @@
-"use client";
+'use client';
 
-import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements } from "@stripe/react-stripe-js";
-import PaymentForm from "../../components/forms/PaymentForm";
-import PageHeader from "../../components/ui/PageHeader";
-import { useStripeConfig } from "../../hooks/useStripeConfig";
-import { useCreatePaymentIntent } from "../../hooks/usePayment";
-import Alert from "../../components/ui/Alert";
-import Card from "../../components/ui/Card";
-import Button from "../../components/ui/Button";
-import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
-import api from "../../lib/api";
-import { generateRecipePdf } from "../../lib/recipePdf";
-import { Payment } from "../../types/payment";
-import { Appointment } from "../../types/appointment";
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
+import PaymentForm from '../../components/forms/PaymentForm';
+import PageHeader from '../../components/ui/PageHeader';
+import { useStripeConfig } from '../../hooks/useStripeConfig';
+import { useCreatePaymentIntent } from '../../hooks/usePayment';
+import Alert from '../../components/ui/Alert';
+import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import { useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
+import api from '../../lib/api';
+import { generateRecipePdf } from '../../lib/recipePdf';
+import { Payment } from '../../types/payment';
+import { Appointment } from '../../types/appointment';
 
 function isSuccessfulPaymentStatus(status: string | undefined | null) {
-  const normalized = (status ?? "").toLowerCase();
-  return normalized === "succeeded" || normalized === "success" || normalized === "complete" || normalized === "completed";
+  const normalized = (status ?? '').toLowerCase();
+  return (
+    normalized === 'succeeded' ||
+    normalized === 'success' ||
+    normalized === 'complete' ||
+    normalized === 'completed'
+  );
 }
 
 function PaymentSuccessBanner() {
@@ -50,10 +55,10 @@ function PaymentSuccessBanner() {
 
 function PaymentPageContent() {
   const searchParams = useSearchParams();
-  const [appointmentId, setAppointmentId] = useState<string>("");
+  const [appointmentId, setAppointmentId] = useState<string>('');
   const [amount, setAmount] = useState<number>(0);
-  const [currency, setCurrency] = useState<string>("lkr");
-  const [paymentId, setPaymentId] = useState<string>("");
+  const [currency, setCurrency] = useState<string>('lkr');
+  const [paymentId, setPaymentId] = useState<string>('');
   const { data: config, isLoading: configLoading, error: configError } = useStripeConfig();
   const [stripePromise, setStripePromise] = useState(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -61,8 +66,8 @@ function PaymentPageContent() {
   const [initInfo, setInitInfo] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [confirmedPayment, setConfirmedPayment] = useState<Payment | null>(null);
-  const flow = searchParams.get("flow");
-  const isVideoConsultationFlow = flow === "video";
+  const flow = searchParams.get('flow');
+  const isVideoConsultationFlow = flow === 'video';
   // Single stable ref tracks which appointmentId has been processed to prevent double-fire
   const processedAppointmentRef = useRef<string | null>(null);
   const inFlightRef = useRef(false);
@@ -70,7 +75,7 @@ function PaymentPageContent() {
   const { mutateAsync: createPaymentIntentAsync } = useCreatePaymentIntent();
 
   const appointment = useQuery<Appointment>({
-    queryKey: ["appointment", appointmentId],
+    queryKey: ['appointment', appointmentId],
     enabled: Boolean(appointmentId),
     queryFn: async () => {
       const { data } = await api.get<Appointment>(`/appointments/${appointmentId}`);
@@ -80,11 +85,11 @@ function PaymentPageContent() {
 
   // Step 1: Read appointmentId from URL
   useEffect(() => {
-    const apt = searchParams.get("appointmentId");
+    const apt = searchParams.get('appointmentId');
 
     if (!apt) {
-      setAppointmentId("");
-      setInitError("Missing appointmentId in URL.");
+      setAppointmentId('');
+      setInitError('Missing appointmentId in URL.');
       setIsInitializing(false);
       return;
     }
@@ -123,8 +128,8 @@ function PaymentPageContent() {
     // Reset display state for a fresh appointment
     setClientSecret(null);
     setAmount(0);
-    setCurrency("lkr");
-    setPaymentId("");
+    setCurrency('lkr');
+    setPaymentId('');
     setInitInfo(null);
     setInitError(null);
     setIsInitializing(true);
@@ -134,10 +139,10 @@ function PaymentPageContent() {
         const response = await createPaymentIntentAsync({ appointmentId });
 
         if (isSuccessfulPaymentStatus(response.status)) {
-          setInitInfo("This appointment payment is already completed. Your consultation is ready.");
+          setInitInfo('This appointment payment is already completed. Your consultation is ready.');
           setClientSecret(null);
         } else if (!response.clientSecret) {
-          setInitError("Payment initialization failed: missing client secret.");
+          setInitError('Payment initialization failed: missing client secret.');
           setClientSecret(null);
         } else {
           setPaymentId(response.paymentId);
@@ -148,12 +153,8 @@ function PaymentPageContent() {
           setInitError(null);
         }
       } catch (err) {
-        console.error("Failed to create payment intent", err);
-        setInitError(
-          err instanceof Error
-            ? err.message
-            : "Failed to initialize payment"
-        );
+        console.error('Failed to create payment intent', err);
+        setInitError(err instanceof Error ? err.message : 'Failed to initialize payment');
         // Allow retry navigation by clearing processed ref
         processedAppointmentRef.current = null;
       } finally {
@@ -172,11 +173,11 @@ function PaymentPageContent() {
         ? {
             clientSecret,
             appearance: {
-              theme: "stripe" as const,
+              theme: 'stripe' as const,
             },
           }
         : undefined,
-    [clientSecret]
+    [clientSecret],
   );
 
   const downloadRecipePdf = async () => {
@@ -184,30 +185,33 @@ function PaymentPageContent() {
     const amountPaid = `${(confirmedPayment.amount / 100).toFixed(2)} ${confirmedPayment.currency.toUpperCase()}`;
     const channelDateTime = appointment.data?.slotTime
       ? new Date(appointment.data.slotTime).toLocaleString()
-      : "-";
+      : '-';
 
     const userRows: Array<[string, string]> = [
-      ["Patient ID", appointment.data?.patientId ?? "-"],
-      ["User ID", appointment.data?.userId ?? appointment.data?.guestUserId ?? "-"],
-      ["Guest Name", appointment.data?.guestUser?.fullName ?? "-"],
-      ["Guest Email", appointment.data?.guestUser?.email ?? "-"],
-      ["Guest Phone", appointment.data?.guestUser?.phoneNumber ?? "-"],
+      ['Patient ID', appointment.data?.patientId ?? '-'],
+      ['User ID', appointment.data?.userId ?? appointment.data?.guestUserId ?? '-'],
+      ['Guest Name', appointment.data?.guestUser?.fullName ?? '-'],
+      ['Guest Email', appointment.data?.guestUser?.email ?? '-'],
+      ['Guest Phone', appointment.data?.guestUser?.phoneNumber ?? '-'],
     ];
 
     const doctorRows: Array<[string, string]> = [
-      ["Doctor", appointment.data?.doctorName ?? "-"],
-      ["Specialization", appointment.data?.specialization ?? "-"],
-      ["Hospital", appointment.data?.hospitalName ?? "-"],
-      ["Channeling Date/Time", channelDateTime],
-      ["Booking Reference", appointment.data?.bookingReferenceId ?? "-"],
+      ['Doctor', appointment.data?.doctorName ?? '-'],
+      ['Specialization', appointment.data?.specialization ?? '-'],
+      ['Hospital', appointment.data?.hospitalName ?? '-'],
+      ['Channeling Date/Time', channelDateTime],
+      ['Booking Reference', appointment.data?.bookingReferenceId ?? '-'],
     ];
 
     const paymentRows: Array<[string, string]> = [
-      ["My Appointment Number", appointment.data?.appointmentNumber ? `#${appointment.data.appointmentNumber}` : "-"],
-      ["Appointment ID", appointmentId],
-      ["Payment ID", confirmedPayment.id],
-      ["Status", confirmedPayment.status?.toUpperCase() ?? "CONFIRMED"],
-      ["Amount Paid", amountPaid],
+      [
+        'My Appointment Number',
+        appointment.data?.appointmentNumber ? `#${appointment.data.appointmentNumber}` : '-',
+      ],
+      ['Appointment ID', appointmentId],
+      ['Payment ID', confirmedPayment.id],
+      ['Status', confirmedPayment.status?.toUpperCase() ?? 'CONFIRMED'],
+      ['Amount Paid', amountPaid],
     ];
 
     await generateRecipePdf({
@@ -221,17 +225,14 @@ function PaymentPageContent() {
   useEffect(() => {
     if (!confirmedPayment || !appointmentId || !isVideoConsultationFlow) return;
 
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return;
 
     try {
-      const storageKey = "video-consultation-payments";
+      const storageKey = 'video-consultation-payments';
       const raw = window.localStorage.getItem(storageKey);
       const parsed = raw ? JSON.parse(raw) : {};
 
-      const nextMap =
-        parsed && typeof parsed === "object"
-          ? (parsed as Record<string, true>)
-          : {};
+      const nextMap = parsed && typeof parsed === 'object' ? (parsed as Record<string, true>) : {};
 
       nextMap[appointmentId] = true;
       window.localStorage.setItem(storageKey, JSON.stringify(nextMap));
@@ -248,7 +249,7 @@ function PaymentPageContent() {
           subtitle="Complete your payment with trusted providers."
         />
         <Alert type="error">
-          {configError ? "Failed to load payment configuration." : initError}
+          {configError ? 'Failed to load payment configuration.' : initError}
         </Alert>
       </main>
     );
@@ -288,18 +289,11 @@ function PaymentPageContent() {
 
   return (
     <main className="flex flex-col max-w-6xl min-h-screen gap-6 px-6 py-10 mx-auto">
-      <PageHeader
-        title="Secure Payment"
-        subtitle="Complete your payment with trusted providers."
-      />
+      <PageHeader title="Secure Payment" subtitle="Complete your payment with trusted providers." />
 
       {!confirmedPayment ? (
         <div className="max-w-xl">
-          <Elements
-            stripe={stripePromise}
-            key={clientSecret}
-            options={elementsOptions}
-          >
+          <Elements stripe={stripePromise} key={clientSecret} options={elementsOptions}>
             <PaymentForm
               appointmentId={appointmentId}
               paymentId={paymentId}
@@ -315,21 +309,48 @@ function PaymentPageContent() {
 
           <Card title="Doctor Channelling Summary">
             <div className="grid gap-2 text-sm text-gray-700 md:grid-cols-2">
-              <p><span className="font-semibold">Appointment ID:</span> {appointmentId}</p>
-              <p><span className="font-semibold">Appointment Number:</span> {appointment.data?.appointmentNumber ? `#${appointment.data.appointmentNumber}` : "-"}</p>
-              <p><span className="font-semibold">Payment ID:</span> {confirmedPayment.id}</p>
-              <p><span className="font-semibold">Doctor:</span> {appointment.data?.doctorName ?? "-"}</p>
-              <p><span className="font-semibold">Hospital:</span> {appointment.data?.hospitalName ?? "-"}</p>
-              <p><span className="font-semibold">Specialization:</span> {appointment.data?.specialization ?? "-"}</p>
               <p>
-                <span className="font-semibold">Channeling Date/Time:</span>{" "}
+                <span className="font-semibold">Appointment ID:</span> {appointmentId}
+              </p>
+              <p>
+                <span className="font-semibold">Appointment Number:</span>{' '}
+                {appointment.data?.appointmentNumber
+                  ? `#${appointment.data.appointmentNumber}`
+                  : '-'}
+              </p>
+              <p>
+                <span className="font-semibold">Payment ID:</span> {confirmedPayment.id}
+              </p>
+              <p>
+                <span className="font-semibold">Doctor:</span> {appointment.data?.doctorName ?? '-'}
+              </p>
+              <p>
+                <span className="font-semibold">Hospital:</span>{' '}
+                {appointment.data?.hospitalName ?? '-'}
+              </p>
+              <p>
+                <span className="font-semibold">Specialization:</span>{' '}
+                {appointment.data?.specialization ?? '-'}
+              </p>
+              <p>
+                <span className="font-semibold">Channeling Date/Time:</span>{' '}
                 {appointment.data?.slotTime
                   ? new Date(appointment.data.slotTime).toLocaleString()
-                  : "-"}
+                  : '-'}
               </p>
-              <p><span className="font-semibold">Booking Reference:</span> {appointment.data?.bookingReferenceId ?? "-"}</p>
-              <p><span className="font-semibold">Status:</span> {confirmedPayment.status?.toUpperCase() ?? appointment.data?.status ?? "CONFIRMED"}</p>
-              <p><span className="font-semibold">Amount Paid:</span> {(confirmedPayment.amount / 100).toFixed(2)} {confirmedPayment.currency.toUpperCase()}</p>
+              <p>
+                <span className="font-semibold">Booking Reference:</span>{' '}
+                {appointment.data?.bookingReferenceId ?? '-'}
+              </p>
+              <p>
+                <span className="font-semibold">Status:</span>{' '}
+                {confirmedPayment.status?.toUpperCase() ?? appointment.data?.status ?? 'CONFIRMED'}
+              </p>
+              <p>
+                <span className="font-semibold">Amount Paid:</span>{' '}
+                {(confirmedPayment.amount / 100).toFixed(2)}{' '}
+                {confirmedPayment.currency.toUpperCase()}
+              </p>
             </div>
 
             <div className="mt-5 flex flex-wrap gap-3">

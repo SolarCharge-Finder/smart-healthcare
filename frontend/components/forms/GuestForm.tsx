@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { FormEvent, useState } from "react";
-import Input from "../ui/Input";
-import Button from "../ui/Button";
-import Alert from "../ui/Alert";
+import { FormEvent, useState } from 'react';
+import Input from '../ui/Input';
+import Button from '../ui/Button';
+import Alert from '../ui/Alert';
 
 export type GuestFormValue = {
   fullName: string;
@@ -18,11 +18,11 @@ type Props = {
 };
 
 const initialState: GuestFormValue = {
-  fullName: "",
-  email: "",
-  phoneNumber: "",
-  area: "",
-  nicOrPassport: "",
+  fullName: '',
+  email: '',
+  phoneNumber: '',
+  area: '',
+  nicOrPassport: '',
 };
 
 export default function GuestForm({ onSubmit }: Props) {
@@ -33,11 +33,11 @@ export default function GuestForm({ onSubmit }: Props) {
     event.preventDefault();
     setError(null);
 
-    if (!value.fullName.trim()) return setError("Full name is required.");
-    if (!value.email.trim()) return setError("Email is required.");
-    if (!value.phoneNumber.trim()) return setError("Phone number is required.");
-    if (!value.area.trim()) return setError("Area is required.");
-    if (!value.nicOrPassport.trim()) return setError("NIC or passport number is required.");
+    if (!value.fullName.trim()) return setError('Full name is required.');
+    if (!value.email.trim()) return setError('Email is required.');
+    if (!value.phoneNumber.trim()) return setError('Phone number is required.');
+    if (!value.area.trim()) return setError('Area is required.');
+    if (!value.nicOrPassport.trim()) return setError('NIC or passport number is required.');
 
     onSubmit(value);
   };
