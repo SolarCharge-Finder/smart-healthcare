@@ -23,4 +23,9 @@ public interface IDoctorService
     Task<DoctorResponse?> GetByUserId(Guid userId);
 
     Task DeleteDoctor(Guid id);
+
+    Task<decimal> GetConsultationFee(Guid doctorId);
+
+    Task UpdateConsultationFee(Guid doctorId, decimal fee, Guid userId);
+    
 }

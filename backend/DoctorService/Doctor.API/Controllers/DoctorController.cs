@@ -148,4 +148,34 @@ public class DoctorController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    [Authorize]
+    [HttpPut("{id}/fee")]
+    public async Task<IActionResult> UpdateConsultationFee(Guid id, UpdateConsultationFeeRequest request)
+    {
+        try
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            await _service.UpdateConsultationFee(id, request.Fee, Guid.Parse(userId));
+
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+    
+    [HttpGet("{id}/fee")]
+    public async Task<IActionResult> GetConsultationFee(Guid id)
+    {
+        var fee = await _service.GetConsultationFee(id);
+        return Ok(new { fee });
+    }
 }
