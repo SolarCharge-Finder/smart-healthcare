@@ -10,3 +10,10 @@ export interface RegisterRequest {
   email: string;
   password: string;
 }
+
+export interface CurrentUserResponse {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+};

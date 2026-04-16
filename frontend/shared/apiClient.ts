@@ -2,8 +2,23 @@
 
 import axios from "axios";
 
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
+
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_AUTH_API_URL || "http://localhost:30001"
+  baseURL: apiBaseUrl ?? "", 
+  headers: {
+    "Content-Type": "application/json"
+  }
+});
+
+apiClient.interceptors.request.use((config) => {
+  if (!apiBaseUrl) {
+    return Promise.reject(
+      new Error("NEXT_PUBLIC_API_URL is required for frontend API calls")
+    );
+  }
+
+  return config;
 });
 
 apiClient.interceptors.request.use((config) => {
