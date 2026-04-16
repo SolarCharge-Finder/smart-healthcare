@@ -11,7 +11,7 @@ import { useState, useEffect } from 'react';
 export default function DoctorDashboard() {
   // hook init
   const doctorProfile = useDoctorProfile();
-  const updateFee = useUpdateDoctorFee(); 
+  const updateFee = useUpdateDoctorFee();
 
   // safe fallback until data loads
   const doctorId = doctorProfile.data?.id ?? '';
@@ -39,7 +39,7 @@ export default function DoctorDashboard() {
     }
   }, [doctorProfile.data]);
 
-  // handle loading 
+  // handle loading
   if (doctorProfile.isLoading) {
     return <Alert type="info">Loading doctor profile...</Alert>;
   }
@@ -161,10 +161,7 @@ export default function DoctorDashboard() {
           onChange={(e) => setFee(Number(e.target.value))}
         />
 
-        <Button
-          onClick={handleFeeUpdate}
-          disabled={updateFee?.isPending}
-        >
+        <Button onClick={handleFeeUpdate} disabled={updateFee?.isPending}>
           {updateFee?.isPending ? 'Updating...' : 'Update Fee'}
         </Button>
       </div>
