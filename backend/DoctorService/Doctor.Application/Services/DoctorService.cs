@@ -153,7 +153,7 @@ public class DoctorService : IDoctorService
         await _repo.RemoveAsync(doctor);
         await _repo.SaveChangesAsync();
     }
-    
+
     public async Task<decimal> GetConsultationFee(Guid doctorId)
     {
         var doctor = await _repo.GetByIdAsync(doctorId);

@@ -11,7 +11,7 @@ public class Doctor
     public string Specialization { get; set; } = "";
 
     public string Hospital { get; set; } = "";
-    
+
     public decimal ConsultationFee { get; set; }
 
     public bool IsApproved { get; set; } = false;

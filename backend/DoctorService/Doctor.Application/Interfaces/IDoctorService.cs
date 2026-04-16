@@ -27,5 +27,5 @@ public interface IDoctorService
     Task<decimal> GetConsultationFee(Guid doctorId);
 
     Task UpdateConsultationFee(Guid doctorId, decimal fee, Guid userId);
-    
+
 }

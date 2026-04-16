@@ -171,7 +171,7 @@ public class DoctorController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
-    
+
     [HttpGet("{id}/fee")]
     public async Task<IActionResult> GetConsultationFee(Guid id)
     {
