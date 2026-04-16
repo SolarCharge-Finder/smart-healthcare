@@ -46,7 +46,7 @@ public class PatientServiceImplementation : IPatientService
         }
         catch (Exception ex)
         {
-            throw new Exception("Failed to grant patient role" + ex);
+            throw new Exception("Failed to grant patient role", ex);
         }
 
         return patient.Id;

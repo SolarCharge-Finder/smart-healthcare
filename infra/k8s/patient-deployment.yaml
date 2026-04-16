@@ -62,3 +62,12 @@ spec:
             
             - name: AUTH_SERVICE_URL
               value: http://auth-service
+
+            - name: InternalApiKey
+              valueFrom:
+                secretKeyRef:
+                  name: smarthealth-secrets
+                  key: INTERNAL_API_KEY
+            
+            - name: ServiceName
+              value: "patient-service"
