@@ -1,5 +1,5 @@
 using Auth.Application.Interfaces;
-using Auth.Domain.Entities;
+using Auth.Application.DTOs;
 
 using Shared.Contracts.Enums;
 
@@ -12,6 +12,21 @@ public class UserService : IUserService
     public UserService(IUserRepository repo)
     {
         _repo = repo;
+    }
+
+    public async Task<UserResponse?> GetById(Guid id)
+    {
+        var user = await _repo.GetByIdAsync(id);
+
+        if (user == null) return null;
+
+        return new UserResponse
+        {
+            Id = user.Id,
+            Name = user.Name,
+            Email = user.Email,
+            Role = user.Role.ToString()
+        };
     }
 
     public async Task UpdateName(Guid userId, string name)
