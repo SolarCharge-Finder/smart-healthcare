@@ -57,16 +57,22 @@ public class DoctorController : ControllerBase
 
         // fallback if you used NameIdentifier instead
         if (userId == null)
+        {
             userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        }
 
         if (userId == null)
+        {
             return Unauthorized("User ID not found in token.");
+        }
 
         // get doctor by userId
         var doctor = await _service.GetByUserId(Guid.Parse(userId));
 
         if (doctor == null)
+        {
             return NotFound("Doctor profile not found.");
+        }
 
         return Ok(doctor);
     }
