@@ -16,6 +16,8 @@ import {
 } from '../../modules/profile/useCompleteProfile';
 import { useRefreshUser } from '@/modules/auth/useAuthUser';
 
+import DoctorDashboard from '@/modules/doctors/DoctorDashboard';
+
 export default function UserPage() {
   const router = useRouter();
   const { user, logout, setUser } = useAuthContext();
@@ -126,6 +128,9 @@ export default function UserPage() {
               </Link>
             </div>
           </Card>
+
+          {/* role based dashboards */}
+          {user.role === 'Doctor' && <DoctorDashboard />}
 
           {/* Account Setup */}
           {user.role === 'Undefined' && (
