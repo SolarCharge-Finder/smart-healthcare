@@ -2,14 +2,16 @@
 
 import { useDoctorProfile } from './useDoctorProfile';
 import { useDoctorAvailability } from '../../hooks/useDoctorAvailability';
+import { useUpdateDoctorFee } from './useUpdateDoctorFee';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import { useState, useEffect } from 'react';
 
 export default function DoctorDashboard() {
-  // always call hooks first
+  // hook init
   const doctorProfile = useDoctorProfile();
+  const updateFee = useUpdateDoctorFee(); 
 
   // safe fallback until data loads
   const doctorId = doctorProfile.data?.id ?? '';
@@ -26,6 +28,8 @@ export default function DoctorDashboard() {
     dayOfWeek: 0,
   });
 
+  const [fee, setFee] = useState<number>(0);
+
   useEffect(() => {
     if (doctorProfile.data) {
       setForm((prev) => ({
@@ -35,7 +39,7 @@ export default function DoctorDashboard() {
     }
   }, [doctorProfile.data]);
 
-  // handle loading AFTER hooks
+  // handle loading 
   if (doctorProfile.isLoading) {
     return <Alert type="info">Loading doctor profile...</Alert>;
   }
@@ -54,10 +58,19 @@ export default function DoctorDashboard() {
     });
   };
 
+  const handleFeeUpdate = async () => {
+    if (!doctorId) return;
+
+    await updateFee.mutateAsync({
+      doctorId,
+      fee,
+    });
+  };
+
   return (
     <Card title="Doctor Dashboard">
       {/* add availability */}
-      <div className="mb-6">
+      <div className="mb-3">
         <h3 className="font-semibold mb-2">Add Availability</h3>
 
         {/* <input
@@ -104,7 +117,7 @@ export default function DoctorDashboard() {
       </div>
 
       {/* availability list */}
-      <div>
+      <div className="mb-3">
         <h3 className="font-semibold mb-2">Your Availability</h3>
 
         {availabilityQuery.isLoading && <Alert type="info">Loading availability...</Alert>}
@@ -133,6 +146,27 @@ export default function DoctorDashboard() {
             </Button>
           </div>
         ))}
+      </div>
+
+      {/* add /edit consultation fee*/}
+      <div className="mb-3">
+        <h3 className="font-semibold mb-2">Consultation Fee</h3>
+
+        <input
+          type="number"
+          className="w-full border p-2 mb-2"
+          placeholder="Enter fee"
+          value={fee}
+          min={0}
+          onChange={(e) => setFee(Number(e.target.value))}
+        />
+
+        <Button
+          onClick={handleFeeUpdate}
+          disabled={updateFee?.isPending}
+        >
+          {updateFee?.isPending ? 'Updating...' : 'Update Fee'}
+        </Button>
       </div>
     </Card>
   );
