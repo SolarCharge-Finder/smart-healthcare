@@ -1,32 +1,35 @@
-using System.Security.Claims;
-using System.Text.Encodings.Web;
-
 using AdminService.Application.Interfaces;
 using AdminService.Infrastructure.Data;
 
 using AdminService.Tests.Fakes;
 
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 using Shared.Contracts.Infrastructure.Auth;
 
+using Testcontainers.PostgreSql;
+
 namespace AdminService.Tests;
 
-public class TestingFactory : WebApplicationFactory<Program>
+public class PostgreSqlTestingFactory : TestingFactory
 {
-    private readonly string _dbName = "admin-tests-" + Guid.NewGuid();
+    private readonly PostgreSqlContainer _db;
+
+    public PostgreSqlTestingFactory(PostgreSqlContainer db)
+    {
+        _db = db;
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        base.ConfigureWebHost(builder);
+
         builder.UseEnvironment("Testing");
 
-        // Inject JWT + required config (prevents crashes)
+        // inject config (prevents AuthServiceClient crash)
         builder.ConfigureAppConfiguration((context, config) =>
         {
             var dict = new Dictionary<string, string?>
@@ -35,7 +38,6 @@ public class TestingFactory : WebApplicationFactory<Program>
                 ["Jwt:Issuer"] = "auth-service",
                 ["Jwt:Audience"] = "smart-healthcare",
 
-                // REQUIRED for AuthServiceClient
                 ["ServiceName"] = "admin-service",
                 ["InternalApiKey"] = "test-api-key"
             };
@@ -45,7 +47,7 @@ public class TestingFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
-            // Replace DB with in-memory
+            // replace DB with PostgreSQL container
             var dbDescriptor = services.FirstOrDefault(
                 d => d.ServiceType == typeof(DbContextOptions<AdminDbContext>));
 
@@ -55,9 +57,9 @@ public class TestingFactory : WebApplicationFactory<Program>
             }
 
             services.AddDbContext<AdminDbContext>(options =>
-                options.UseInMemoryDatabase(_dbName));
+                options.UseNpgsql(_db.GetConnectionString()));
 
-            // Replace Doctor client with fake
+            // replace doctor service client
             var doctorDescriptor = services.FirstOrDefault(
                 d => d.ServiceType == typeof(IDoctorServiceClient));
 
@@ -66,11 +68,9 @@ public class TestingFactory : WebApplicationFactory<Program>
                 services.Remove(doctorDescriptor);
             }
 
-            services.AddSingleton<FakeDoctorServiceClient>();
-            services.AddSingleton<IDoctorServiceClient>(sp =>
-                sp.GetRequiredService<FakeDoctorServiceClient>());
+            services.AddScoped<IDoctorServiceClient, FakeDoctorServiceClient>();
 
-            // Replace Auth client with fake (IMPORTANT)
+            // replace auth client
             var authDescriptor = services.FirstOrDefault(
                 d => d.ServiceType == typeof(IAuthServiceClient));
 
@@ -80,16 +80,6 @@ public class TestingFactory : WebApplicationFactory<Program>
             }
 
             services.AddScoped<IAuthServiceClient, FakeAuthServiceClient>();
-
-            // Override authentication
-            services.AddAuthentication("Test")
-                .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
-
-            services.PostConfigure<AuthenticationOptions>(options =>
-            {
-                options.DefaultAuthenticateScheme = "Test";
-                options.DefaultChallengeScheme = "Test";
-            });
         });
     }
 
@@ -97,17 +87,8 @@ public class TestingFactory : WebApplicationFactory<Program>
     {
         base.ConfigureClient(client);
 
-        // Default user for all tests
+        // default user for all tests
         client.DefaultRequestHeaders.Add("x-user-id", Guid.NewGuid().ToString());
         client.DefaultRequestHeaders.Add("x-user-role", "Admin");
-    }
-
-    public async Task ResetDatabaseAsync()
-    {
-        using var scope = Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
-
-        context.Admins.RemoveRange(context.Admins);
-        await context.SaveChangesAsync();
     }
 }

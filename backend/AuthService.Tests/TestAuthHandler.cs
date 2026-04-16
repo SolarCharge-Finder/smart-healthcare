@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace AdminService.Tests;
+namespace AuthService.Tests;
 
 public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
@@ -22,22 +22,20 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        // get user id from header
         var userId = Request.Headers[UserIdHeader].FirstOrDefault();
 
         if (string.IsNullOrEmpty(userId))
         {
-            throw new Exception("x-user-id header is required in tests");
+            // IMPORTANT: return fail instead of throwing
+            return Task.FromResult(AuthenticateResult.Fail("Missing user id"));
         }
 
-        // get role (default Admin to avoid breaking tests)
-        var role = Request.Headers[RoleHeader].FirstOrDefault()
-                   ?? "Admin";
+        var role = Request.Headers[RoleHeader].FirstOrDefault() ?? "User";
 
         var claims = new[]
         {
-            new Claim("sub", userId), // IMPORTANT for downstream services
-            new Claim(ClaimTypes.NameIdentifier, userId),
+            new Claim("sub", userId),
+            new Claim(ClaimTypes.NameIdentifier, userId), // REQUIRED for your controller
             new Claim(ClaimTypes.Email, $"{userId}@test.com"),
             new Claim(ClaimTypes.Role, role)
         };

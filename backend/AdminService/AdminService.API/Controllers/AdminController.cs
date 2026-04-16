@@ -52,6 +52,20 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
+    [Authorize(Roles = "Admin")]
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(Guid id)
+    {
+        var doctor = await _service.GetById(id);
+
+        if (doctor == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(doctor);
+    }
+
     // see pending admins for approval
     [Authorize(Roles = "Admin")]
     [HttpGet("pending")]

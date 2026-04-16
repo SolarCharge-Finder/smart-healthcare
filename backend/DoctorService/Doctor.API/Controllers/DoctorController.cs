@@ -25,15 +25,13 @@ public class DoctorController : ControllerBase
     {
         try
         {
-            // use "sub" as the single source of truth for user identity
-            var userIdClaim = User.FindFirst("sub")?.Value;
-
-            if (userIdClaim == null || !Guid.TryParse(userIdClaim, out var userId))
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId == null)
             {
                 return Unauthorized();
             }
 
-            await _service.CreateDoctor(request, userId);
+            await _service.CreateDoctor(request, Guid.Parse(userId));
             return Ok();
         }
         catch (Exception ex)

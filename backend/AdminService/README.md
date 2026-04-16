@@ -125,7 +125,7 @@ AdminService → DoctorService (via HttpClient)
 Build image:
 
 ```
-docker build -t backend-admin-service:latest ./backend/AdminService
+docker build -t backend-admin-service:latest -f ./backend/AdminService/Dockerfile ./backend
 ```
 
 Run locally (optional):
@@ -148,7 +148,7 @@ kubectl apply -f admin-service.yaml
 Restart:
 
 ```
-kubectl rollout restart deployment admin-deployment
+kubectl rollout restart deployment admin-service
 ```
 
 Check pods:

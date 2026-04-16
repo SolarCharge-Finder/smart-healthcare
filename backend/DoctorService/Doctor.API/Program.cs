@@ -35,6 +35,10 @@ using (var scope = app.Services.CreateScope())
 // middleware
 app.UseApiMiddleware();
 
+// health check
+app.MapGet("/health", () => Results.Ok("Healthy"));
+
+
 app.Run();
 
 public partial class Program { }

@@ -1,20 +1,21 @@
-namespace AuthService.Tests.Helpers;
-
 using Auth.Application.Interfaces;
+
+namespace AuthService.Tests.Fakes;
+
 public class FakeEmailService : IEmailService
 {
-    public static Dictionary<string, string> LastVerificationToken = new();
-    public static Dictionary<string, string> LastPasswordResetToken = new();
+    public List<(string Email, string Token)> VerificationEmails { get; } = new();
+    public List<(string Email, string Token)> PasswordResetEmails { get; } = new();
 
     public Task SendVerificationEmail(string email, string token)
     {
-        LastVerificationToken[email] = token;
+        VerificationEmails.Add((email, token));
         return Task.CompletedTask;
     }
 
     public Task SendPasswordResetEmail(string email, string token)
     {
-        LastPasswordResetToken[email] = token;
+        PasswordResetEmails.Add((email, token));
         return Task.CompletedTask;
     }
 }
