@@ -1,5 +1,4 @@
-using System;
-
+﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -40,6 +39,7 @@ namespace Doctor.Infrastructure.Data.Migrations
                     FullName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Specialization = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
                     Hospital = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    ConsultationFee = table.Column<decimal>(type: "numeric", nullable: false),
                     IsApproved = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
