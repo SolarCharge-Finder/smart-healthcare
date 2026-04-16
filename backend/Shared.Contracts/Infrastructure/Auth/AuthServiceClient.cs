@@ -20,10 +20,10 @@ public class AuthServiceClient : IAuthServiceClient
         _httpClient = httpClient;
 
         // Read from config (appsettings or env)
-        _serviceName = configuration["ServiceName"] 
+        _serviceName = configuration["ServiceName"]
             ?? throw new ArgumentNullException("ServiceName is not configured");
 
-        _apiKey = configuration["InternalApiKey"] 
+        _apiKey = configuration["InternalApiKey"]
             ?? throw new ArgumentNullException("InternalApiKey is not configured");
     }
 

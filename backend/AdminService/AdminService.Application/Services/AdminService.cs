@@ -85,7 +85,7 @@ public class AdminServiceImplementation : IAdminService
         admin.IsApproved = true;
 
         await _repo.SaveChangesAsync();
-        
+
         try
         {
             await _authClient.GrantRoleAsync(admin.UserId, UserRole.Admin);

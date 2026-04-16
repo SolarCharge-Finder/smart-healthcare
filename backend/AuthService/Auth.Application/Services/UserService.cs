@@ -1,5 +1,5 @@
-using Auth.Application.Interfaces;
 using Auth.Application.DTOs;
+using Auth.Application.Interfaces;
 
 using Shared.Contracts.Enums;
 
@@ -18,7 +18,10 @@ public class UserService : IUserService
     {
         var user = await _repo.GetByIdAsync(id);
 
-        if (user == null) return null;
+        if (user == null)
+        {
+            return null;
+        }
 
         return new UserResponse
         {

@@ -7,12 +7,12 @@ using AdminService.Application.Services;
 using AdminService.Infrastructure.Data;
 using AdminService.Infrastructure.Repositories;
 
-using Shared.Contracts.Infrastructure.Auth;
-
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+
+using Shared.Contracts.Infrastructure.Auth;
 
 public static class ServiceExtensions
 {

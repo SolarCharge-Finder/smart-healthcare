@@ -6,16 +6,16 @@ using AdminService.Application.Interfaces;
 
 using FluentAssertions;
 
-using Xunit;
-
 using Microsoft.Extensions.DependencyInjection;
+
+using Xunit;
 
 namespace AdminService.Tests;
 
 public class AdminTests : IClassFixture<TestingFactory>
 {
     private readonly HttpClient _client;
-    private readonly TestingFactory _factory; 
+    private readonly TestingFactory _factory;
 
     public AdminTests(TestingFactory factory)
     {
