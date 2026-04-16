@@ -9,6 +9,9 @@ namespace AdminService.Tests;
 
 public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
+    public const string UserIdHeader = "x-user-id";
+    public const string RoleHeader = "x-user-role";
+
     public TestAuthHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
@@ -19,11 +22,24 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
+        // get user id from header
+        var userId = Request.Headers[UserIdHeader].FirstOrDefault();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new Exception("x-user-id header is required in tests");
+        }
+
+        // get role (default Admin to avoid breaking tests)
+        var role = Request.Headers[RoleHeader].FirstOrDefault()
+                   ?? "Admin";
+
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, "11111111-1111-1111-1111-111111111111"),
-            new Claim(ClaimTypes.Email, "test@test.com"),
-            new Claim(ClaimTypes.Role, "Admin")
+            new Claim("sub", userId), // IMPORTANT for downstream services
+            new Claim(ClaimTypes.NameIdentifier, userId),
+            new Claim(ClaimTypes.Email, $"{userId}@test.com"),
+            new Claim(ClaimTypes.Role, role)
         };
 
         var identity = new ClaimsIdentity(claims, "Test");
