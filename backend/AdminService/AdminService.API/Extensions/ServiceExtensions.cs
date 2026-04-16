@@ -7,6 +7,8 @@ using AdminService.Application.Services;
 using AdminService.Infrastructure.Data;
 using AdminService.Infrastructure.Repositories;
 
+using Shared.Contracts.Infrastructure.Auth;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -21,6 +23,7 @@ public static class ServiceExtensions
         var db = config["DB_NAME"] ?? "admin-db";
         var user = config["DB_USER"] ?? "change-me";
         var pass = config["DB_PASSWORD"] ?? "change-me";
+        var authServiceUrl = config["AUTH_SERVICE_URL"] ?? "http://auth-service";
 
         var connectionString = $"Host={host};Port={port};Database={db};Username={user};Password={pass}";
 
@@ -29,6 +32,10 @@ public static class ServiceExtensions
 
         services.AddScoped<IAdminService, AdminServiceImplementation>();
         services.AddScoped<IAdminRepository, AdminRepository>();
+        services.AddHttpClient<IAuthServiceClient, AuthServiceClient>(client =>
+        {
+            client.BaseAddress = new Uri(authServiceUrl);
+        });
     }
 
     public static void AddApiServices(this IServiceCollection services)

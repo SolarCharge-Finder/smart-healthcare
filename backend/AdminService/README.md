@@ -125,7 +125,7 @@ AdminService → DoctorService (via HttpClient)
 Build image:
 
 ```
-docker build -t backend-admin-service:latest ./backend/AdminService
+docker build -t backend-admin-service:latest -f ./backend/AdminService/Dockerfile ./backend
 ```
 
 Run locally (optional):
