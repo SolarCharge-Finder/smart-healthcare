@@ -17,6 +17,7 @@ import {
 import { useRefreshUser } from '@/modules/auth/useAuthUser';
 
 import DoctorDashboard from '@/modules/doctors/DoctorDashboard';
+import AdminDashboard from '@/modules/admin/AdminDashboard';
 
 export default function UserPage() {
   const router = useRouter();
@@ -131,6 +132,7 @@ export default function UserPage() {
 
           {/* role based dashboards */}
           {user.role === 'Doctor' && <DoctorDashboard />}
+          {user.role === 'Admin' && <AdminDashboard />}
 
           {/* Account Setup */}
           {user.role === 'Undefined' && (

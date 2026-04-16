@@ -50,7 +50,7 @@ function DoctorAvailabilityContent() {
   const doctorId = params.doctorId as string;
   const selectedDate = searchParams.get('date');
 
-  const {availabilityQuery} = useDoctorAvailability(doctorId);
+  const { availabilityQuery } = useDoctorAvailability(doctorId);
 
   if (!doctorId) {
     return <Alert type="error">Invalid doctor.</Alert>;
@@ -78,10 +78,7 @@ function DoctorAvailabilityContent() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-6 py-10">
-      <PageHeader
-        title="Available Time Slots"
-        subtitle="Select a time to continue booking."
-      />
+      <PageHeader title="Available Time Slots" subtitle="Select a time to continue booking." />
 
       {/* selected date first */}
       {selectedDate && grouped[selectedDate] && (

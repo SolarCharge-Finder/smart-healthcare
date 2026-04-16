@@ -85,7 +85,7 @@ export function useDoctorSearch(params: DoctorSearchParams) {
 
       const data = responses
         .flatMap((response) => response.data)
-        .map(mapDoctor) 
+        .map(mapDoctor)
         .sort((a, b) => {
           const byDate = a.date.localeCompare(b.date);
           if (byDate !== 0) return byDate;
