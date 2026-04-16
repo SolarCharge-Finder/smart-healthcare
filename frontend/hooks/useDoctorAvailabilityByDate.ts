@@ -6,12 +6,9 @@ export function useDoctorAvailabilityByDate(doctorId?: string, date?: string) {
     queryKey: ['doctor-availability-by-date', doctorId, date],
     enabled: !!doctorId && !!date,
     queryFn: async () => {
-      const { data } = await api.get(
-        `/doctors/${doctorId}/availability/by-date`,
-        {
-          params: { date },
-        }
-      );
+      const { data } = await api.get(`/doctors/${doctorId}/availability/by-date`, {
+        params: { date },
+      });
       return data;
     },
   });
