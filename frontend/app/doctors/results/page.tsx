@@ -4,19 +4,20 @@ import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Alert from '../../../components/ui/Alert';
 import PageHeader from '../../../components/ui/PageHeader';
+import Card from '../../../components/ui/Card';
+import Button from '../../../components/ui/Button';
 import SearchFilter from '../../../components/search/SearchFilter';
-import DoctorCard from '../../../components/cards/DoctorCard';
 import { useDoctorSearch } from '../../../hooks/useDoctorSearch';
 
-function DoctorSearchResultsContent() {
+function ResultsContent() {
   const router = useRouter();
   const params = useSearchParams();
 
+  // extract params
   const doctorName = params.get('name') ?? '';
   const specialization = params.get('specialization') ?? '';
   const hospital = params.get('hospital') ?? '';
   const date = params.get('date') ?? '';
-  const isTelemedicineView = params.get('telemedicine') === '1';
 
   const search = useDoctorSearch({
     doctorName,
@@ -26,93 +27,68 @@ function DoctorSearchResultsContent() {
     lookAheadDays: 7,
   });
 
-  const selectedDateResults = (search.data ?? []).filter((doctor) => doctor.date === date);
-  const nextDateResults = (search.data ?? []).filter((doctor) => doctor.date !== date);
-
   return (
     <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-6 py-10">
       <PageHeader
         title="Doctor Search Results"
-        subtitle="Choose an available slot and continue to booking."
+        subtitle="Select a doctor to view available time slots."
       />
 
+      {/* search filter */}
       <SearchFilter
         initialValues={{ doctorName, specialization, hospital, date }}
         onSearch={(values) => {
           const next = new URLSearchParams();
-          if (isTelemedicineView) next.set('telemedicine', '1');
 
           if (values.doctorName) next.set('name', values.doctorName);
           if (values.specialization) next.set('specialization', values.specialization);
           if (values.hospital) next.set('hospital', values.hospital);
 
           next.set('date', values.date);
+
           router.push(`/doctors/results?${next.toString()}`);
         }}
       />
 
-      {search.isError ? <Alert type="error">Unable to load search results.</Alert> : null}
+      {/* states */}
+      {search.isLoading && <Alert type="info">Searching doctors...</Alert>}
+      {search.isError && <Alert type="error">Failed to load search results.</Alert>}
+      {search.isSuccess && search.data.length === 0 && (
+        <Alert type="info">No doctors found for selected filters.</Alert>
+      )}
 
-      {search.isSuccess && search.data.length === 0 ? (
-        <Alert type="info">
-          No doctors are available for the selected filters from {date} to the next 7 days.
-        </Alert>
-      ) : null}
-
-      {search.isSuccess &&
-      date &&
-      selectedDateResults.length === 0 &&
-      nextDateResults.length > 0 ? (
-        <Alert type="info">
-          No doctors are available on {date}. Showing the next available dates.
-        </Alert>
-      ) : null}
-
-      {search.isSuccess && date && selectedDateResults.length > 0 && nextDateResults.length > 0 ? (
-        <Alert type="info">
-          Showing available doctors for {date} and upcoming available dates.
-        </Alert>
-      ) : null}
-
+      {/* results */}
       <div className="grid gap-4 md:grid-cols-2">
         {(search.data ?? []).map((doctor) => (
-          <DoctorCard
-            key={`${doctor.doctorId}-${doctor.hospitalId}-${doctor.date}`}
-            doctor={doctor}
-            hideHospitalFields={isTelemedicineView}
-            onBookNow={(slot) => {
-              const targetSlot = slot || doctor.availableSlots[0];
-              if (!targetSlot) return;
+          <Card key={doctor.doctorId} title={doctor.doctorName}>
+            <div className="text-sm text-gray-600">
+              <p>Specialization: {doctor.specialization}</p>
+              <p>Hospital: {doctor.hospitalName}</p>
 
-              const next = new URLSearchParams({
-                doctorId: doctor.doctorId,
-                doctorName: doctor.doctorName,
-                hospitalId: doctor.hospitalId,
-                hospitalName: doctor.hospitalName,
-                specialization: doctor.specialization,
-                selectedDate: doctor.date,
-                selectedTimeSlot: targetSlot,
-              });
-
-              if (isTelemedicineView) {
-                next.set('telemedicine', '1');
-              }
-
-              router.push(`/appointments/place?${next.toString()}`);
-            }}
-          />
+              <div className="mt-3">
+                <Button
+                  onClick={() => {
+                    const next = new URLSearchParams({
+                      date, // preserve selected date
+                    });
+                    router.push(`/doctors/${doctor.doctorId}?${next.toString()}`);
+                  }}
+                >
+                  View Availability
+                </Button>
+              </div>
+            </div>
+          </Card>
         ))}
       </div>
     </main>
   );
 }
 
-export default function DoctorSearchResultsPage() {
+export default function DoctorResultsPage() {
   return (
-    <Suspense
-      fallback={<main className="mx-auto min-h-screen max-w-6xl px-6 py-10">Loading...</main>}
-    >
-      <DoctorSearchResultsContent />
+    <Suspense fallback={<div>Loading...</div>}>
+      <ResultsContent />
     </Suspense>
   );
 }

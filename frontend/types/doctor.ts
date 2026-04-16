@@ -21,9 +21,26 @@ export type DoctorSearchResult = {
   doctorId: string;
   doctorName: string;
   specialization: string;
-  hospitalId: string;
   hospitalName: string;
   date: string;
-  availableSlots: string[];
-  pricing: PricingBreakdown;
+};
+
+export type Availability = {
+  id: string;
+  doctorId: string;
+  hospital: string;
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+  isRecurring: boolean;
+  dayOfWeek: number | null;
+};
+
+// payload for create
+export type CreateAvailabilityDto = {
+  hospital: string;
+  startTime: string;
+  endTime: string;
+  isRecurring: boolean;
+  dayOfWeek: number | null;
 };

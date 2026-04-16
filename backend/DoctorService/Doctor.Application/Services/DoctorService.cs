@@ -102,7 +102,7 @@ public class DoctorService : IDoctorService
 
         var response = new FilterOptionsResponse
         {
-            DoctorNames = doctors.Select(d => d.FullName).Distinct().ToList(),
+            DoctorNames = doctors.Select(d => d.FullName).ToList(),
             Specializations = doctors.Select(d => d.Specialization).Distinct().ToList(),
             Hospitals = doctors.Select(d => d.Hospital).Distinct().ToList()
         };

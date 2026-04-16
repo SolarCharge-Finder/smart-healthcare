@@ -17,6 +17,7 @@ import api from '../../../lib/api';
 import { Appointment } from '../../../types/appointment';
 import { useAuthContext } from '../../../modules/auth/AuthContext';
 import { authStorage } from '../../../modules/auth/authStorage';
+import { useDoctorAvailabilityByDate } from '@/hooks/useDoctorAvailabilityByDate';
 
 type JwtPayload = {
   [key: string]: unknown;
@@ -62,7 +63,7 @@ function PlaceAppointmentContent() {
     return `${selectedDate}T${selectedTimeSlot}:00Z`;
   }, [selectedDate, selectedTimeSlot]);
 
-  const availability = useDoctorAvailability(doctorId, selectedDate);
+  const availability = useDoctorAvailabilityByDate(doctorId, selectedDate);
 
   const pricing = useQuery({
     queryKey: ['appointment-pricing', doctorId, hospitalId],
