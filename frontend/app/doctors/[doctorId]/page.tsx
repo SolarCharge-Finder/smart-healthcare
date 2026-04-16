@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useDoctorAvailability } from '../../../hooks/useDoctorAvailability';
+import { useDoctorAvailability } from '../../../modules/doctors/hooks/useDoctorAvailability';
 import Alert from '../../../components/ui/Alert';
 import PageHeader from '../../../components/ui/PageHeader';
 import Card from '../../../components/ui/Card';

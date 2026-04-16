@@ -7,7 +7,7 @@ import PageHeader from '../../../components/ui/PageHeader';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import SearchFilter from '../../../components/search/SearchFilter';
-import { useDoctorSearch } from '../../../hooks/useDoctorSearch';
+import { useDoctorSearch } from '../../../modules/doctors/hooks/useDoctorSearch';
 
 function ResultsContent() {
   const router = useRouter();

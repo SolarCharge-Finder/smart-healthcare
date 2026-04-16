@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import api from '../lib/api';
-import { DoctorFilterOptions, DoctorSearchResult } from '../types/doctor';
+import api from '../../../lib/api';
+import { DoctorFilterOptions, DoctorSearchResult } from '../../../types/doctor';
 
 // backend dto (actual API response shape)
 type DoctorSearchDto = {

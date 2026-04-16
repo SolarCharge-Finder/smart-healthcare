@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/shared/apiClient';
-import { PendingAdminDto, PendingDoctorDto } from './adminTypes';
+import { PendingAdminDto, PendingDoctorDto } from '../types/admin';
 
 export function useAdmin() {
   const queryClient = useQueryClient();

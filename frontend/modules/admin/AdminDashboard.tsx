@@ -3,7 +3,7 @@
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
-import { useAdmin } from './useAdmin';
+import { useAdmin } from './hooks/useAdmin';
 
 export default function AdminDashboard() {
   const { pendingAdminsQuery, approveAdmin, rejectAdmin, pendingDoctorsQuery, approveDoctor } =

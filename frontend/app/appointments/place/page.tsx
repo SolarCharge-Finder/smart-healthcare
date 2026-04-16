@@ -12,12 +12,12 @@ import PageHeader from '../../../components/ui/PageHeader';
 import PaymentSummary from '../../../components/booking/PaymentSummary';
 import GuestForm, { GuestFormValue } from '../../../components/forms/GuestForm';
 import { useCreateAppointment } from '../../../hooks/useCreateAppointment';
-import { useDoctorAvailability } from '../../../hooks/useDoctorSearch';
+import { useDoctorAvailability } from '../../../modules/doctors/hooks/useDoctorSearch';
 import api from '../../../lib/api';
 import { Appointment } from '../../../types/appointment';
 import { useAuthContext } from '../../../modules/auth/AuthContext';
-import { authStorage } from '../../../modules/auth/authStorage';
-import { useDoctorAvailabilityByDate } from '@/hooks/useDoctorAvailabilityByDate';
+import { authStorage } from '../../../modules/auth/infra/authStorage';
+import { useDoctorAvailabilityByDate } from '@/modules/doctors/hooks/useDoctorAvailabilityByDate';
 
 type JwtPayload = {
   [key: string]: unknown;

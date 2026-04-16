@@ -13,7 +13,7 @@ import { TelemedicineSessionResponse } from '../../types/telemedicine';
 import { Appointment } from '../../types/appointment';
 import api from '../../lib/api';
 import PaymentSummary from '../../components/booking/PaymentSummary';
-import { authStorage } from '../../modules/auth/authStorage';
+import { authStorage } from '../../modules/auth/infra/authStorage';
 
 type JwtPayload = {
   [key: string]: unknown;

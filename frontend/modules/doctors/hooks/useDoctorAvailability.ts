@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/shared/apiClient';
-import { CreateAvailabilityDto, Availability } from '../types/doctor';
+import { CreateAvailabilityDto, Availability } from '../../../types/doctor';
 
 export function useDoctorAvailability(doctorId: string | undefined) {
   const queryClient = useQueryClient();

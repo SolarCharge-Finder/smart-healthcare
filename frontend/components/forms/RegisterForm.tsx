@@ -6,7 +6,7 @@ import Input from '../ui/Input';
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
 
-import { registerApi } from '../../modules/auth/authApi';
+import { registerApi } from '../../modules/auth/infra/authApi';
 
 export default function RegisterForm() {
   const [name, setName] = useState('');

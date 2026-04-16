@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import api from '../lib/api';
+import api from '../../../lib/api';
 
 export function useDoctorAvailabilityByDate(doctorId?: string, date?: string) {
   return useQuery<{ availableSlots: string[] }>({

@@ -1,8 +1,8 @@
 'use client';
 
-import { useDoctorProfile } from './useDoctorProfile';
-import { useDoctorAvailability } from '../../hooks/useDoctorAvailability';
-import { useUpdateDoctorFee } from './useUpdateDoctorFee';
+import { useDoctorProfile } from './hooks/useDoctorProfile';
+import { useDoctorAvailability } from './hooks/useDoctorAvailability';
+import { useUpdateDoctorFee } from './hooks/useUpdateDoctorFee';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';

@@ -14,7 +14,7 @@ import {
   useCompleteAsDoctor,
   useCompleteAsPatient,
 } from '../../modules/profile/useCompleteProfile';
-import { useRefreshUser } from '@/modules/auth/useAuthUser';
+import { useRefreshUser } from '@/modules/auth/hooks/useAuthUser';
 
 import DoctorDashboard from '@/modules/doctors/DoctorDashboard';
 import AdminDashboard from '@/modules/admin/AdminDashboard';

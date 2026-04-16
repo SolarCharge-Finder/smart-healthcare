@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 
 import { notificationApi } from '../lib/api';
-import { authStorage } from '../modules/auth/authStorage';
+import { authStorage } from '../modules/auth/infra/authStorage';
 import { NotificationItem, UnreadCountResponse } from '../types/notification';
 
 function authHeaders() {

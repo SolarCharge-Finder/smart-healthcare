@@ -7,7 +7,7 @@ import Input from '../ui/Input';
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
 
-import { loginApi } from '../../modules/auth/authApi';
+import { loginApi } from '../../modules/auth/infra/authApi';
 import { useAuthContext } from '../../modules/auth/AuthContext';
 
 export default function LoginForm() {
