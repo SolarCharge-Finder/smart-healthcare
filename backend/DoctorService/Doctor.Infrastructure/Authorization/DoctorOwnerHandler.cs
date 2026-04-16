@@ -26,36 +26,35 @@ public class DoctorOwnerHandler : AuthorizationHandler<DoctorOwnerRequirement>
 
         if (httpContext == null)
         {
+            context.Fail();
             return;
         }
 
-        var userIdClaim = context.User.FindFirst("sub")?.Value;
+        var userIdClaim =
+            context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? context.User.FindFirst("sub")?.Value;
 
-        if (userIdClaim == null)
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim, out var userId))
         {
+            context.Fail();
             return;
         }
 
-        if (!Guid.TryParse(userIdClaim, out var userId))
+        if (!httpContext.Request.RouteValues.TryGetValue("doctorId", out var doctorIdObj) ||
+            !Guid.TryParse(doctorIdObj?.ToString(), out var doctorId))
         {
-            return;
-        }
-
-        if (!httpContext.Request.RouteValues.TryGetValue("doctorId", out var doctorIdObj))
-        {
-            return;
-        }
-
-        if (!Guid.TryParse(doctorIdObj?.ToString(), out var doctorId))
-        {
+            context.Fail();
             return;
         }
 
         var doctor = await _doctorRepository.GetByIdAsync(doctorId);
 
-        if (doctor != null && doctor.UserId == userId)
+        if (doctor == null || doctor.UserId != userId)
         {
-            context.Succeed(requirement);
+            context.Fail();
+            return;
         }
+
+        context.Succeed(requirement);
     }
 }

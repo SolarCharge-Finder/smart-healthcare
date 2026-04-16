@@ -20,5 +20,7 @@ public interface IDoctorService
 
     Task<DoctorResponse?> GetById(Guid id);
 
+    Task<DoctorResponse?> GetByUserId(Guid userId);
+
     Task DeleteDoctor(Guid id);
 }
