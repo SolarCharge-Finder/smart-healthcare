@@ -83,6 +83,24 @@ function PaymentPageContent() {
     },
   });
 
+  const appointmentNumberDisplay =
+    appointment.data?.appointmentNumber && appointment.data.appointmentNumber > 0
+      ? `#${appointment.data.appointmentNumber}`
+      : `#${appointmentId.slice(0, 8).toUpperCase()}`;
+
+  const doctorNameDisplay = appointment.data?.doctorName
+    ? appointment.data.doctorName
+    : appointment.data?.doctorId
+      ? `Doctor (${appointment.data.doctorId.slice(0, 8)})`
+      : '-';
+
+  const hospitalNameDisplay = appointment.data?.hospitalName || 'Assigned at consultation';
+
+  const specializationDisplay = appointment.data?.specialization || 'General Consultation';
+
+  const bookingReferenceDisplay =
+    appointment.data?.bookingReferenceId || `BK-${appointmentId.slice(0, 8).toUpperCase()}`;
+
   // Step 1: Read appointmentId from URL
   useEffect(() => {
     const apt = searchParams.get('appointmentId');
@@ -196,17 +214,17 @@ function PaymentPageContent() {
     ];
 
     const doctorRows: Array<[string, string]> = [
-      ['Doctor', appointment.data?.doctorName ?? '-'],
-      ['Specialization', appointment.data?.specialization ?? '-'],
-      ['Hospital', appointment.data?.hospitalName ?? '-'],
+      ['Doctor', doctorNameDisplay],
+      ['Specialization', specializationDisplay],
+      ['Hospital', hospitalNameDisplay],
       ['Channeling Date/Time', channelDateTime],
-      ['Booking Reference', appointment.data?.bookingReferenceId ?? '-'],
+      ['Booking Reference', bookingReferenceDisplay],
     ];
 
     const paymentRows: Array<[string, string]> = [
       [
         'My Appointment Number',
-        appointment.data?.appointmentNumber ? `#${appointment.data.appointmentNumber}` : '-',
+        appointmentNumberDisplay,
       ],
       ['Appointment ID', appointmentId],
       ['Payment ID', confirmedPayment.id],
@@ -314,6 +332,12 @@ function PaymentPageContent() {
         <div className="space-y-4">
           <PaymentSuccessBanner />
 
+          {appointment.isError ? (
+            <Alert type="info">
+              Some appointment metadata is unavailable right now, but your payment is confirmed.
+            </Alert>
+          ) : null}
+
           <Card title="Doctor Channelling Summary">
             <div className="grid gap-2 text-sm text-gray-700 md:grid-cols-2">
               <p>
@@ -321,23 +345,27 @@ function PaymentPageContent() {
               </p>
               <p>
                 <span className="font-semibold">Appointment Number:</span>{' '}
-                {appointment.data?.appointmentNumber
-                  ? `#${appointment.data.appointmentNumber}`
-                  : '-'}
+                {appointmentNumberDisplay}
               </p>
               <p>
                 <span className="font-semibold">Payment ID:</span> {confirmedPayment.id}
               </p>
               <p>
-                <span className="font-semibold">Doctor:</span> {appointment.data?.doctorName ?? '-'}
+                <span className="font-semibold">Doctor:</span> {doctorNameDisplay}
+              </p>
+              <p>
+                <span className="font-semibold">Doctor ID:</span> {appointment.data?.doctorId ?? '-'}
+              </p>
+              <p>
+                <span className="font-semibold">Patient ID:</span> {appointment.data?.patientId ?? '-'}
               </p>
               <p>
                 <span className="font-semibold">Hospital:</span>{' '}
-                {appointment.data?.hospitalName ?? '-'}
+                {hospitalNameDisplay}
               </p>
               <p>
                 <span className="font-semibold">Specialization:</span>{' '}
-                {appointment.data?.specialization ?? '-'}
+                {specializationDisplay}
               </p>
               <p>
                 <span className="font-semibold">Channeling Date/Time:</span>{' '}
@@ -347,7 +375,7 @@ function PaymentPageContent() {
               </p>
               <p>
                 <span className="font-semibold">Booking Reference:</span>{' '}
-                {appointment.data?.bookingReferenceId ?? '-'}
+                {bookingReferenceDisplay}
               </p>
               <p>
                 <span className="font-semibold">Status:</span>{' '}
