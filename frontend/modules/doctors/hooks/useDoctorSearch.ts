@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '../../../lib/api';
 import { DoctorFilterOptions, DoctorSearchResult } from '../../../types/doctor';
+import { DoctorDetailsDto } from '../types/doctor';
 
 // backend dto (actual API response shape)
 type DoctorSearchDto = {
@@ -19,6 +20,15 @@ function mapDoctor(dto: DoctorSearchDto): DoctorSearchResult {
     specialization: dto.specialization,
     hospitalName: dto.hospital,
     date: dto.date,
+  };
+}
+// map to UI model (optional but consistent)
+function mapDoctorDetails(dto: DoctorDetailsDto) {
+  return {
+    doctorId: dto.id,
+    doctorName: dto.fullName,
+    specialization: dto.specialization,
+    hospitalName: dto.hospital,
   };
 }
 
@@ -54,45 +64,22 @@ export function useDoctorFilterOptions() {
 }
 
 export function useDoctorSearch(params: DoctorSearchParams) {
-  const lookAheadDays = params.lookAheadDays ?? 7;
-
   return useQuery<DoctorSearchResult[]>({
-    queryKey: ['doctor-search', params, lookAheadDays],
-    enabled: Boolean(params.date),
+    queryKey: ['doctor-search', params],
+    enabled: !!params.date,
     queryFn: async () => {
-      const selectedDate = params.date
-        ? new Date(params.date + 'T00:00:00Z') // safer timezone handling
-        : null;
+      if (!params.date) return [];
 
-      if (!selectedDate || Number.isNaN(selectedDate.getTime())) {
-        return [];
-      }
-
-      const requests = Array.from({ length: lookAheadDays + 1 }, (_, offset) => {
-        const targetDate = formatIsoDate(addDays(selectedDate, offset));
-
-        return api.get<DoctorSearchDto[]>('/doctors/search', {
-          params: {
-            name: params.doctorName || undefined,
-            specialization: params.specialization || undefined,
-            hospital: params.hospital || undefined,
-            date: targetDate,
-          },
-        });
+      const { data } = await api.get<DoctorSearchDto[]>('/doctors/search', {
+        params: {
+          Name: params.doctorName || undefined,
+          Specialization: params.specialization || undefined,
+          Hospital: params.hospital || undefined,
+          Date: params.date, // backend already accepts YYYY-MM-DD
+        },
       });
 
-      const responses = await Promise.all(requests);
-
-      const data = responses
-        .flatMap((response) => response.data)
-        .map(mapDoctor)
-        .sort((a, b) => {
-          const byDate = a.date.localeCompare(b.date);
-          if (byDate !== 0) return byDate;
-          return a.doctorName.localeCompare(b.doctorName);
-        });
-
-      return data;
+      return data.map(mapDoctor);
     },
   });
 }
@@ -104,6 +91,17 @@ export function useDoctorAvailability(doctorId?: string) {
     queryFn: async () => {
       const { data } = await api.get(`/doctors/${doctorId}/availability`);
       return data;
+    },
+  });
+}
+
+export function useDoctorDetails(doctorId?: string) {
+  return useQuery({
+    queryKey: ['doctor-details', doctorId],
+    enabled: !!doctorId,
+    queryFn: async () => {
+      const { data } = await api.get<DoctorDetailsDto>(`/doctors/${doctorId}`);
+      return mapDoctorDetails(data);
     },
   });
 }
