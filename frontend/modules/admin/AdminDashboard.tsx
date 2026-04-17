@@ -6,7 +6,7 @@ import Button from '@/components/ui/Button';
 import { useAdmin } from './hooks/useAdmin';
 
 export default function AdminDashboard() {
-  const { pendingAdminsQuery, approveAdmin, rejectAdmin, pendingDoctorsQuery, approveDoctor } =
+  const { pendingAdminsQuery, approveAdmin, rejectAdmin, pendingDoctorsQuery, approveDoctor, rejectDoctor } =
     useAdmin();
 
   return (
@@ -69,12 +69,21 @@ export default function AdminDashboard() {
               {/* <p className="text-sm text-gray-500">{doctor.specialization}</p> */}
             </div>
 
-            <Button
-              onClick={() => approveDoctor.mutate(doctor.id)}
-              disabled={approveDoctor.isPending}
-            >
-              Approve
-            </Button>
+            <div className='flex gap-2'>
+              <Button
+                onClick={() => approveDoctor.mutate(doctor.id)}
+                disabled={approveDoctor.isPending}
+              >
+                Approve
+              </Button>
+              <Button
+                variant="danger"
+                onClick={() => rejectDoctor.mutate(doctor.id)}
+                disabled={rejectDoctor.isPending}
+              >
+                Reject
+              </Button>
+            </div>
           </div>
         ))}
       </div>

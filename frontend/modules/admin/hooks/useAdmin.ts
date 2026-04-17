@@ -61,11 +61,22 @@ export function useAdmin() {
     },
   });
 
+  //reject doctor
+  const rejectDoctor = useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`doctors/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pending-doctors'] });
+    },   
+  });
+
   return {
     pendingAdminsQuery,
     approveAdmin,
     rejectAdmin,
     pendingDoctorsQuery,
     approveDoctor,
+    rejectDoctor,
   };
 }
