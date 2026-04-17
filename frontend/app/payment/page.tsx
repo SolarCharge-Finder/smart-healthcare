@@ -30,14 +30,14 @@ function isSuccessfulPaymentStatus(status: string | undefined | null) {
 
 function PaymentSuccessBanner() {
   return (
-    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-800">
+    <div className="px-4 py-3 border rounded-xl border-emerald-200 bg-emerald-50 text-emerald-800">
       <div className="flex items-center gap-3">
-        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600 text-white">
+        <span className="inline-flex items-center justify-center w-8 h-8 text-white rounded-full bg-emerald-600">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
             fill="currentColor"
-            className="h-5 w-5"
+            className="w-5 h-5"
             aria-hidden="true"
           >
             <path
@@ -264,6 +264,13 @@ function PaymentPageContent() {
         />
         <PaymentSuccessBanner />
         <Alert type="info">{initInfo}</Alert>
+        {appointmentId ? (
+          <div>
+            <Link href={`/consultation/${appointmentId}`} className="inline-block">
+                <Button>Join Consultation</Button>
+            </Link>
+          </div>
+        ) : null}
       </main>
     );
   }
@@ -353,17 +360,16 @@ function PaymentPageContent() {
               </p>
             </div>
 
-            <div className="mt-5 flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 mt-5">
               <Link href="/appointments/history" className="inline-block">
                 <Button variant="secondary">View Appointment History</Button>
               </Link>
-              {isVideoConsultationFlow ? (
-                <Link href={`/consultation/${appointmentId}`} className="inline-block">
+              <Link href={`/consultation/${appointmentId}`} className="inline-block">
                   <Button>Join Consultation</Button>
-                </Link>
-              ) : (
+              </Link>
+              {!isVideoConsultationFlow ? (
                 <Button onClick={downloadRecipePdf}>Download recipe</Button>
-              )}
+              ) : null}
             </div>
           </Card>
         </div>

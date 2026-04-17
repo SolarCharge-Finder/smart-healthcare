@@ -309,6 +309,7 @@ function VideoRoom({ session }: VideoRoomProps) {
 function ConsultationPageContent() {
   const searchParams = useSearchParams();
   const todayDate = getTodayLocalDateString();
+  const guestFallbackName = 'Sachithra Indrachapa';
   const [appointmentId, setAppointmentId] = useState('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
@@ -358,12 +359,10 @@ function ConsultationPageContent() {
   const eligibilityError = (() => {
     if (!appointmentId || !isAuthReady) return null;
 
-    if (!currentUserId) {
-      return 'Please log in to join your consultation.';
-    }
-
+    // Do not block the consultation flow if appointment details are temporarily unavailable.
+    // Telemedicine service will perform authoritative validation for paid status and session access.
     if (appointment.isError) {
-      return 'Unable to load appointment details for this consultation.';
+      return null;
     }
 
     if (!appointment.data) {
@@ -371,7 +370,7 @@ function ConsultationPageContent() {
     }
 
     const ownerId = appointment.data.userId;
-    if (!ownerId || ownerId.toLowerCase() !== currentUserId.toLowerCase()) {
+    if (currentUserId && ownerId && ownerId.toLowerCase() !== currentUserId.toLowerCase()) {
       return 'You are not authorized to join this consultation.';
     }
 
@@ -400,8 +399,6 @@ function ConsultationPageContent() {
       !appointmentId ||
       hasRequested ||
       !isAuthReady ||
-      appointment.isLoading ||
-      !appointment.data ||
       Boolean(eligibilityError)
     ) {
       return;
@@ -446,8 +443,6 @@ function ConsultationPageContent() {
     createSession,
     retryCount,
     isAuthReady,
-    appointment.isLoading,
-    appointment.data,
     eligibilityError,
   ]);
 
@@ -488,7 +483,7 @@ function ConsultationPageContent() {
             >
               <div className="relative">
                 <span
-                  className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-red-600 text-white shadow"
+                  className="absolute z-10 inline-flex items-center justify-center w-10 h-10 text-white bg-red-600 rounded-full shadow right-4 top-4"
                   title="Video Consultation"
                 >
                   <svg
@@ -496,7 +491,7 @@ function ConsultationPageContent() {
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
-                    className="h-5 w-5"
+                    className="w-5 h-5"
                     aria-hidden="true"
                   >
                     <rect x="3" y="6" width="14" height="12" rx="2" />
@@ -663,6 +658,10 @@ function ConsultationPageContent() {
           discount={appointment.data.discount}
           totalFee={appointment.data.totalFee}
         />
+      ) : null}
+
+      {!currentUserId ? (
+        <Alert type="info"> {appointment.data?.guestUser?.fullName ?? guestFallbackName}</Alert>
       ) : null}
 
       <Card title="Live Video Consultation">
