@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { authStorage } from '@/modules/auth/infra/authStorage';
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -12,6 +13,18 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   if (!apiBaseUrl) {
     return Promise.reject(new Error('NEXT_PUBLIC_API_URL is required for frontend API calls'));
+  }
+
+  return config;
+});
+
+api.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = authStorage.getToken();
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
 
   return config;

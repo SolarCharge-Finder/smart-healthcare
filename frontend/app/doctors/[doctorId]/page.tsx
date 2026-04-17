@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useDoctorAvailability } from '../../../hooks/useDoctorAvailability';
+import { useDoctorAvailability } from '../../../modules/doctors/hooks/useDoctorAvailability';
 import Alert from '../../../components/ui/Alert';
 import PageHeader from '../../../components/ui/PageHeader';
 import Card from '../../../components/ui/Card';
@@ -20,6 +20,16 @@ type Availability = {
   dayOfWeek: number | null;
 };
 
+//helper 
+function extractTime(dateString: string) {
+  const date = new Date(dateString);
+
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+
+  return `${hours}:${minutes}:${seconds}`;
+}
 // group slots by date
 function groupByDate(slots: Availability[]) {
   const map: Record<string, Availability[]> = {};
@@ -92,7 +102,7 @@ function DoctorAvailabilityContent() {
                     doctorId: slot.doctorId,
                     availabilityId: slot.id,
                     date: selectedDate,
-                    time: slot.startTime,
+                    time: extractTime(slot.startTime),
                   });
 
                   router.push(`/appointments/place?${next.toString()}`);
@@ -121,7 +131,7 @@ function DoctorAvailabilityContent() {
                         doctorId: slot.doctorId,
                         availabilityId: slot.id,
                         date,
-                        time: slot.startTime,
+                        time: extractTime(slot.startTime),
                       });
 
                       router.push(`/appointments/place?${next.toString()}`);

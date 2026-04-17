@@ -1,4 +1,4 @@
-import { LoginResponse } from './authTypes';
+import { LoginResponse } from '../types/auth';
 
 const TOKEN_KEY = 'token';
 const USER_KEY = 'user';

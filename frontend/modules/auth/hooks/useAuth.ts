@@ -1,7 +1,7 @@
 'use client';
 
-import { loginApi, registerApi, verifyApi } from './authApi';
-import { authStorage } from './authStorage';
+import { loginApi, registerApi, verifyApi } from "../infra/authApi";
+import { authStorage } from "../infra/authStorage";
 
 export const useAuth = () => {
   const login = async (email: string, password: string) => {

@@ -26,6 +26,13 @@ export type DoctorSearchDto = {
   hospital: string;
 };
 
+export type DoctorDetailsDto = {
+  id: string;
+  fullName: string;
+  specialization: string;
+  hospital: string;
+};
+
 // ui model
 export type DoctorSearchResult = {
   doctorId: string;
@@ -33,13 +40,3 @@ export type DoctorSearchResult = {
   specialization: string;
   hospitalName: string;
 };
-
-// mapper
-export function mapDoctor(dto: DoctorSearchDto): DoctorSearchResult {
-  return {
-    doctorId: dto.id,
-    doctorName: dto.fullName,
-    specialization: dto.specialization,
-    hospitalName: dto.hospital,
-  };
-}

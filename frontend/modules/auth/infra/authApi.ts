@@ -1,5 +1,5 @@
-import apiClient from '../../shared/apiClient';
-import { LoginResponse, RegisterRequest, CurrentUserResponse } from './authTypes';
+import apiClient from '../../../shared/apiClient';
+import { LoginResponse, RegisterRequest, CurrentUserResponse } from '../types/auth';
 
 export const loginApi = async (email: string, password: string): Promise<LoginResponse> => {
   const res = await apiClient.post('/auth/login', {

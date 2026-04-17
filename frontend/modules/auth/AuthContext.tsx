@@ -1,8 +1,8 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { LoginResponse } from './authTypes';
-import { authStorage } from './authStorage';
+import { LoginResponse } from './types/auth';
+import { authStorage } from './infra/authStorage';
 
 type AuthContextType = {
   user: LoginResponse | null;

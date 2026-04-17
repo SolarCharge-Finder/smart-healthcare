@@ -9,302 +9,208 @@ import Alert from '../../../components/ui/Alert';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import PageHeader from '../../../components/ui/PageHeader';
-import PaymentSummary from '../../../components/booking/PaymentSummary';
 import GuestForm, { GuestFormValue } from '../../../components/forms/GuestForm';
 import { useCreateAppointment } from '../../../hooks/useCreateAppointment';
-import { useDoctorAvailability } from '../../../hooks/useDoctorSearch';
-import api from '../../../lib/api';
+import api from '@/lib/api';
 import { Appointment } from '../../../types/appointment';
 import { useAuthContext } from '../../../modules/auth/AuthContext';
-import { authStorage } from '../../../modules/auth/authStorage';
-import { useDoctorAvailabilityByDate } from '@/hooks/useDoctorAvailabilityByDate';
+import { authStorage } from '../../../modules/auth/infra/authStorage';
+import { useDoctorDetails } from '@/modules/doctors/hooks/useDoctorSearch';
 
-type JwtPayload = {
-  [key: string]: unknown;
-};
+function normalizeHospitalId(name: string) {
+return name.trim().toUpperCase().replace(/\s+/g, '-');
+}
 
 function parseUserIdFromToken(token: string | null): string | null {
-  if (!token) return null;
+if (!token) return null;
 
-  try {
-    const payload = token.split('.')[1];
-    if (!payload) return null;
-
-    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
-
-    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
-
-    const decoded = JSON.parse(atob(padded)) as JwtPayload;
-
-    const claim = decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
-
-    return typeof claim === 'string' ? claim : null;
-  } catch {
-    return null;
-  }
+try {
+const payload = token.split('.')[1];
+const decoded = JSON.parse(atob(payload));
+return decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
+} catch {
+return null;
+}
 }
 
 function PlaceAppointmentContent() {
-  const params = useSearchParams();
-  const { user } = useAuthContext();
-  const createAppointment = useCreateAppointment();
+const params = useSearchParams();
+const { user } = useAuthContext();
+const createAppointment = useCreateAppointment();
 
-  const doctorId = params.get('doctorId') ?? '';
-  const doctorName = params.get('doctorName') ?? '';
-  const hospitalId = params.get('hospitalId') ?? '';
-  const hospitalName = params.get('hospitalName') ?? '';
-  const specialization = params.get('specialization') ?? '';
-  const selectedDate = params.get('selectedDate') ?? '';
-  const selectedTimeSlot = params.get('selectedTimeSlot') ?? '';
-  const isTelemedicineFlow = params.get('telemedicine') === '1';
+const doctorId = params.get('doctorId') ?? '';
+const date = params.get('date') ?? '';
+const time = params.get('time') ?? '';
 
-  const slotTime = useMemo(() => {
-    if (!selectedDate || !selectedTimeSlot) return '';
-    return `${selectedDate}T${selectedTimeSlot}:00Z`;
-  }, [selectedDate, selectedTimeSlot]);
+// build UTC slot
+const slotTime =
+  date && time ? new Date(`${date}T${time}Z`).toISOString() : '';
 
-  const availability = useDoctorAvailabilityByDate(doctorId, selectedDate);
+const doctorQuery = useDoctorDetails(doctorId);
 
-  const pricing = useQuery({
-    queryKey: ['appointment-pricing', doctorId, hospitalId],
-    enabled: Boolean(doctorId && hospitalId),
-    queryFn: async () => {
-      const { data } = await api.get('/appointments/pricing', {
-        params: {
-          doctorId,
-          hospitalId,
-        },
-      });
-      return data as {
-        doctorFee: number;
-        hospitalFee: number;
-        eChannellingFee: number;
-        discount: number;
-        totalFee: number;
-      };
-    },
-  });
+const doctorName = doctorQuery.data?.doctorName ?? '';
+const hospitalName = doctorQuery.data?.hospitalName ?? '';
+const specialization = doctorQuery.data?.specialization ?? '';
 
-  const myAppointments = useQuery<Appointment[]>({
-    queryKey: ['appointments', 'my-booked-count'],
-    enabled: Boolean(user),
-    queryFn: async () => {
-      const { data } = await api.get<Appointment[]>('/appointments');
-      return data;
-    },
-  });
+const doctorFeeQuery = useQuery({
+queryKey: ['doctor-fee', doctorId],
+enabled: !!doctorId,
+queryFn: async () => {
+const { data } = await api.get(`/doctors/${doctorId}/fee`);
+return data.fee as number;
+},
+});
 
-  const [guest, setGuest] = useState<GuestFormValue | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [bookedAppointment, setBookedAppointment] = useState<Appointment | null>(null);
+const myAppointments = useQuery<Appointment[]>({
+queryKey: ['appointments'],
+enabled: !!user,
+queryFn: async () => {
+const { data } = await api.get('/appointments');
+return data;
+},
+});
 
-  const isLoggedIn = Boolean(user);
-  const canShowSummary = isLoggedIn || guest !== null;
-  const slotAvailable = availability.data?.availableSlots?.includes(selectedTimeSlot) ?? false;
-  const slotUnavailable = availability.isSuccess && !slotAvailable;
+const [guest, setGuest] = useState<GuestFormValue | null>(null);
+const [error, setError] = useState<string | null>(null);
+const [bookedAppointment, setBookedAppointment] = useState<Appointment | null>(null);
 
-  const pricingSummary = useMemo(() => {
-    if (!pricing.data) return null;
+const isLoggedIn = !!user;
+const canProceed = isLoggedIn || guest !== null;
 
-    const effectiveHospitalFee = isTelemedicineFlow ? 0 : pricing.data.hospitalFee;
-    const effectiveTotal =
-      pricing.data.doctorFee +
-      effectiveHospitalFee +
-      pricing.data.eChannellingFee -
-      pricing.data.discount;
+const myCount = useMemo(() => {
+return (
+myAppointments.data?.filter(
+(a) => a.status?.toUpperCase() !== 'CANCELLED'
+).length ?? 0
+);
+}, [myAppointments.data]);
 
-    return {
-      doctorFee: pricing.data.doctorFee,
-      hospitalFee: effectiveHospitalFee,
-      eChannellingFee: pricing.data.eChannellingFee,
-      discount: pricing.data.discount,
-      totalFee: effectiveTotal,
-    };
-  }, [pricing.data, isTelemedicineFlow]);
+useEffect(() => {
+setError(null);
+setBookedAppointment(null);
+}, [doctorId, date, time]);
 
-  const myBookedAppointmentsCount = useMemo(() => {
-    return (
-      myAppointments.data?.filter((appointment) => appointment.status.toUpperCase() !== 'CANCELLED')
-        .length ?? 0
-    );
-  }, [myAppointments.data]);
+const onBook = async () => {
+setError(null);
 
-  useEffect(() => {
-    setError(null);
-    setBookedAppointment(null);
-  }, [doctorId, hospitalId, selectedDate, selectedTimeSlot]);
-
-  const onBook = async () => {
-    setError(null);
-
-    if (!slotTime) {
-      setError('Invalid appointment date or time.');
-      return;
-    }
-
-    if (slotUnavailable) {
-      setError('Selected slot is no longer available. Please pick another slot.');
-      return;
-    }
-
-    try {
-      const userId = parseUserIdFromToken(authStorage.getToken());
-
-      if (isLoggedIn && !userId) {
-        setError('Your session is invalid. Please log in again.');
-        return;
-      }
-
-      const appointment = await createAppointment.mutateAsync({
-        userId: isLoggedIn ? (userId ?? undefined) : undefined,
-        doctorId,
-        doctorName,
-        hospitalId,
-        hospitalName,
-        specialization,
-        slotTime,
-        guest: isLoggedIn ? undefined : (guest ?? undefined),
-      });
-      setBookedAppointment(appointment);
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        const responseData = err.response?.data;
-        if (typeof responseData === 'string' && responseData.trim()) {
-          setError(responseData);
-          return;
-        }
-
-        const message = (responseData as { message?: string } | undefined)?.message;
-        if (typeof message === 'string' && message.trim()) {
-          setError(message);
-          return;
-        }
-      }
-
-      setError('Unable to book appointment. Please try another slot.');
-    }
-  };
-
-  if (!doctorId || !doctorName || !hospitalId || !selectedDate || !selectedTimeSlot) {
-    return (
-      <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-6 px-6 py-10">
-        <Alert type="error">
-          Missing booking details. Please search and select a doctor again.
-        </Alert>
-      </main>
-    );
-  }
-
-  return (
-    <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-6 py-10">
-      <PageHeader
-        title="Place Appointment"
-        subtitle="Review selected doctor details and confirm booking."
-      />
-
-      <Card title="Selected Doctor Information">
-        <div className="grid gap-2 text-sm text-gray-700 md:grid-cols-2">
-          <p>
-            <span className="font-semibold">Doctor:</span> {doctorName}
-          </p>
-          <p>
-            <span className="font-semibold">Hospital:</span> {hospitalName}
-          </p>
-          <p>
-            <span className="font-semibold">Specialization:</span> {specialization}
-          </p>
-          <p>
-            <span className="font-semibold">Date:</span> {selectedDate}
-          </p>
-          <p>
-            <span className="font-semibold">Time Slot:</span> {selectedTimeSlot}
-          </p>
-          {isLoggedIn ? (
-            <p>
-              <span className="font-semibold">My Booked Appointments:</span>{' '}
-              {myBookedAppointmentsCount}
-            </p>
-          ) : null}
-        </div>
-      </Card>
-
-      {!isLoggedIn && !guest ? (
-        <Card title="Guest Details">
-          <GuestForm onSubmit={setGuest} />
-        </Card>
-      ) : null}
-
-      {canShowSummary && pricingSummary ? (
-        <PaymentSummary
-          doctorFee={pricingSummary.doctorFee}
-          hospitalFee={pricingSummary.hospitalFee}
-          eChannellingFee={pricingSummary.eChannellingFee}
-          discount={pricingSummary.discount}
-          totalFee={pricingSummary.totalFee}
-          hideHospitalFee={isTelemedicineFlow}
-        />
-      ) : null}
-
-      {error ? <Alert type="error">{error}</Alert> : null}
-
-      {bookedAppointment ? (
-        <Alert type="success">
-          Appointment booked successfully. Appointment Number: {bookedAppointment.appointmentNumber}
-          . Click Pay Now to complete payment.
-        </Alert>
-      ) : null}
-
-      {slotUnavailable ? (
-        <Alert type="error">
-          This slot has already been taken. Please return to results and pick another slot.
-        </Alert>
-      ) : null}
-
-      {canShowSummary ? (
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            {bookedAppointment ? (
-              <Link
-                href={`/payment?appointmentId=${bookedAppointment.id}&flow=${isTelemedicineFlow ? 'video' : 'book'}`}
-                className="inline-block"
-              >
-                <Button variant="secondary">Pay Now</Button>
-              </Link>
-            ) : (
-              <Button variant="secondary" disabled>
-                Pay Now
-              </Button>
-            )}
-          </div>
-
-          <Button
-            onClick={onBook}
-            disabled={
-              createAppointment.isPending ||
-              pricing.isLoading ||
-              availability.isLoading ||
-              slotUnavailable ||
-              Boolean(bookedAppointment)
-            }
-          >
-            {createAppointment.isPending
-              ? 'Booking...'
-              : bookedAppointment
-                ? 'Booked'
-                : 'Book Appointment'}
-          </Button>
-        </div>
-      ) : null}
-    </main>
-  );
+ 
+if (!slotTime || !hospitalName) {
+  setError('Invalid booking details.');
+  return;
 }
 
-export default function PlaceAppointmentPage() {
-  return (
-    <Suspense
-      fallback={<main className="mx-auto min-h-screen max-w-6xl px-6 py-10">Loading...</main>}
-    >
-      <PlaceAppointmentContent />
-    </Suspense>
-  );
+try {
+  const userId = parseUserIdFromToken(authStorage.getToken());
+  const hospitalId = normalizeHospitalId(hospitalName);
+
+  const appointment = await createAppointment.mutateAsync({
+    userId: isLoggedIn ? userId ?? undefined : undefined,
+    doctorId,
+    hospitalId,
+    slotTime,
+    doctorName,
+    hospitalName,
+    specialization,
+    guest: isLoggedIn ? undefined : guest ?? undefined,
+  });
+
+  setBookedAppointment(appointment);
+} catch (err) {
+  if (axios.isAxiosError(err)) {
+    const msg =
+      err.response?.data?.message ||
+      (typeof err.response?.data === 'string'
+        ? err.response.data
+        : null);
+
+    if (msg) {
+      setError(msg);
+      return;
+    }
+  }
+
+  setError('Booking failed.');
+}
+ 
+
+};
+
+// guard
+if (!doctorId || !date || !time) {
+return ( <main className="p-6"> <Alert type="error">Missing booking details.</Alert> </main>
+);
+}
+
+if (doctorQuery.isLoading) {
+return <Alert type="info">Loading doctor details...</Alert>;
+}
+
+return ( <main className="mx-auto max-w-6xl p-6 space-y-6"> <PageHeader title="Place Appointment" subtitle="Confirm booking" />
+
+ 
+  <Card title="Details">
+    <div className="grid gap-2 text-sm">
+      <p><b>Doctor:</b> {doctorName}</p>
+      <p><b>Hospital:</b> {hospitalName}</p>
+      <p><b>Specialization:</b> {specialization}</p>
+      <p><b>Date:</b> {date}</p>
+      <p><b>Time:</b> {time}</p>
+      {isLoggedIn && <p><b>My Bookings:</b> {myCount}</p>}
+    </div>
+  </Card>
+
+  {!isLoggedIn && !guest && (
+    <Card title="Guest Details">
+      <GuestForm onSubmit={setGuest} />
+    </Card>
+  )}
+
+  {canProceed && doctorFeeQuery.data !== undefined && (
+    <Card title="Consultation Fee">
+      <p>Rs. {doctorFeeQuery.data}</p>
+    </Card>
+  )}
+
+  {error && <Alert type="error">{error}</Alert>}
+
+  {bookedAppointment && (
+    <Alert type="success">
+      Appointment booked. No: {bookedAppointment.appointmentNumber}
+    </Alert>
+  )}
+
+  {canProceed && (
+    <div className="flex justify-between">
+      <div>
+        {bookedAppointment ? (
+          <Link href={`/payment?appointmentId=${bookedAppointment.id}`}>
+            <Button variant="secondary">Pay Now</Button>
+          </Link>
+        ) : (
+          <Button disabled>Pay Now</Button>
+        )}
+      </div>
+
+      <Button
+        onClick={onBook}
+        disabled={createAppointment.isPending || !!bookedAppointment}
+      >
+        {createAppointment.isPending
+          ? 'Booking...'
+          : bookedAppointment
+          ? 'Booked'
+          : 'Book Appointment'}
+      </Button>
+    </div>
+  )}
+</main>
+ 
+
+);
+}
+
+export default function Page() {
+return (
+<Suspense fallback={<div>Loading...</div>}> <PlaceAppointmentContent /> </Suspense>
+);
 }

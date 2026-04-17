@@ -154,6 +154,49 @@ public class DoctorService : IDoctorService
         await _repo.SaveChangesAsync();
     }
 
+    public async Task<decimal> GetConsultationFee(Guid doctorId)
+    {
+        var doctor = await _repo.GetByIdAsync(doctorId);
+
+        if (doctor == null)
+        {
+            throw new Exception("Doctor not found");
+        }
+
+        if (!doctor.IsApproved)
+        {
+            throw new Exception("Doctor is not approved");
+        }
+
+        return doctor.ConsultationFee;
+    }
+
+    public async Task UpdateConsultationFee(Guid doctorId, decimal fee, Guid userId)
+    {
+        var doctor = await _repo.GetByIdAsync(doctorId);
+
+        if (doctor == null)
+        {
+            throw new Exception("Doctor not found");
+        }
+
+        // Only the doctor who owns this profile can update
+        if (doctor.UserId != userId)
+        {
+            throw new Exception("Unauthorized to update consultation fee");
+        }
+
+        // Validation
+        if (fee < 0)
+        {
+            throw new Exception("Consultation fee cannot be negative");
+        }
+
+        doctor.ConsultationFee = fee;
+
+        await _repo.SaveChangesAsync();
+    }
+
     private static DoctorResponse Map(Doctor d) => new()
     {
         Id = d.Id,

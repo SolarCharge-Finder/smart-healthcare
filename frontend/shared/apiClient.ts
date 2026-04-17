@@ -1,6 +1,7 @@
 // apiClient.ts for authentication-related API calls, with token handling (adeesha)
 
 import axios from 'axios';
+import { authStorage } from '@/modules/auth/infra/authStorage';
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -21,7 +22,7 @@ apiClient.interceptors.request.use((config) => {
 
 apiClient.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token');
+    const token = authStorage.getToken();
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

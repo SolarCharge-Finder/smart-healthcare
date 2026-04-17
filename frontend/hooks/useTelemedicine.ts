@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { telemedicineApi } from '../lib/api';
 import { TelemedicineSessionResponse, CreateSessionRequest } from '../types/telemedicine';
-import { authStorage } from '../modules/auth/authStorage';
+import { authStorage } from '../modules/auth/infra/authStorage';
 
 function extractTelemedicineError(error: unknown, fallback: string): Error {
   if (axios.isAxiosError(error)) {

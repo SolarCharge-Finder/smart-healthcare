@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/shared/apiClient';
-import { PendingAdminDto, PendingDoctorDto } from './adminTypes';
+import { PendingAdminDto, PendingDoctorDto } from '../types/admin';
 
 export function useAdmin() {
   const queryClient = useQueryClient();
@@ -61,11 +61,22 @@ export function useAdmin() {
     },
   });
 
+  //reject doctor
+  const rejectDoctor = useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`doctors/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pending-doctors'] });
+    },   
+  });
+
   return {
     pendingAdminsQuery,
     approveAdmin,
     rejectAdmin,
     pendingDoctorsQuery,
     approveDoctor,
+    rejectDoctor,
   };
 }
